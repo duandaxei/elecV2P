@@ -1,4 +1,89 @@
-<a href='https://github.com/elecV2/elecV2P' target='_blank'>elecV2P</a> 重要更新日志: (最新版本 v3.4.4)
+<a href='https://github.com/elecV2/elecV2P' target='_blank'>elecV2P</a> 重要更新日志: (最新版本 v3.5.8)
+
+v3.5.8  2021.01.02
+ • TASK 列表关键字搜索过滤
+ • 脚本增加 $webhook 函数
+ • efss download progress
+
+v3.5.7  2021.12.26
+ • SECURITY 未设置提醒
+ • download 自动添加后缀
+ • RULE/REWRITE 可执行 efh
+
+v3.5.6  2021.12.19
+ • EFSS 远程文件下载
+ • webUI 导航栏及其他优化
+ • $axios 错误信息显示优化
+ • Fix favend 关键字重复问题
+
+v3.5.5  2021.12.11
+ • favend 支持 efh 远程文件
+ • 备份所有 store/cookie 常量
+ • REWRITE 单条规则备注信息
+ • 新增 $fend 用于前后台数据交互
+
+v3.5.4  2021.12.04
+ • 非授权访问可设置通知提醒
+ • webhook 全局 CORS 网址设置
+ • favend 新文件格式(.efh) 初版
+
+v3.5.3  2021.11.21
+ • TASK 定时任务分组设置
+ • fix 远程 JS 更新 bug
+
+v3.5.2  2021.11.07
+ • websocket 断连提醒
+ • MITM 跳过对图片的处理
+ • config.json 配置文件导入
+
+v3.5.1  2021.10.23
+ • 首次 token 访问时生成 cookie
+ • Fix:
+   - webhook 中文乱码问题
+   - filter.list 解析问题
+   - MIMT enable 显示问题
+
+v3.5.0  2021.10.16
+ • REWRITE 备份及订阅分组
+ • REWRITE 增加对 request 的修改
+ • REWRITE/RULES 规则总开关
+ • REWRITE/MITM 规则匹配缓存
+ • webUI 与后台版本一致性检测
+ • TASK 选择部分远程 JS 更新
+ • 移除对旧(v3.3.8 之前) list 格式的支持
+
+v3.4.9  2021.10.03
+ • EFSS 文件打包/解压/重命名
+ • 远程 JS 推送时可重命名
+
+v3.4.8  2021.09.25
+ • 增强对 Buffer 类数据的处理
+ • webhook 打开/关闭代理端口
+ • webUI 及其他细节优化
+
+v3.4.7  2021.09.18
+ • EFSS 多文件操作及移动端优化
+ • TASK 订阅可指定默认 id
+ • TASK 订阅支持开始/暂定其他任务
+ • 默认脚本 deletelog/softeupdate 优化
+
+v3.4.6  2021.09.11
+ • EFSS 界面增加文本文件编辑器
+ • 增加 access.log 访问日志
+ • favend 收藏目录显示大小和日期
+ • Fix:
+   - EFSS 换目录后的路径问题
+   - favend $request.path
+   - websocket token 验证
+
+v3.4.5  2021.08.21
+ • Docker 所有平台直接使用基础镜像
+ • runJS 增加 -grant 参数处理 详见<a href='https://github.com/elecV2/elecV2P-dei/blob/master/docs/06-task.md' target='_blank'> 06-task.md </a>相关部分
+ • 增加临时环境变量 $env
+ • 通知触发 JS 默认以 nodejs 兼容模式运行
+ • EFSS 右键新建文件夹
+ • EFSS 复制粘粘移动文件
+ • 增加 $store.set 方法
 
 v3.4.4  2021.08.01
  • JS 运行增加 sudo 模式及 $task（详见: <a href='https://github.com/elecV2/elecV2P-dei/blob/master/docs/04-JS.md' target='_blank'>04-JS.md</a> 相关部分）

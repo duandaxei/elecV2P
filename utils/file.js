@@ -1,8 +1,9 @@
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const Zip = require('adm-zip')
 
-const { errStack, sJson, sString, sType, sBool, bEmpty, iRandom, euid } = require('./string')
+const { errStack, sJson, sString, sType, sBool, bEmpty, iRandom, euid, kSize } = require('./string')
 const { now } = require('./time')
 const { logger } = require('./logger')
 const clog = new logger({ head: 'utilsFile', level: 'debug' })
@@ -18,17 +19,17 @@ const fpath = {
 }
 
 if (!fs.existsSync(fpath.list)) {
-  fs.mkdirSync(fpath.list)
+  fs.mkdirSync(fpath.list, { recursive: true })
   clog.notify('mkdir new Lists folder')
 }
 
 if (!fs.existsSync(fpath.js)) {
-  fs.mkdirSync(fpath.js)
+  fs.mkdirSync(fpath.js, { recursive: true })
   clog.notify('mkdir new JSFile folder')
 }
 
 if (!fs.existsSync(fpath.store)) {
-  fs.mkdirSync(fpath.store)
+  fs.mkdirSync(fpath.store, { recursive: true })
   clog.notify('mkdir new Store folder')
 }
 
@@ -43,7 +44,7 @@ const list = {
       let listobj = sJson(liststr)
       switch(name) {
       case 'mitmhost.list':
-        if (listobj && listobj.mitmhost && listobj.mitmhost.list) {
+        if (listobj?.mitmhost?.list) {
           return listobj.mitmhost
         }
         return {
@@ -51,102 +52,80 @@ const list = {
         }
         break
       case 'rewrite.list':
-        if (listobj && listobj.rewrite && listobj.rewrite.list) {
+        if (listobj?.rewrite?.list) {
           return listobj
         }
-        listobj = {
+        return {
           rewrite: {
             note: 'elecV2P rewrite list',
             list: []
           }
         }
-        liststr.split(/\r|\n/).forEach(l=>{
-          if (/^(#|\[|\/\/)/.test(l) || l.length<2) {
-            return
-          }
-          let item = l.split(" ")
-          if (item.length === 2) {
-            if (/^sub/.test(item[0])) {
-              if (!listobj.rewritesub) {
-                listobj.rewritesub = {}
-              }
-              listobj.rewritesub[euid()] = {
-                name: 'elecV2P 重写订阅',
-                resource: item[1],
-                enable: true
-              }
-            } else if (/^http|^reject|\.js$/.test(item[1])) {
-              listobj.rewrite.list.push({
-                match: item[0],
-                target: item[1],
-                enable: true
-              })
-            }
-          }
-        })
-        return listobj
         break
       case 'default.list':
-        if (listobj && listobj.rules && listobj.rules.list) {
+        if (listobj?.rules?.list) {
           return listobj
         }
-        listobj = {
+        return {
           rules: {
             note: 'elecV2P rules list',
             list: []
           }
         }
-        liststr.split(/\n|\r/).forEach(l=>{
-          if (l.length<=8 || /^(#|\[|\/\/)/.test(l)) {
-            return
-          }
-          let item = l.split(/ *, */)
-          if (item.length >= 4) {
-            listobj.rules.list.push({
-              mtype: item[0],
-              match: item[1],
-              ctype: item[2],
-              target: item[3],
-              stage: item[4] || 'res',
-              enable: true
-            })
-          }
-        })
-        return listobj
         break
       default:
         return liststr
       }
     }
     clog.error('no list', name)
-    return false
+    switch (name) {
+    case 'default.list':
+    case 'mitmhost.list':
+    case 'rewrite.list':
+    case 'task.list':
+    case 'useragent.list':
+      clog.info('make new file', name);
+      fs.writeFile(listpath, '{}', 'utf8', (err)=>{
+        if (err) {
+          clog.error(err);
+        }
+      });
+    }
+    return ''
   },
   put(name, cont, option = {}){
     try {
       if (option.type === 'add') {
         if (name === 'mitmhost.list') {
           let orglist = this.get('mitmhost.list')
-          let listadd = (host, enable = true)=>{
+          let listadd = (host, note = '', enable = true)=>{
             let fhost = orglist.list.find(x=>x.host === host)
             if (fhost) {
               fhost.enable = sBool(enable)
+              if (note && fhost.note !== note) {
+                if (fhost.note) {
+                  fhost.note += '|' + note
+                } else {
+                  fhost.note = note
+                }
+              }
             } else {
               orglist.list.push({
-                host, enable: sBool(enable)
+                host, note, enable: sBool(enable)
               })
             }
           }
           let contype = sType(cont)
           if (contype === 'string') {
             if (cont.length > 2) {
-              listadd(cont)
+              listadd(cont, option.note)
             }
           } else if (contype === 'array') {
             cont.forEach(host=>{
               if (typeof(host) === 'string' && host.length>2) {
-                listadd(host)
+                listadd(host, option.note)
               } else if (typeof(host) === 'object' && host.host) {
-                listadd(host.host, host.enable)
+                listadd(host.host, option.note, host.enable)
               }
             })
           } else {
@@ -156,7 +135,7 @@ const list = {
           cont = { mitmhost: orglist }
         }
       }
-      fs.writeFileSync(path.join(fpath.list, name), typeof(cont) === 'object' ? JSON.stringify(cont, null, 2) : sString(cont), 'utf8')
+      fs.writeFileSync(path.join(fpath.list, name), sType(cont) === 'object' ? JSON.stringify(cont, null, 2) : sString(cont), 'utf8')
       clog.info(name, 'updated')
       return true
     } catch(e) {
@@ -197,8 +176,39 @@ const file = {
       return false
     }
   },
-  copy(source, target){
-    fs.copyFileSync(source, target)
+  save(fpath, fcont, cb=()=>{}){
+    clog.info(`save file to ${fpath}`)
+    let folder = path.dirname(fpath)
+    if (!fs.existsSync(folder)) {
+      clog.info('mkdir', folder, 'for', fpath)
+      fs.mkdirSync(folder, { recursive: true })
+    }
+    switch (sType(fcont)) {
+    case 'buffer':
+      break
+    case 'object':
+      fcont = JSON.stringify(fcont, null, 2)
+      break
+    default:
+      fcont = sString(fcont)
+    }
+    fs.writeFile(fpath, fcont, 'utf8', cb)
+  },
+  copy(source, target, cb=()=>{}){
+    clog.info('copy', source, 'to', target)
+    fs.copyFile(source, target, cb)
+  },
+  move(source, target, cb=()=>{}){
+    clog.info('move', source, 'to', target)
+    fs.rename(source, target, cb)
+  },
+  rename(oldPath, newPath, cb=()=>{}){
+    // AKA - move
+    clog.info('rename', oldPath, 'to', newPath)
+    fs.rename(oldPath, newPath, cb)
+  },
+  mkdir(dir, cb=()=>{}){
+    fs.mkdir(dir, { recursive: true }, cb)
   },
   path(x1, x2){
     if (!(x1 && x2)) return
@@ -226,6 +236,55 @@ const file = {
       }
     }
     return 0
+  },
+  zip(filelist, targetfile){
+    if (sType(filelist) !== 'array') {
+      clog.error('a array parameter is expect when compress zip files')
+      return false
+    }
+    if (filelist.length === 0) {
+      clog.error('no files to compress')
+      return false
+    }
+    let zip = new Zip()
+    filelist.forEach(file=>{
+      if (fs.existsSync(file)) {
+        if (fs.statSync(file).isDirectory()) {
+          clog.debug('add directory', file, 'to', targetfile)
+          zip.addLocalFolder(file)
+        } else {
+          clog.debug('add file', file, 'to', targetfile)
+          zip.addLocalFile(file)
+        }
+      } else {
+        clog.error(file, 'not exist, skip compress')
+      }
+    })
+    if (!targetfile) {
+      targetfile = filelist[0] + '.etc.zip'
+    } else if (!/\.zip$/.test(targetfile)) {
+      targetfile = targetfile + '.zip'
+    }
+    zip.writeZip(targetfile)
+    clog.info('success compress all files to', targetfile)
+    return true
+  },
+  unzip(zipfile, targetpath, options = {}){
+    if (fs.existsSync(zipfile)) {
+      let zip = new Zip(zipfile)
+      if (!targetpath) {
+        targetpath = path.dirname(zipfile)
+      }
+      zip.extractAllTo(targetpath, options.overwrite)
+      clog.info('success uncompress', zipfile, 'to', targetpath)
+      if (options.filelist) {
+        return this.aList(targetpath)
+      }
+      return true
+    } else {
+      clog.error(zipfile, 'not exist, cant unzip')
+      return false
+    }
   },
   aList(folder, option = { max: -1, dot: true, skip: { folder: [], file: [] } }, progress = { num: 0 }){
     if (!fs.existsSync(folder)) {
@@ -268,12 +327,12 @@ const file = {
       return {
         type: 'file',
         name: basename,
-        size: this.size(folder),
+        size: kSize(fstat.size),
         mtime: fstat.mtimeMs
       }
     }
   },
-  list({ folder, max=1000, dotfiles='deny', ext=[], noext=[] }) {
+  list({ folder, max=1000, dotfiles='deny', ext=[], noext=[], detail=false }) {
     // ext: 只返回该 extension 的文件, noext: 不包括该后缀名的文件
     if (!(folder && fs.existsSync(folder))) {
       return []
@@ -294,7 +353,8 @@ const file = {
         if (dotfiles !== 'allow' && /^\./.test(fd)) {
           continue
         }
-        if (fs.statSync(path.join(newfolder, fd)).isDirectory()) {
+        let fstat = fs.statSync(path.join(newfolder, fd))
+        if (fstat.isDirectory()) {
           subfolder.push((subf ? subf + '/' : '') + fd)
         } else {
           if (ext.length && ext.indexOf(path.extname(fd)) === -1) {
@@ -303,7 +363,15 @@ const file = {
           if (noext.length && noext.indexOf(path.extname(fd)) !== -1) {
             continue
           }
-          fnlist.push((subf ? subf + '/' : '') + fd)
+          if (detail) {
+            fnlist.push({
+              name: (subf ? subf + '/' : '') + fd,
+              size: kSize(fstat.size),
+              mtime: fstat.mtimeMs
+            })
+          } else {
+            fnlist.push((subf ? subf + '/' : '') + fd)
+          }
           curnum++
           if (curnum >= max) {
             return fnlist
@@ -327,9 +395,9 @@ const Jsfile = {
     }
     name = name.trim()
     if (name === 'list') {
-      return file.list({ folder: fpath.js, ext: ['.js'] }).sort()
+      return file.list({ folder: fpath.js, ext: ['.js', '.efh'] }).sort()
     }
-    if (!/\.js$/i.test(name)) {
+    if (!/\.(js|efh)$/i.test(name)) {
       name += '.js'
     }
     let jspath = path.join(fpath.js, name)
@@ -350,24 +418,21 @@ const Jsfile = {
       }
       return fs.readFileSync(jspath, 'utf8')
     }
-    clog.error('no such js file', name)
+    clog.error('no such script:', name);
     return false
   },
   put(name, cont){
-    if (!/\.js$/i.test(name)) {
+    if (!/\.(js|efh)$/i.test(name)) {
       name += '.js'
     }
     try {
-      if (typeof(cont) === 'object') {
-        cont = JSON.stringify(cont)
-      }
       let fullpath = path.join(fpath.js, name)
       let jsfolder = path.dirname(fullpath)
       if (!fs.existsSync(jsfolder)) {
         clog.info('mkdir', jsfolder, 'for', name)
         fs.mkdirSync(jsfolder, { recursive: true })
       }
-      fs.writeFileSync(fullpath, cont, 'utf8')
+      fs.writeFileSync(fullpath, sType(cont) === 'object' ? JSON.stringify(cont, null, 2) : sString(cont), 'utf8')
       clog.info(`${name} success saved`)
       return true
     } catch(e) {
@@ -381,7 +446,7 @@ const Jsfile = {
       return false
     }
     let delf = (name) => {
-      if (!/\.js$/i.test(name)) {
+      if (!/\.(js|efh)$/i.test(name)) {
         name += '.js'
       }
       let jspath = path.join(fpath.js, name)
@@ -390,7 +455,7 @@ const Jsfile = {
         clog.info(name, 'deleted')
         return true
       } else {
-        clog.error('no such js file:', name)
+        clog.error('no such script:', name);
         return false
       }
     }
@@ -422,6 +487,7 @@ const Jsfile = {
 
 const store = {
   maxByte: 1024*1024*2,
+  path: fpath.store,
   get(key, type) {
     // empty key return undefined, don't change
     if (bEmpty(key)) {
@@ -460,6 +526,8 @@ const store = {
         return Number(value)
       case 'array':
       case 'object':
+      case 'json':
+      case 'dict':
         return sJson(value, true)
       case 'string':
         return sString(value)
@@ -560,7 +628,32 @@ const store = {
   },
   all() {
     return fs.readdirSync(fpath.store)
-  }
+  },
+  backup(targetfile = ''){
+    const zip = new Zip();
+    zip.addLocalFolder(fpath.store);
+    if (targetfile && typeof targetfile === 'string') {
+      zip.writeZip(targetfile);
+      clog.info('backup store', fpath.store, 'to', targetfile);
+      return true;
+    } else {
+      clog.info('export stroe', fpath.store, 'as buffer');
+      return zip.toBuffer();
+    }
+  },
 }
+
+let estartinfo = store.get('elecV2PStartInfo');
+if (estartinfo && sType(estartinfo) === 'array') {
+  if (estartinfo.length >= 99) {
+    clog.info('elecV2P start for', estartinfo.length, 'times, reset to 1');
+    estartinfo = [];
+  }
+  estartinfo.push(now());
+} else {
+  estartinfo = [now()];
+}
+store.put(estartinfo, 'elecV2PStartInfo', { note: 'The every time of elecV2P start' });
+clog.info('elecV2P start', estartinfo.length, 'times');
 
 module.exports = { list, Jsfile, store, file }

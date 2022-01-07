@@ -34,7 +34,10 @@ class logger {
     if(head) this._head = head
     if(level && CONFIG_LOG.levels.hasOwnProperty(level)) this._level = level
     if(cb) this._cb = cb
-    if(file) this._file = /\.log/.test(file) ? file : file + '.log'
+    if (file) {
+      file = file.trim().replace(/\/|\\/g, '-');
+      this._file = /\.log$/.test(file) ? file : file + '.log';
+    }
 
     if (isalignHead !== false) {
       this.infohead = alignHead(this._head + ' info')
@@ -101,9 +104,9 @@ class logger {
   clear(){
     let cont = null
     if(this._file && LOGFILE.delete(this._file)) {
-      cont = `[${ this.infohead }][${ now() }] ${ this._file } was cleared`
+      cont = `[${ this.infohead }][${ now() }] ${ this._file } cleared`;
     } else {
-      cont = `[${ this.infohead }][${ now() }] no log file to clear`
+      cont = `[${ this.infohead }][${ now() }] ${ this._file || '' } no exist yet, no need to clear`;
     }
     console.log(cont)
     if(this._cb) this._cb(cont)
@@ -141,13 +144,26 @@ const clog = new logger({ head: 'logger', level: 'debug' })
 const LOGFILE = {
   streamList: {},
   statusList: {},
-  streamFile(name){
+  filethList: {},
+  filepath(name){
+    if (!this.filethList[name]) {
+      this.filethList[name] = path.join(CONFIG_LOG.logspath, name.trim().replace(/\/|\\/g, '-'))
+    }
+    return this.filethList[name]
+  },
+  streamFile(name, opclose = false){
+    if (opclose) {
+      if (this.streamList[name]) {
+        this.streamList[name].end()
+      }
+      return
+    }
     if (!this.streamList[name]) {
-      this.streamList[name] = fs.createWriteStream(name, { flags: 'a' })
+      let filename = this.filepath(name)
+      this.streamList[name] = fs.createWriteStream(filename, { flags: 'a' })
       this.statusList[name] = {
         interval: setInterval(()=>{
           if (this.statusList[name].toclose) {
-            clearInterval(this.statusList[name].interval)
             this.streamList[name].end()
           } else {
             this.statusList[name].toclose = true
@@ -155,26 +171,30 @@ const LOGFILE = {
         }, 5000),
         toclose: true
       }
-      clog.debug('stream', name, 'created')
+      clog.debug('stream', filename, 'created')
       this.streamList[name].on('close', ()=>{
-        clog.debug(name + ' stream closed')
+        clearInterval(this.statusList[name]?.interval);
+        clog.debug(filename + ' stream closed')
         delete this.streamList[name]
         delete this.statusList[name]
+        delete this.filethList[name]
       })
       this.streamList[name].on('error', ()=>{
-        clog.debug(name + ' stream error')
+        clearInterval(this.statusList[name]?.interval);
+        clog.debug(filename + ' stream error')
         delete this.streamList[name]
         delete this.statusList[name]
+        delete this.filethList[name]
       })
     }
     this.statusList[name].toclose = false
     return this.streamList[name]
   },
-  put(filename, data){
+  put(filename, data, head = ''){
     if (!filename || data === undefined || data === '') {
       return
     }
-    this.streamFile(path.join(CONFIG_LOG.logspath, filename.trim().replace(/\/|\\/g, '-'))).write(sString(data) + '\n')
+    this.streamFile(filename).write((head ? `[${ alignHead(head) }][${ now() }] ` : '') + sString(data) + '\n')
   },
   get(filename){
     if (!filename) {
@@ -198,14 +218,18 @@ const LOGFILE = {
     filename = filename.trim()
     if (filename == 'all') {
       require('./file.js').file.list({ folder: CONFIG_LOG.logspath, ext: ['.log'] }).forEach(file=>{
-        clog.notify('delete log file:', file)
-        fs.unlinkSync(path.join(CONFIG_LOG.logspath, file))
+        clog.notify('delete log file:', file);
+        this.streamFile(filename, true);
+        fs.unlinkSync(path.join(CONFIG_LOG.logspath, file));
       })
       return true
     }
-    if (fs.existsSync(path.join(CONFIG_LOG.logspath, filename))){
-      clog.notify('delete log file:', filename)
-      fs.unlinkSync(path.join(CONFIG_LOG.logspath, filename))
+    let logfpath = path.join(CONFIG_LOG.logspath, filename);
+    if (fs.existsSync(logfpath)){
+      this.streamFile(filename, true);
+      clog.notify('delete log file:', filename);
+      fs.unlinkSync(logfpath);
+      // fs.writeFileSync(logfpath, '', 'utf8');
       return true
     } 
     return false
@@ -221,26 +245,65 @@ function formArgs() {
   return format(...arguments)
 }
 
-function alignHead(head) {
-  if (head.length === CONFIG_LOG.alignHeadlen) {
-    return head
+function alignHead(str, alignlen = CONFIG_LOG.alignHeadlen) {
+  let buf = Buffer.from(str), tlen = (buf.length + str.length) / 2
+  if (tlen === alignlen) {
+    return str
   }
-  if (head.length < CONFIG_LOG.alignHeadlen) {
-    let nstr = head.split(' ')
-    let space = CONFIG_LOG.alignHeadlen - head.length
-    while(space--){
-      nstr[0] += ' '
+  if (tlen < alignlen) {
+    let nstr = str.split(' '), lastr = nstr.pop()
+    lastr = ' '.repeat(alignlen - tlen) + lastr
+    return nstr.join(' ') + ' ' + lastr
+  }
+  const sp = str.split(/\/|\\/)
+  if (sp.length > 1) {
+    str = sp[0].slice(0,1) + '/' + sp.pop()
+    buf = Buffer.from(str)
+    tlen = (buf.length + str.length) / 2
+    if (tlen === alignlen) {
+      return str
     }
-    return nstr.join(' ')
-  }
-  if (head.length > CONFIG_LOG.alignHeadlen) {
-    const sp = head.split(/\/|\\/)
-    if (sp.length > 1) {
-      head = sp[0].slice(0,1) + '/' + sp.pop()
+    if (tlen < alignlen) {
+      let nstr = str.split(' '), lastr = nstr.pop()
+      lastr = ' '.repeat(alignlen - tlen) + lastr
+      return nstr.join(' ') + ' ' + lastr
     }
-    const nstr = head.split(' ').pop()
-    return head.slice(0, CONFIG_LOG.alignHeadlen-6-nstr.length) + '...' + head.slice(-nstr.length-3)
   }
+  let lsidx = buf.lastIndexOf(' '), lres
+  let isZh  = (buf, idx)=>(buf[idx] >= 228 && (buf[idx+1] >= 128 && buf[idx+1] <=191) && (buf[idx+2] >= 128 && buf[idx+2] <=191))
+  if (isZh(buf, lsidx - 4)) {
+    lres = buf.slice(lsidx - 1)
+  } else if (isZh(buf, lsidx - 3)) {
+    lres = buf.slice(lsidx - 3)
+    alignlen++
+  } else {
+    lres = buf.slice(lsidx - 2)
+  }
+  alignlen = alignlen - lres.length - 3
+  tlen = 0
+  let end = 0
+  while (end <= buf.length) {
+    if (isZh(buf, end)) {
+      if (alignlen - tlen >= 2) {
+        end += 3
+        tlen += 2
+      } else {
+        break
+      }
+    } else {
+      end++
+      tlen++
+    }
+    if (tlen >= alignlen) {
+      break
+    }
+  }
+
+  let res = buf.slice(0, end).toString()
+  if (tlen < alignlen) {
+    res += ' '.repeat(alignlen - tlen)
+  }
+  return res + '...' + lres.toString()
 }
 
 function setGlog(level) {

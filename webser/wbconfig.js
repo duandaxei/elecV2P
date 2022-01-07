@@ -5,12 +5,12 @@ const { CONFIG } = require('../config')
 const { CONFIG_RUNJS, CONFIG_RULE } = require('../script')
 
 module.exports = app => {
-  app.get("/config", (req, res)=>{
+  app.get('/config', (req, res)=>{
     let type = req.query.type
-    clog.notify((req.headers['x-forwarded-for'] || req.connection.remoteAddress), "get config data", type)
+    clog.notify((req.headers['x-forwarded-for'] || req.connection.remoteAddress), 'get config data', type)
     switch(req.query.type){
       case 'setting':
-        res.end(JSON.stringify({
+        res.json({
           homepage: CONFIG.homepage,
           gloglevel: CONFIG.gloglevel || 'info',
           CONFIG_FEED, CONFIG_RUNJS, CONFIG_Axios,
@@ -22,7 +22,7 @@ module.exports = app => {
           anyproxy: CONFIG.anyproxy,
           webUI: CONFIG.webUI,
           newversion: CONFIG.newversion,
-        }))
+        })
         break
       default:{
         let token = req.query.token || req.body.token
@@ -36,17 +36,20 @@ module.exports = app => {
         if (token === CONFIG.wbrtoken) {
           res.download(list.get('config.json', 'path'))
         } else {
-          res.end('no config data to get')
+          res.json({
+            rescode: -1,
+            message: 'no config data to get'
+          })
         }
       }
     }
   })
 
-  app.put("/config", (req, res)=>{
-    clog.notify((req.headers['x-forwarded-for'] || req.connection.remoteAddress) + " put config " + req.body.type)
+  app.put('/config', (req, res)=>{
+    clog.notify((req.headers['x-forwarded-for'] || req.connection.remoteAddress), 'put config', req.body.type)
     let bSave = true
     switch(req.body.type){
-      case "config":
+      case 'config':
         let data = req.body.data
         Object.assign(CONFIG, data)
         if (CONFIG.CONFIG_FEED) {
@@ -59,83 +62,103 @@ module.exports = app => {
         if (data.gloglevel !== CONFIG.gloglevel) {
           setGlog(data.gloglevel)
         }
-        res.end("save config to " + CONFIG.path)
+        res.json({
+          rescode: 0,
+          message: 'save config to ' + CONFIG.path
+        })
         break
-      case "homepage":
+      case 'homepage':
         let homepage = req.body.data.replace(/\/$/, '')
         CONFIG.homepage = homepage
         CONFIG_FEED.rss.homepage = homepage
-        res.end('set homepage success!')
+        res.json({
+          rescode: 0,
+          message: 'set homepage success!'
+        })
         break
-      case "gloglevel":
+      case 'gloglevel':
         try {
           CONFIG.gloglevel = req.body.data
           setGlog(CONFIG.gloglevel)
-          res.end(JSON.stringify({
+          res.json({
             rescode: 0,
             message: 'global log level set to ' + CONFIG.gloglevel
-          }))
+          })
         } catch(e) {
-          res.end(JSON.stringify({
+          res.json({
             rescode: -1,
             message: 'global log level change fail ' + e.message
-          }))
+          })
           clog.error('global log level change fail ' + e.message)
           bSave = false
         }
         break
-      case "wbrtoken":
-        CONFIG.wbrtoken = req.body.data
-        clog.notify('webhook token set to', CONFIG.wbrtoken)
-        res.end(JSON.stringify({
-          rescode: 0,
-          message: 'success reset webhook token'
-        }))
+      case 'wbrtoken':
+        if (req.body.data && req.body.data.length >= 6) {
+          CONFIG.wbrtoken = req.body.data
+          clog.notify('webhook token success changed')
+          res.json({
+            rescode: 0,
+            message: 'success reset webhook token'
+          })
+        } else {
+          clog.error('webhook token', req.body.data, 'is illegal')
+          res.json({
+            rescode: -1,
+            message: 'webhook token is illegal'
+          })
+        }
         break
-      case "eAxios":
+      case 'eAxios':
         try {
           Object.assign(CONFIG_Axios, req.body.data)
           CONFIG.CONFIG_Axios = CONFIG_Axios
-          res.end(JSON.stringify({
+          res.json({
             rescode: 0,
             message: 'success! set eAxios'
-          }))
+          })
           axProxy.update()
         } catch(e) {
-          res.end(JSON.stringify({
+          res.json({
             rescode: -1,
             message: 'fail to change eAxios setting'
-          }))
+          })
           console.error(e)
           bSave = false
         }
         break
-      case "uagent":
+      case 'uagent':
         if (req.body.data) {
           CONFIG_RULE.uagent = req.body.data
-          list.put('useragent.list', JSON.stringify(req.body.data, null, 2))
-          res.end('success update User-Agent list')
+          list.put('useragent.list', req.body.data)
+          res.json({
+            rescode: 0,
+            message: 'success update User-Agent list'
+          })
         } else {
-          res.end('no data to update')
+          res.json({
+            rescode: -1,
+            message: 'no data to update'
+          })
         }
         bSave = false
         break
-      case "runjs":
+      case 'runjs':
         try {
           Object.assign(CONFIG_RUNJS, req.body.data)
           CONFIG.CONFIG_RUNJS = CONFIG_RUNJS
-          res.end(JSON.stringify({
+          res.json({
             rescode: 0,
             message: 'RUNJS config changed'
-          }))
+          })
         } catch(e) {
-          res.end(JSON.stringify({
+          res.json({
             rescode: -1,
             message: 'fail to change RUNJS config' + e.message
-          }))
+          })
         }
         break
-      case "efss":
+      case 'efss':
         let cefss = req.body.data, msg
         if (cefss.enable === false) {
           clog.notify('efss is closed')
@@ -167,9 +190,9 @@ module.exports = app => {
         if (msg.rescode === 0) {
           Object.assign(CONFIG.efss, cefss)
         }
-        res.end(JSON.stringify(msg))
+        res.json(msg)
         break
-      case "security":
+      case 'security':
         CONFIG.SECURITY = req.body.data
         let secmsg = {
           rescode: 0,
@@ -178,57 +201,78 @@ module.exports = app => {
         if (CONFIG.SECURITY.enable) {
           secmsg.message = 'security updated'
         }
-        res.end(JSON.stringify(secmsg))
+        res.json(secmsg)
         break
-      case "init":
+      case 'init':
         CONFIG.init = Object.assign(CONFIG.init || {}, req.body.data.CONFIG_init)
         let cktip = 'checkupdate is ' + (CONFIG.init.checkupdate === false ? 'off' : 'on')
         if (req.body.data.CONFIG_init.runjs) {
-          res.end(cktip + '\nadd initialization runjs: ' + req.body.data.CONFIG_init.runjs)
+          res.json({
+            rescode: 0,
+            message: cktip + '\nadd initialization runjs: ' + req.body.data.CONFIG_init.runjs
+          })
         } else {
-          res.end(cktip + '\ninitialization runjs is cleared')
+          res.json({
+            rescode: 0,
+            message: cktip + '\ninitialization runjs is cleared'
+          })
         }
         break
-      case "anyproxy":
+      case 'anyproxy':
         try {
           CONFIG.anyproxy = Object.assign(CONFIG.anyproxy || {}, req.body.data)
-          res.end(JSON.stringify({
+          res.json({
             rescode: 0,
             message: 'anyproxy config success updated'
-          }))
+          })
         } catch(e) {
-          res.end(JSON.stringify({
+          res.json({
             rescode: -1,
             message: 'fail to change anyproxy config' + e.message
-          }))
+          })
         }
         break
-      case "webUI":
+      case 'webUI':
         try {
           CONFIG.webUI = Object.assign(CONFIG.webUI || {}, req.body.data)
-          res.end(JSON.stringify({
+          res.json({
             rescode: 0,
             message: 'webUI config success updated'
-          }))
+          })
         } catch(e) {
-          res.end(JSON.stringify({
+          res.json({
             rescode: -1,
             message: 'fail to change webUI config' + e.message
-          }))
+          })
         }
         break
       default:{
         clog.error('data put error, unknow type: ' + req.body.type)
         bSave = false
-        res.end(JSON.stringify({
+        res.json({
           rescode: -1,
           message: 'data put error, unknow type: ' + req.body.type
-        }))
+        })
       }
     }
     if (bSave) {
       clog.info('current config save to script/Lists/config.json')
       list.put('config.json', JSON.stringify(CONFIG, null, 2))
     }
+  })
+
+  app.post('/config', (req, res)=>{
+    if (req.body.file?.content) {
+      if (list.put('config.json', req.body.file.content)) {
+        return res.json({
+          rescode: 0,
+          message: 'success import config.json'
+        })
+      }
+    }
+    res.json({
+      rescode: -1,
+      message: 'fail to import config.json'
+    })
   })
 }

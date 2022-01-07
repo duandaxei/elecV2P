@@ -5,31 +5,79 @@
 <pre style="white-space: pre-line;word-break: break-word;margin: 0;padding: 6px 1em;text-align: left;display: flex;">
 - 主要功能基本完成，告一段落
 - 后面偶尔修修 Bug，欢迎提交 Issue
-- Porject 的坑有时间再填
+- Project 的坑有时间再填
 - Thanks for using.
 </pre>
 </div>
 <div style="background-color: #003153;margin-top: 12px;border-radius: 8px;">
 <h3 style="font-size: 24px;text-align: center;border-bottom: 1px solid;color: white;padding: 6px;margin-bottom: 0;">Project</h3>
 <pre style="margin-bottom: 0;white-space: pre-line;word-break: break-word;margin: 0;padding: 6px 1em;text-align: left;display: flex;">
-- WEBHOOK 临时 token 及权限管理
-- TASK/RULES/REWRITE 排序
-- EFSS download wget/aria2c/git 等
-- EFSS zip 压缩打包/解压
-- Backup 备份导出/导入(lists/store)
-- 文件编辑器(component||libery) (备 CodeMirror?)
+- 规则及定时任务的移动和排序
+- 多 token 授权及对应权限管理
+- 使用脚本管理规则($rewrite/$rule
+- elecV2P 启动器/快捷方式（$run JSON 格式文件
+- eFlow: 不同语言的脚本执行流程可视化控制（天坑）
 - 多语言 [一个可能永远不填的坑..., start ready...]
-- elecV2Pflow: 不同语言的脚本执行流程可视化控制（天坑）
 </pre>
 </div>
 </div>
 <div style="width: 50%;background-color: #2d8800;border-radius: 8px;margin: 0 12px; max-height: 480px; overflow: hidden auto;">
 <h3 style="font-size: 24px;text-align: center;border-bottom: 1px solid;color: white;padding: 6px;margin-bottom: 0;">Done</h3>
 <pre style="margin-bottom: 0;white-space: pre-line;word-break: break-word;margin: 0;padding: 6px 1em;text-align: left;display: flex;">
+- [x] 脚本增加 $webhook 函数
+- [x] TASK 列表关键字搜索过滤
+- [x] efss download progress
+- [x] webhook 部分返回结果 JSON 化
+- [x] RULE/REWRITE 执行 efh 文件
+- [x] download 自动添加后缀
+- [x] SECURITY 未设置提醒
+- [x] efss 远程文件下载
+- [x] $axios 错误显示优化
+- [x] 显示脚本最近修改日期
+- [x] webUI 移动端导航栏固定
+- [x] 所有 store/cookie 常量备份/导入
+- [x] REWRITE 单条规则备注信息
+- [x] efh $fend 前后台数据交互
+- [x] webUI 页面缓存提醒优化
+- [x] elecV2P 启动次数统计
+- [x] favend 支持 efh 远程文件
+- [X] favend JS 重构(.efh 初版)
+- [x] 全局 CORS 设置
+- [x] 非授权访问通知提醒
+- [X] TASK 定时任务分组
+- [x] MITM 跳过对图片类数据的处理
+- [x] websocket 断连提醒
+- [x] 首次 token 访问时生成 cookie
+- [x] REWRITE 备份及订阅分组
+- [x] RULES/REWRITE 规则总开关
+- [x] REWRITE/MITM 规则匹配缓存
+- [x] webUI 与后台版本一致性检测
+- [x] TASK 部分远程 JS 更新
+- [x] 当前连接客户端信息简易记录
+- [X] EFSS 文件压缩/解压/重命名
+- [x] $download options existskip
+- [x] 远程推送 JS 时可重命名文件
+- [x] access.log 更详细记录
+- [x] 增加对 Buffer 类数据的处理
+- [x] webhook 打开/关闭代理端口
+- [x] EFSS 多文件操作
+- [x] softupdate.js 异步并行下载
+- [x] favend favorite 显示日期和大小
+- [X] EFSS 新增文本文件编辑器
+- [x] 添加 access.log 访问日志
+- [x] weboskcet token 验证
+- [x] 增加 $store.set 方法
+- [x] EFSS 右键新建文件夹
+- [x] EFSS 复制粘粘移动文件
+- [x] github action 自动构建多平台 docker 镜像
+- [x] table overflow 显示优化
+- [x] runJS 增加 -grant 参数处理
+- [x] 增加临时环境变量 $env
+- [x] 通知触发 JS 优化
 - [x] JS 增加 sudo 模式及 $task
 - [x] 增加默认变量__taskname/__taskid
 - [x] require 相关函数优化
-- [x] logs 删除按钮
+- [x] logs 界面删除按钮
 - [x] 部分对象 Proxy 化
 - [x] EFSS 右键增加 pm2 运行选项
 - [x] JS 默认环境变量增加 $cache

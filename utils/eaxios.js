@@ -7,7 +7,7 @@ const HttpsProxyAgent = require('https-proxy-agent')
 const { logger } = require('./logger')
 const clog = new logger({ head: 'eAxios', level: 'debug' })
 
-const { sJson, sType, errStack, surlName, progressBar } = require('./string')
+const { sJson, sType, errStack, surlName, progressBar, sTypetoExt } = require('./string')
 
 const { CONFIG, CONFIG_Port } = require('../config')
 
@@ -202,29 +202,29 @@ function stream(url) {
   })
 }
 
-function downloadfile(durl, dest, cb) {
-  // 在 elecV2P 中占非常重要的部分，如无必要不要改动
+function downloadfile(durl, options, cb) {
+  // 在 elecV2P 中占非常重要的位置，如无必要不要改动
   // very important, don't change if not necessary
   if (!/^https?:\/\/\S{4,}/.test(durl)) {
     return Promise.reject(durl + ' is not a valid url')
   }
   let folder = '', fname  = ''
-  if (dest) {
-    if (sType(dest) === 'object') {
-      if (dest.folder) {
-        folder = dest.folder
+  if (options) {
+    if (sType(options) === 'object') {
+      if (options.folder) {
+        folder = options.folder
       }
-      if (dest.name) {
-        fname = dest.name
+      if (options.name) {
+        fname = options.name
       }
     } else {
-      if (file.isExist(dest, true)) {
-        folder = dest
-      } else if (path.dirname(dest) !== '.') {
-        folder = path.dirname(dest)
-        fname = path.basename(dest)
+      if (file.isExist(options, true)) {
+        folder = options
+      } else if (path.dirname(options) !== '.') {
+        folder = path.dirname(options)
+        fname = path.basename(options)
       } else {
-        fname = dest
+        fname = options
       }
     }
   }
@@ -235,40 +235,69 @@ function downloadfile(durl, dest, cb) {
     fname  = surlName(durl)
   }
 
-  dest = path.resolve(folder, fname)
+  let dest = path.resolve(folder, fname)
+  if (options.existskip && fs.existsSync(dest)) {
+    clog.info(dest, 'exist, skip download')
+    return Promise.resolve(`${dest} exist, skip download`)
+  }
   folder = path.dirname(dest)   // fname 中包含目录的情况
+  fname  = path.basename(dest)  // fname 最终值
   if (!fs.existsSync(folder)) {
     clog.info('mkdir', folder, 'for download', fname)
     fs.mkdirSync(folder, { recursive: true })
   }
   return new Promise((resolve, reject)=>{
     eAxios({
-      url: durl,
+      url: durl, timeout: options.timeout,
       responseType: 'stream'
     }).then(response=>{
       if (response.status == 404) {
-        clog.error(durl + ' 404! file dont exist')
+        clog.error(durl, '404! file dont exist')
         reject('404! file dont exist')
         return
       }
-      let totalLength = response.headers['content-length']
-      let currentLength = 0
-      let file = fs.createWriteStream(dest)
-      response.data.on('data', (chunk) => {
-        currentLength += chunk.length
-        let progress = progressBar({ step: currentLength, total: totalLength, name: fname })
-        clog.debug(progress)
-        if (cb) {
-          cb({ progress })
+      if (sType(options?.cb) === 'function') {
+        cb = options.cb
+      }
+      if (sType(cb) === 'function') {
+        let chunkstatus = {
+          step: 0,       // 记录是第几个 chunk 块
+          total: response.headers['content-length'],
+          current: 0,
         }
-      })
+        response.data.on('data', async (chunk) => {
+          chunkstatus.current += chunk.length
+          chunkstatus.step++
+          let progress = progressBar({ step: chunkstatus.current, total: chunkstatus.total, name: fname })
+          clog.debug(progress)
+          try {
+            await cb({ progress, chunk: chunkstatus.step, name: fname })
+          } catch(e) {
+            // calllback 错误不影响下载，不 reject
+            clog.error(fname, 'download callback error', errStack(e))
+          }
+        })
+      }
+      if (!path.extname(fname) && !/stream/.test(response.headers['content-type'])) {
+        fname += sTypetoExt(response.headers['content-type']);
+        dest = path.resolve(folder, fname);
+      }
+      let file = fs.createWriteStream(dest)
       response.data.pipe(file)
-      file.on('finish', ()=>{
+      file.on('finish', async ()=>{
         clog.notify(`success download ${durl} to ${dest}`)
         file.close()
         resolve(dest)
-        if (cb) {
-          cb({ finish: `success download ${durl} to ${dest}`})
+        if (sType(cb) === 'function') {
+          try {
+            await cb({
+              progress: progressBar({ step: 2, total: 1, name: fname }),
+              finish: `success download ${durl} to ${dest}`,
+              name: fname
+            })
+          } catch(e) {
+            clog.error(fname, 'download callback error', errStack(e))
+          }
         }
       })
     }).catch(e=>{
@@ -304,7 +333,7 @@ async function checkupdate(force = false){
     }
   }
 
-  if (body.version && Number(body.version.replace(/\.|v/g, '')) > Number(CONFIG.version.replace(/\.|v/g, ''))) {
+  if (body.version && Number(body.version.replace(/\.|v/g, '')) > CONFIG.vernum) {
     body.update = true
     body.updateversion = body.version
     CONFIG.newversion = body.updateversion

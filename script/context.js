@@ -6,30 +6,56 @@ const { errStack, euid, sType, sString, sJson, bEmpty, feedPush, iftttPush, bark
 const { exec } = require('../func/exec')
 
 const $cache = {
+  vals: new Map(),
   get(key){
-    return this[key]
+    return this.vals.get(key)
+  },
+  set(key, value){
+    return this.vals.set(key, value)
   },
   put(value, key) {
-    this[key] = value
+    return this.vals.set(key, value)
   },
   delete(key){
-    delete this[key]
+    return this.vals.delete(key)
   },
   keys(){
-    return Object.keys(this).filter(key=>['get', 'put', 'keys', 'delete', 'clear'].indexOf(key) === -1)
+    return [...this.vals.keys()]
   },
   clear(){
-    this.keys().forEach(key=>delete this[key])
+    return this.vals.clear()
   }
 }
 
 const $cacheProxy = new Proxy($cache, {
   set(target, prop, val){
-    if (['get', 'put', 'keys', 'delete', 'clear'].indexOf(prop) !== -1) {
+    switch (prop) {
+    case 'size':
+      throw new Error('forbid redefine $cache prop ' + prop)
+    case 'get':
+    case 'set':
+    case 'put':
+    case 'keys':
+    case 'delete':
+    case 'clear':
       throw new Error('forbid redefine $cache method ' + prop)
-    } else {
-      target[prop] = val
-      return true
+    default:
+      return target.vals.set(prop, val)
+    }
+  },
+  get(target, prop){
+    switch (prop) {
+    case 'size':
+      return target.vals.size
+    case 'get':
+    case 'set':
+    case 'put':
+    case 'keys':
+    case 'delete':
+    case 'clear':
+      return target[prop].bind(target)
+    default:
+      return target.vals.get(prop)
     }
   }
 })
@@ -46,6 +72,7 @@ class contextBase {
   clearInterval = clearInterval
 
   __version = CONFIG.version
+  __vernum  = CONFIG.vernum
   __home = CONFIG.homepage
   __efss = file.get(CONFIG.efss.directory, 'path')
   $ws = {
@@ -69,6 +96,9 @@ class contextBase {
         }
       }
       return store.put(value, key, options)
+    },
+    set(key, value, options){
+      return this.put(value, key, options)
     }
   }
   $axios = (request)=>{
@@ -77,14 +107,35 @@ class contextBase {
         url: request
       }
     }
-    if (CONFIG.CONFIG_RUNJS.white && CONFIG.CONFIG_RUNJS.white.enable && CONFIG.CONFIG_RUNJS.white.list && CONFIG.CONFIG_RUNJS.white.list.length && CONFIG.CONFIG_RUNJS.white.list.indexOf(this.__name) !== -1) {
+    if (CONFIG.CONFIG_RUNJS.white?.enable && CONFIG.CONFIG_RUNJS.white.list?.length && CONFIG.CONFIG_RUNJS.white.list.indexOf(this.__name) !== -1) {
       // 白名单检测
       request.token = CONFIG.wbrtoken
     } else if (CONFIG.CONFIG_RUNJS.eaxioslog) {
       // 白名单之外才显示 url
       this.console.log(request.method || 'GET', request.url)
     }
-    return eAxios(request, (CONFIG.CONFIG_RUNJS.proxy === false) ? false : null)
+    return eAxios(request, (CONFIG.CONFIG_RUNJS.proxy === false) ? false : null).catch(error=>{
+      let err = new Error(`$axios ${request.method || 'GET'} ${request.url} Error: ${error.message}`);
+      if (error.response) {
+        let { request, config, ...res } = error.response;
+        err.response = res;
+      }
+      if (error.stack) {
+        err.stack = error.stack;
+      }
+      if (CONFIG.gloglevel === 'debug') {
+        err.config = {
+          url: error.config.url,
+          method: error.config.method,
+          data: error.config.data,
+          headers: error.config.headers,
+          timeout: error.config.timeout,
+          responseType: error.config.responseType
+        };
+      }
+      this.console.debug(err);
+      throw err;
+    });
   }
   $cheerio = cheerio
   $message = message
@@ -132,12 +183,47 @@ class contextBase {
     bark:  barkPush,
     cust:  custPush
   }
-  $done = (data) => {
-    this.console.debug('$done:', data)
-    if (this.$vmEvent) {
-      this.$vmEvent.emit(this.ok, data)
+  $fend = async (key, fn) => {
+    // 待优化：
+    // - 多 $fend 匹配优化
+    // - 无 $fend 匹配问题
+    if (typeof this.$request === 'undefined') {
+      return this.$done('$fend', key, 'error: $request is expect');
     }
-    return data
+
+    let body = this.$request.body;
+    if (!key || !body) {
+      return this.$done('$fend error: key and body are expect');
+    }
+    try {
+      body = JSON.parse(body);
+    } catch(e) {
+      return this.$done('$fend', key, 'error: $request.body can\'t be JSON.parse');
+    }
+    if (body.key === key) {
+      if (typeof fn === 'function') {
+        try {
+          fn = await fn(body.data);
+        } catch(e) {
+          fn = '$fend ' + key + ' error: ' + e.message;
+          this.console.error('$fend', key, e);
+        }
+      }
+      return this.$done(fn);
+    }
+  };
+  $done = (data) => {
+    if (this.$vmEvent) {
+      this.$vmEvent.emit(this.ok, data);
+    }
+    let dstr = sString(data);
+    if (dstr.length > 1200) {
+      dstr = dstr.slice(0, 1200) + '...';
+    } else if (!dstr) {
+      dstr = 'no result';
+    }
+    this.console.debug('$done:', dstr);
+    return data;
   }
 }
 
@@ -153,7 +239,7 @@ class surgeContext {
         url: req
       }
     }
-    if (CONFIG.CONFIG_RUNJS.white && CONFIG.CONFIG_RUNJS.white.enable && CONFIG.CONFIG_RUNJS.white.list && CONFIG.CONFIG_RUNJS.white.list.length && CONFIG.CONFIG_RUNJS.white.list.indexOf(this.__name) !== -1) {
+    if (CONFIG.CONFIG_RUNJS.white?.enable && CONFIG.CONFIG_RUNJS.white.list?.length && CONFIG.CONFIG_RUNJS.white.list.indexOf(this.__name) !== -1) {
       req.token = CONFIG.wbrtoken
     } else if (CONFIG.CONFIG_RUNJS.eaxioslog) {
       this.fconsole.log(req.method || 'GET', req.url)
@@ -185,15 +271,12 @@ class surgeContext {
       } else {
         sbody = error
       }
-    }).finally(()=>{
+    }).finally(async ()=>{
       if(cb && sType(cb) === 'function') {
         try {
-          let cbres = cb(error, resps, sbody)
-          if (sType(cbres) === 'promise') {
-            cbres.catch(err=>this.fconsole.error('$httpClient', req.method, req.url, 'async cb error:', errStack(err, true)))
-          }
+          await cb(error, resps, sbody)
         } catch(err) {
-          this.fconsole.error('$httpClient', req.method, req.url, 'cb error:', errStack(err, true))
+          this.fconsole.error('$httpClient', req.method, req.url, 'callback', errStack(err, true))
         }
       }
     })
@@ -254,7 +337,7 @@ class quanxContext {
           url: req
         }
       }
-      if (CONFIG.CONFIG_RUNJS.white && CONFIG.CONFIG_RUNJS.white.enable && CONFIG.CONFIG_RUNJS.white.list && CONFIG.CONFIG_RUNJS.white.list.length && CONFIG.CONFIG_RUNJS.white.list.indexOf(this.__name) !== -1) {
+      if (CONFIG.CONFIG_RUNJS.white?.enable && CONFIG.CONFIG_RUNJS.white.list?.length && CONFIG.CONFIG_RUNJS.white.list.indexOf(this.__name) !== -1) {
         req.token = CONFIG.wbrtoken
       } else if (CONFIG.CONFIG_RUNJS.eaxioslog) {
         this.fconsole.log(req.method || 'GET', req.url)
@@ -275,15 +358,12 @@ class quanxContext {
           resp = errStack(error)
           this.fconsole.error('$task.fetch', req.url, resp)
           reject({ error: resp })
-        }).finally(()=>{
+        }).finally(async ()=>{
           if(cb && sType(cb) === 'function') {
             try {
-              let cbres = cb(resp)
-              if (sType(cbres) === 'promise') {
-                cbres.catch(err=>this.fconsole.error('$task.fetch async cb error:', errStack(err, true)))
-              }
+              await cb(resp)
             } catch(err) {
-              this.fconsole.error('$task.fetch cb error:', errStack(err, true))
+              this.fconsole.error('$task.fetch callback', errStack(err, true))
             }
           }
         })

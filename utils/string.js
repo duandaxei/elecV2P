@@ -1,6 +1,13 @@
+/* 一些关于字符操作的基础函数
+** Author: http://t.me/elecV2
+**/
+
 function sType(obj) {
   if (typeof obj !== 'object') {
     return typeof obj
+  }
+  if (Buffer.isBuffer(obj)) {
+    return 'buffer'
   }
   return Object.prototype.toString.call(obj).slice(8, -1).toLocaleLowerCase()
 }
@@ -13,10 +20,22 @@ function sType(obj) {
  */
 function sJson(str, force=false) {
   if (!str) {
-    return force ? {} : false
+    return force ? Object.create(null) : false
   }
-  if (/^(object|array)$/.test(sType(str))) {
+  let type = sType(str)
+  switch (type) {
+  case 'array':
+  case 'object':
     return str
+  case 'buffer':
+    return str.toJSON()
+  case 'set':
+    return Array.from(str)
+  case 'map':
+    return Array.from(str).reduce((obj, [key, value]) => {
+      obj[key] = value
+      return obj
+    }, {})
   }
   try {
     let jobj = JSON.parse(str)
@@ -25,7 +44,7 @@ function sJson(str, force=false) {
     }
   } catch(e) {
     try {
-      let obj = (new Function("return " + str))()
+      let obj = (new Function("return " + str))();
       if (/^(object|array)$/.test(sType(obj))) {
         return obj
       }
@@ -42,10 +61,17 @@ function sString(obj) {
     return ''
   }
   let type = sType(obj)
-  if (type === 'string') {
+  switch (type) {
+  case 'string':
     return obj.trim()
-  }
-  if (/object|array/.test(type)) {
+  case 'map':
+  case 'set':
+  case 'buffer':
+    return JSON.stringify({
+      type, data: Array.from(obj)
+    })
+  case 'array':
+  case 'object':
     try {
       if (obj[Symbol.toPrimitive]) {
         return String(obj[Symbol.toPrimitive]())
@@ -54,8 +80,13 @@ function sString(obj) {
     } catch(e) {
       return e.message
     }
+  default:
+    return String(obj).trim()
   }
-  return String(obj).trim()
+}
+
+function strJoin() {
+  return [...arguments].map(s=>sString(s)).join(' ')
 }
 
 function sBool(val) {
@@ -110,7 +141,7 @@ function euid(len = 8) {
 
 function UUID(){
   let dt = new Date().getTime()
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     let r = (dt + Math.random()*16)%16 | 0
     dt = Math.floor(dt/16)
     return (c=='x' ? r :(r&0x3|0x8)).toString(16)
@@ -180,7 +211,7 @@ function surlName(url) {
     return ''
   }
   let name = ''
-  let sdurl = url.split(/\/|\?|#/)
+  let sdurl = url.split(/\/|\\|\?|#/)
   while (name === '' && sdurl.length) {
     name = sdurl.pop()
   }
@@ -198,7 +229,7 @@ function progressBar({step=0, total, name='file', initLength=50}) {
     }
     return `${name} [${procbar}] ${endtip}`
   }
-  if (total < step) {
+  if (total <= step) {
     while(initLength > 0) {
       procbar += '>'
       initLength--
@@ -228,4 +259,70 @@ function atob(b64 = 'SGVsbG8gZWxlY1YyUCE=') {
   return Buffer.from(b64, 'base64').toString()
 }
 
-module.exports = { euid, UUID, iRandom, sJson, sString, bEmpty, sUrl, sType, sBool, errStack, kSize, nStatus, escapeHtml, surlName, progressBar, btoa, atob }
+function sbufBody(body = '') {
+  switch (sType(body)) {
+  case 'string':
+  case 'buffer':
+    return body
+  case 'arraybuffer':
+    return Buffer.from(body)
+  case 'null':
+  case 'undefined':
+  case 'boolean':
+  case 'number':
+    return String(body)
+  case 'object':
+    return JSON.stringify(body, null, 2)
+  default:
+    return sString(body)
+  }
+}
+
+function sParam(str) {
+  // 取出字符串中 -local/-timeout/-rename 参数
+  if (!/ -/.test(str)) {
+    return { fstr: str };
+  }
+  // -local 参数处理
+  let final = {};
+  if (/ -local/.test(str)) {
+    final.local = true;
+    str = str.replace(' -local', '');
+  }
+  // -timeout 参数处理
+  let timeout = str.match(/ -timeout(=| )(\d+)/);
+  if (timeout && timeout[2]) {
+    final.timeout = Number(timeout[2]);
+    str = str.replace(/ -timeout(=| )(\d+)/g, '');
+  }
+  // -rename 参数处理
+  let ren = str.match(/ -rename(=| )([^\- ]+)/);
+  if (ren && ren[2]) {
+    final.rename = ren[2];
+    str = str.replace(/ -rename(=| )([^\- ]+)/, '');
+  }
+  final.fstr = str;
+  return final;
+}
+
+function sTypetoExt(ctype) {
+  // content-type to ext
+  if (/javascript/.test(ctype)) {
+    return '.js';
+  }
+  if (/plain/.test(ctype)) {
+    return '.txt';
+  }
+  if (/markdown/.test(ctype)) {
+    return '.md';
+  }
+  if (/x-icon/.test(ctype)) {
+    return '.ico';
+  }
+  if (!/stream/.test(ctype)) {
+    return '.' + ctype.split(/;|\//)[1];
+  }
+  return '';
+}
+
+module.exports = { euid, UUID, iRandom, sJson, sString, strJoin, bEmpty, sUrl, sType, sBool, errStack, kSize, nStatus, escapeHtml, surlName, progressBar, btoa, atob, sbufBody, sParam, sTypetoExt }

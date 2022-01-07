@@ -59,7 +59,7 @@ EFSS favorite&backend，用于快速打开/查看某个目录的文件，以及�
 ``` JS
 console.log($request)   // 查看默认变量 $request 内容。（该模式下的 console.log 内容前端不可见，只能在后台看到
 // $request.method, $request.protocol, $request.url, $request.hostname, $request.path, $request.headers, $request.body
-// bakend 特有属性 $request.key 表示访问该 backend 的关键字
+// bakend 特有属性 $env.key 表示访问该 backend 的关键字，$env.name 表示该 backend 名称
 console.log(__version, 'cookieKEY:', $store.get('cookieKEY'))   // 其他默认变量/函数也可直接调用
 
 // 最终网页返回结果
@@ -76,8 +76,6 @@ $done({
 
 // === $done({ response: { statusCode, headers, body } })
 ```
-
-当返回结果不是以上 $done 中的格式时，将会把最终结果作为 body 输出，其他项使用默认参数。
 
 ## 使用 PM2 运行 (v3.4.3 beta 测试阶段...)
 

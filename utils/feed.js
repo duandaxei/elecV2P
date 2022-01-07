@@ -120,7 +120,7 @@ function iftttPush(title, description, url) {
       }
     })
   } else {
-    clog.debug('IFTTT not available yet, skip IFTTT push')
+    clog.debug('IFTTT not available yet, skip push IFTTT notification')
   }
 }
 
@@ -168,7 +168,7 @@ function barkPush(title, description, url) {
       }
     })
   } else {
-    clog.debug('bark not available yet, skip push bark notifications.')
+    clog.debug('bark not available yet, skip push BARK notification')
   }
 }
 
@@ -221,7 +221,7 @@ function custPush(title, description, url) {
       }
     })
   } else {
-    clog.debug('custnotify push not available yet, skip custnotify push.')
+    clog.debug('custom notify not available yet, skip push custom notification')
   }
 }
 
@@ -238,7 +238,7 @@ function feedPush(title, description, url) {
   }
   url = formUrl(url)
   if (CONFIG_FEED.webmessage && CONFIG_FEED.webmessage.enable) {
-    message.success(`【elecV2P 网页通知】 ${title}\n${description}\n${url || ''}`, { secd: 10, url })
+    message.success(`【elecV2P 网页通知】 ${title}\n${description}\n${url || ''}`, { url })
   }
   if (CONFIG_FEED.rss.enable) {
     const date = new Date()
@@ -252,12 +252,16 @@ function feedPush(title, description, url) {
     })
   }
   if (CONFIG_FEED.runjs && CONFIG_FEED.runjs.enable && CONFIG_FEED.runjs.list && wsSer.recv.runjs) {
-    CONFIG_FEED.runjs.list.split(/ ?, ?|，| /).filter(s=>s).forEach(fn=>{
+    CONFIG_FEED.runjs.list.split(/ ?, ?|，/).filter(s=>s).forEach(fn=>{
       wsSer.recv.runjs({ fn, addContext: {
         $title$: title,
         $body$: description,
         $url$: url,
-        from: 'feedPush'
+        from: 'feedPush',
+        grant: 'nodejs',
+        env: {
+          title, body: description, url
+        }
       }})
     })
   }

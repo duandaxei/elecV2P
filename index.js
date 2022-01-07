@@ -9,29 +9,37 @@ const aProxyOptions = {
   webInterface: {
     enable: true,          // 是否打开代理请求查看端口
     webPort: CONFIG_Port.webif
-  }
+  },
+  wsIntercept: Boolean(CONFIG.anyproxy.wsIntercept)
 }
 
 const { eproxy, wsSer, logger, message, checkupdate } = require('./utils')
 const clog = new logger({ head: 'elecV2P', level: 'debug' })
 
 let eProxy = null
-if (CONFIG.anyproxy && CONFIG.anyproxy.enable === false) {
+if (CONFIG.anyproxy.enable === false) {
   clog.info('anyproxy not enabled yet')
 } else {
   eProxy = new eproxy(aProxyOptions)
   eProxy.start()
 }
 
+// anyproxy 临时设置
 CONFIG_Port.anyproxy = { ...CONFIG.anyproxy }
 
+// websocket 快速打开/关闭 anyproxy
 wsSer.recv.eproxy = (op)=>{
   switch(op) {
     case 'new':
     case 'start':
-      eProxy = new eproxy(aProxyOptions)
-      eProxy.start()
-      message.success('anyproxy started')
+      if (eProxy === null) {
+        eProxy = new eproxy(aProxyOptions)
+        eProxy.start()
+        message.success('anyproxy started')
+      } else {
+        clog.info('anyproxy already started')
+        message.error('anyproxy already started')
+      }
       CONFIG_Port.anyproxy.enable = true
       break
     case 'delete':
