@@ -1,6 +1,6 @@
 const { CONFIG, CONFIG_Port } = require('../config')
 
-const { logger, list, Jsfile, sType, stream, checkupdate } = require('../utils')
+const { logger, list, Jsfile, sType, stream, checkupdate, eAxios } = require('../utils')
 const clog = new logger({ head: 'wbdata' })
 
 const { CONFIG_RULE, setRewriteRule } = require('../script')
@@ -29,6 +29,7 @@ module.exports = app => {
             mitmhost: CONFIG_RULE.mitmhostenable
           },
           menunav: CONFIG.webUI?.nav,
+          theme: CONFIG.webUI?.theme,
           userid: CONFIG.userid,
         })
         if (req.query.check) {
@@ -81,6 +82,24 @@ module.exports = app => {
             message: 'wrong stream url ' + req.query.url
           })
         }
+        break
+      case 'sponsors':
+        eAxios('https://sponsors.elecv2.workers.dev/').then(response=>{
+          res.json({
+            rescode: 0,
+            message: 'success get sponsors list',
+            resdata: {
+              userid: CONFIG.userid,
+              sponsors: response.data,
+            }
+          })
+        }).catch(e=>{
+          res.json({
+            rescode: -1,
+            message: 'fail to get sponsors list',
+            resdata: e.message
+          })
+        })
         break
       default: {
         clog.error('unknow data get type', type)
