@@ -571,7 +571,7 @@ function handler(req, res){
       crtHost(rbody.hostname).then(cont=>{
         res.json({
           rescode: 0,
-          message: 'Get certificate for ' + rbody.hostname + ' in rootCA directory',
+          message: 'success generate certificate for ' + rbody.hostname,
           resdata: cont
         })
       }).catch(error=>{
@@ -615,7 +615,7 @@ function handler(req, res){
       }
       res.json({
         rescode: 0,
-        message: 'Get minishell config',
+        message: `current minishell is ${CONFIG.minishell ? 'opened' : 'closed'}`,
         resdata: CONFIG.minishell
       });
       break

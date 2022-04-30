@@ -23,6 +23,7 @@ module.exports = app => {
           anyproxy: CONFIG.anyproxy,
           webUI: CONFIG.webUI,
           newversion: CONFIG.newversion,
+          CONFIG_env: CONFIG.env,
         })
         break
       default:{
@@ -271,6 +272,34 @@ module.exports = app => {
             message: 'fail to change webUI menunav config' + e.message
           })
         }
+        break
+      case 'env':
+        const envdata = req.body.data
+        if (envdata.path) {
+          CONFIG.env.path = envdata.path
+          process.env.PATH = envdata.path
+          clog.notify('process env PATH change to', envdata.path)
+        }
+        if (envdata.todel?.length) {
+          envdata.todel.forEach(key=>{
+            clog.info('delete process env', key)
+            delete process.env[key]
+            delete CONFIG.env[key]
+          })
+        }
+        if (envdata.other?.length) {
+          envdata.other.forEach(s=>{
+            if (s[0] && s[1]) {
+              clog.info('new process env', s[0], 'value:', s[1])
+              process.env[s[0]] = s[1]
+              CONFIG.env[s[0]] = s[1]
+            }
+          })
+        }
+        res.json({
+          rescode: 0,
+          message: 'CONFIG and process env updated'
+        })
         break
       default:{
         clog.error('data put error, unknow type: ' + req.body.type)

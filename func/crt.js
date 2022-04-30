@@ -7,6 +7,19 @@ const EasyCert = require('node-easy-cert')
 const anycrtpath = path.join(os.homedir(), '.anyproxy/certificates')
 const rootCApath = path.join(__dirname, '../rootCA')
 
+const crt_path = {
+  any: anycrtpath,
+  crt: path.join(rootCApath, 'rootCA.crt'),
+  p12: path.join(rootCApath, 'p12b64.txt'),
+  dot: (()=>{
+    const dcrt = fs.readdirSync(rootCApath).find(s=>/\.0$/.test(s))
+    if (dcrt) {
+      return path.join(rootCApath, dcrt)
+    }
+    return ''
+  })(),
+}
+
 if(!fs.existsSync(anycrtpath)) {
   fs.mkdirSync(anycrtpath, { recursive: true })
 }
@@ -14,8 +27,10 @@ if(!fs.existsSync(rootCApath)) {
   fs.mkdirSync(rootCApath, { recursive: true })
 }
 
-const { logger, errStack, now } = require('../utils')
+const { logger, errStack, now, euid } = require('../utils')
 const clog = new logger({ head: 'funcCrt' })
+
+const { exec } = require('./exec')
 
 const easyCert = new EasyCert({
   rootDirPath: rootCApath,
@@ -48,13 +63,17 @@ function newRootCrt(evoptions={}) {
       } else {
         resolve({ keyPath, crtPath })
         clog.notify('new rootCA generated at', crtPath)
-        const password = evoptions.password || 'elecV2P'
+        const password = evoptions.password || 'elecV2P_' + euid(4)
         const p12b64 = pemToP12(keyPath, crtPath, password)
-        fs.writeFile(path.join(rootCApath, 'p12b64.txt'), `password = ${password}\np12base64 = ${p12b64}`, 'utf8', err=>{
+        fs.writeFile(crt_path.p12, `password = ${password}\np12base64 = ${p12b64}`, 'utf8', err=>{
           if (err) {
             clog.error('fail to generate p12 crt', errStack(err))
+            crt_path.p12 = ''
+          } else {
+            clog.info('success generate p12b64.txt')
           }
         })
+        androidCrt(crtPath)
       }
     })
   })
@@ -86,11 +105,7 @@ async function rootCrtSync() {
   let rcrt = path.join(rootCApath, 'rootCA.crt'),
       rkey = path.join(rootCApath, 'rootCA.key')
   if (!(fs.existsSync(rcrt) && fs.existsSync(rkey))) {
-    try {
-      await newRootCrt()
-    } catch(e) {
-      throw(e)
-    }
+    await newRootCrt()
   }
   clog.info('move rootCA.crt/rootCA.key to', anycrtpath)
   fs.copyFileSync(rcrt, anycrtpath + '/rootCA.crt')
@@ -109,6 +124,32 @@ function pemToP12(keyPath, crtPath, password='elecV2P') {
   const p12b64 = forge.util.encode64(p12Der)
 
   return p12b64
+}
+
+function androidCrt(crtPath) {
+  exec(`openssl x509 -in ${crtPath} -noout -subject_hash_old`, {
+    cb(data, error) {
+      if (error) {
+        clog.error('fail to get subject_hash_old', errStack(error))
+        return
+      }
+      if (!data) {
+        return
+      }
+      data = data.trim()
+      if (data.length === 8) {
+        crt_path.dot = path.join(rootCApath, data + '.0')
+        fs.copyFile(crtPath, crt_path.dot, err=>{
+          if (err) {
+            clog.error(`fail to generate ${data}.0 certificate`, errStack(err))
+            crt_path.dot = ''
+          } else {
+            clog.info(`success generate ${data}.0 certificate`)
+          }
+        })
+      }
+    }
+  })
 }
 
 function cacheClear() {
@@ -145,12 +186,17 @@ function crtHost(hostname) {
     easyCert.getCertificate(hostname, (error, keyContent, crtContent) => {
       if (error === 'ROOT_CA_NOT_EXISTS') {
         reject(error);
-        clog.error('fail to get certificate for', hostname, ' reason:', error);
+        clog.error('fail to generate certificate for', hostname, 'reason:', error);
+        return;
       }
-      resolve(easyCert.getRootDirPath());
-      clog.info('get certificate for', hostname);
+      const crt_root = easyCert.getRootDirPath();
+      resolve(crt_root);
+      clog.info('success generate certificate for', hostname);
+      clog.info(`copy ${hostname}.crt/${hostname}.key to`, anycrtpath);
+      fs.copyFile(`${crt_root}/${hostname}.crt`, `${anycrtpath}/${hostname}.crt`, clog.error);
+      fs.copyFile(`${crt_root}/${hostname}.key`, `${anycrtpath}/${hostname}.key`, clog.error);
     });
   })
 }
 
-module.exports = { clearCrt, rootCrtSync, newRootCrt, cacheClear, crtInfo, crtHost }
+module.exports = { clearCrt, rootCrtSync, newRootCrt, cacheClear, crtInfo, crtHost, crt_path }

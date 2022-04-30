@@ -44,6 +44,19 @@ if (process.env.TOKEN) {
 if (!CONFIG.wbrtoken) {
   CONFIG.wbrtoken = UUID()
 }
+if (!CONFIG.env) {
+  CONFIG.env = {
+    path: ''
+  }
+} else {
+  const { path, PATH, ...config_other } = CONFIG.env
+  for (let enkey in config_other) {
+    process.env[enkey] = config_other[enkey]
+  }
+}
+process.env.PATH = [...new Set((process.env.PATH + (CONFIG.env.path ?? CONFIG.env.PATH ?? '')).split(path.delimiter).filter(s=>s).concat(path.join(__dirname, 'script/Shell')))].join(path.delimiter)
+CONFIG.env.path = process.env.PATH
+
 CONFIG.userid  = sHash(CONFIG.wbrtoken)
 CONFIG.version = require('./package.json').version
 CONFIG.vernum  = Number(CONFIG.version.replace(/\.|v/g, ''))
