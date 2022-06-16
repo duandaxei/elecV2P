@@ -3,10 +3,11 @@
 <div style="background-color: #1890ff;list-style: none;border-radius: 8px;padding: 0;margin: 0;">
 <h3 style="font-size: 24px;text-align: center;border-bottom: 1px solid;color: white;padding: 6px;margin-bottom: 0;">Todo</h3>
 <pre style="white-space: pre-line;word-break: break-word;margin: 0;padding: 6px 10px;text-align: left;display: flex;">
-- [ ] 其他程序扩展下载.efh
+- [ ] 多配置文件及快速切换
 - [ ] 前端可选择后台节点
-- [ ] 引入 $math 用于数学计算
-- [ ] script_store.efh 应用中心
+- [ ] 桌面浏览器 notifications
+- [ ] 引入 $crypto 用于哈希加密
+- [ ] CONFIG 语言偏好设置
 </pre>
 </div>
 <div style="background-color: #003153;margin-top: 12px;border-radius: 8px;">
@@ -14,7 +15,6 @@
 <pre style="margin-bottom: 0;white-space: pre-line;word-break: break-word;margin: 0;padding: 6px 10px;text-align: left;display: flex;">
 - 规则及定时任务的移动和排序
 - 使用脚本管理规则($rewrite/$rule
-- elecV2P 启动器/快捷方式（$run JSON 格式文件
 - websocket 服务器端(多)点对点信息传递（加密？）
 - eFlow: 不同语言的脚本执行流程可视化控制（天坑）
 - 多语言 [一个可能永远不填的坑..., start ready...]
@@ -24,6 +24,11 @@
 <div style="width: 50%;background-color: #2d8800;border-radius: 8px;margin: 0 12px; max-height: 480px; overflow: hidden auto;">
 <h3 style="font-size: 24px;text-align: center;border-bottom: 1px solid;color: white;padding: 6px;margin-bottom: 0;">Done</h3>
 <pre style="margin-bottom: 0;white-space: pre-line;word-break: break-word;margin: 0;padding: 6px 10px;text-align: left;display: flex;">
+- [x] 首页快捷运行脚本 eapp
+- [x] 增加脚本默认参数 __md5hash
+- [x] 脚本内容缓存提升读取速度
+- [x] efh script runon 简化
+- [x] minishell run 命令初版
 - [x] 可设置取消所有 cookie 授权
 - [x] 总日志大小超过 10M 提醒
 - [x] cookie/store 常量加密储存
