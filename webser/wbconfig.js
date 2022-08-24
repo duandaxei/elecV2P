@@ -273,6 +273,16 @@ module.exports = app => {
           })
         }
         break
+      case 'webUILogo':
+        if (!CONFIG.webUI) {
+          CONFIG.webUI = Object.create(null)
+        }
+        CONFIG.webUI.logo = req.body.data
+        res.json({
+          rescode: 0,
+          message: 'webUI logo config success updated'
+        })
+        break
       case 'env':
         const envdata = req.body.data
         if (envdata.path) {
@@ -300,6 +310,30 @@ module.exports = app => {
           rescode: 0,
           message: 'CONFIG and process env updated'
         })
+        break
+      case 'favend':
+        let { prop, keys, value } = req.body
+        if (prop === 'collapse') {
+          let empty_keys = []
+          keys.forEach(key=>{
+            if (CONFIG.efss.favend?.[key]) {
+              CONFIG.efss.favend[key].collapse = value
+            } else {
+              empty_keys.push(key)
+            }
+          })
+          res.json({
+            rescode: 0,
+            message: 'success update favend collapse list',
+            resdata: empty_keys.length ? empty_keys : undefined
+          })
+        } else {
+          bSave = false
+          res.json({
+            rescode: -1,
+            message: 'unknow favend config prop ' + prop
+          })
+        }
         break
       default:{
         clog.error('data put error, unknow type: ' + req.body.type)

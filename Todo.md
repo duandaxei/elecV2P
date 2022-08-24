@@ -3,7 +3,6 @@
 <div style="background-color: #1890ff;list-style: none;border-radius: 8px;padding: 0;margin: 0;">
 <h3 style="font-size: 24px;text-align: center;border-bottom: 1px solid;color: white;padding: 6px;margin-bottom: 0;">Todo</h3>
 <pre style="white-space: pre-line;word-break: break-word;margin: 0;padding: 6px 10px;text-align: left;display: flex;">
-- [ ] 首页 LOGO 图像及文字自定义
 - [ ] EFSS 简单影音播放器
 - [ ] MITM 自签域名证书管理
 - [ ] 多配置文件及快速切换
@@ -15,6 +14,7 @@
 <div style="background-color: #003153;margin-top: 12px;border-radius: 8px;">
 <h3 style="font-size: 24px;text-align: center;border-bottom: 1px solid;color: white;padding: 6px;margin-bottom: 0;">Project</h3>
 <pre style="margin-bottom: 0;white-space: pre-line;word-break: break-word;margin: 0;padding: 6px 10px;text-align: left;display: flex;">
+- ev binary 执行程序
 - 规则及定时任务的移动和排序
 - 使用脚本管理规则($rewrite/$rule
 - websocket 服务器端(多)点对点信息传递（加密？）
@@ -26,6 +26,12 @@
 <div style="width: 50%;background-color: #2d8800;border-radius: 8px;margin: 0 12px; max-height: 480px; overflow: hidden auto;">
 <h3 style="font-size: 24px;text-align: center;border-bottom: 1px solid;color: white;padding: 6px;margin-bottom: 0;">Done</h3>
 <pre style="margin-bottom: 0;white-space: pre-line;word-break: break-word;margin: 0;padding: 6px 10px;text-align: left;display: flex;">
+- [x] favend 选择隐藏部分规则
+- [x] 子命令交互输入框延迟显示
+- [x] 优化 EFSS 首次加载速度
+- [x] fix 部分子命令不退出的问题
+- [x] 自定义 LOGO 图标及文字
+- [x] websocket 重连时间间隔优化
 - [x] 日志输出支持 ansi 彩色
 - [x] webUI 可选择是否开启 TLS
 - [x] $axios method alias get/post
