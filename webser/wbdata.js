@@ -32,6 +32,7 @@ module.exports = app => {
           theme: CONFIG.webUI?.theme,
           logo: CONFIG.webUI?.logo,
           userid: CONFIG.userid,
+          lang: CONFIG.lang,
         })
         if (req.query.check) {
           checkupdate()
@@ -53,7 +54,8 @@ module.exports = app => {
         res.json({
           host: mlist?.list || [],
           enable: mlist?.enable !== false,
-          crtinfo: CONFIG_Port.anyproxy.enable ? crtInfo() : { rescode: -1, message: 'ANYPROXY not enabled yet' }
+          eproxy: CONFIG_Port.anyproxy,
+          crtinfo: crtInfo(),
         })
         break
       case 'filter':
