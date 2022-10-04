@@ -1,7 +1,7 @@
 const cheerio = require('cheerio')
 
 const { CONFIG } = require('../config')
-const { errStack, euid, sType, sString, sJson, bEmpty, feedPush, iftttPush, barkPush, custPush, store, eAxios, jsfile, file, downloadfile, wsSer, message } = require('../utils')
+const { errStack, euid, sType, sString, sJson, bEmpty, feedPush, iftttPush, barkPush, custPush, store, eAxios, jsfile, file, downloadfile, wsSer, sseSer, message } = require('../utils')
 
 const { exec } = require('../func/exec')
 
@@ -84,6 +84,7 @@ class contextBase {
   __home = CONFIG.homepage
   __efss = file.get(CONFIG.efss.directory, 'path')
   $ws = {
+    sse: sseSer.Send.bind(sseSer),
     send: wsSer.send
   }
   $exec = exec
@@ -127,7 +128,7 @@ class contextBase {
       this.console.log(request.method || 'GET', request.url)
     }
     return eAxios(request, (CONFIG.CONFIG_RUNJS.proxy === false) ? false : null).catch(error=>{
-      let err = new Error(`$axios ${request.method || 'GET'} ${request.url} Error: ${error.message}`);
+      let err = new Error(`$axios ${request.method || 'GET'} ${request.url} Error: ${error.message || error}`);
       if (error.response) {
         let { request, config, ...res } = error.response;
         err.response = res;
@@ -135,7 +136,7 @@ class contextBase {
       if (error.stack) {
         err.stack = error.stack;
       }
-      if (CONFIG.gloglevel === 'debug') {
+      if (CONFIG.gloglevel === 'debug' && error.config) {
         err.config = {
           url: error.config.url,
           method: error.config.method,
