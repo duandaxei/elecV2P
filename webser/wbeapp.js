@@ -34,20 +34,25 @@ if (!CONFIG.eapp) {
       "type": "shell",
       "target": "pm2 ls",
     }, {
-      "name": "查看目录",
+      "name": "查看目录文件",
       "type": "shell",
       "target": "ls -cwd %ei%",
+    }, {
+      "name": "随机配色",
+      "type": "eval",
+      "target": "const s=['--secd-fc','--secd-bk','--icon-bk'],r=Math.random().toString(16).slice(2),f=[],ht=h=>h.reduce((a,c)=>a+c.toString(16).padStart(2,'0'),'');['--main-bk','--main-cl','--icon-run'].forEach((v,i)=>{let hc=r.slice(i*2,i*2+6);if (i<2){let hs=hc.match(/\\w{2}/g).map(s=>parseInt(s,16)),h1=160-Math.max(...hs);h1<0&&(hs=hs.map(s=>Math.max(0,s+h1)))&&(hc=ht(hs));i&&(f.push('--main-fc'+': #'+ht(hs.map(s=>255-s))));}f.push(v+': #'+hc);f.push(s[i]+': #'+hc+'b8');});document.body.style=f.join(';');",
+      "note": "给当前页面生成一个随机配色方案",
     }]
   }
 }
+CONFIG.eapp.apps.forEach(app=>{
+  if (!app.hash || app.hash.length !== 32) {
+    app.hash = sHash(app.name + app.type + app.target + app.run)
+  }
+})
 
 module.exports = app => {
   app.get('/eapp', (req, res)=>{
-    CONFIG.eapp.apps.forEach(app=>{
-      if (!app.hash || app.hash.length !== 32) {
-        app.hash = sHash(app.name + app.type + app.target)
-      }
-    })
     res.json({
       rescode: 0,
       message: 'success get eapp config',
@@ -56,15 +61,22 @@ module.exports = app => {
   })
 
   app.put('/eapp', (req, res)=>{
-    const app = {
-      name: req.body.name,
-      logo: req.body.logo,
-      type: req.body.type,
-      target: req.body.target,
+    const { name, logo, type, target, run, note, idx } = req.body
+    if (!(name && type && target)) {
+      return res.json({
+        rescode: -1,
+        message: 'name and type and target are expect'
+      })
     }
-    app.hash = sHash(app.name + app.type + app.target)
-    if (CONFIG.eapp.apps[req.body.idx]) {
-      CONFIG.eapp.apps[req.body.idx] = app
+    const app = {
+      name, logo, type, target,
+    }
+    run && (app.run = run)
+    note && (app.note = note)
+
+    app.hash = sHash(name + type + target + run)
+    if (CONFIG.eapp.apps[idx]) {
+      CONFIG.eapp.apps[idx] = app
     } else {
       CONFIG.eapp.apps.push(app)
     }
@@ -93,7 +105,7 @@ module.exports = app => {
       CONFIG.eapp.apps = apps.filter(app=>{
         if (app.name && app.type && app.target) {
           if (app.hash?.length !== 32) {
-            app.hash = sHash(app.name + app.type + app.target)
+            app.hash = sHash(app.name + app.type + app.target + app.run)
           }
           return true
         }
