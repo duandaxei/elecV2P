@@ -13,7 +13,7 @@ const clog = new logger({ head: 'webServer' })
 const { wbefss, wbconfig, wbfeed, wbcrt, wbjs, wbtask, wblogs, wbstore, wbdata, wblist, wbhook, wbrpc, wbrun, wbeapp } = require('./webser')
 
 async function newServer(app) {
-  if (CONFIG?.webUI?.tls?.enable) {
+  if (CONFIG.webUI.tls?.enable) {
     const host = CONFIG.webUI.tls.host || '127.0.0.1'
     try {
       if (!(fs.existsSync(`rootCA/${host}.key`) && fs.existsSync(`rootCA/${host}.crt`))) {
@@ -37,9 +37,7 @@ module.exports = () => {
   app.set('json spaces', 2)
   app.use((req, res, next)=>{
     if (isAuthReq(req, res)) {
-      if (CONFIG.cors?.enable && CONFIG.cors?.origin) {
-        res.set({ 'Access-Control-Allow-Origin': CONFIG.cors.origin})
-      }
+      res.set({ 'Access-Control-Allow-Origin': '*' })
       next()
     } else {
       res.status(403).send(`<p>You have no permission to access.</p><p>IP: ${req.headers['x-forwarded-for'] || req.connection.remoteAddress} is recorded.</p><br><p>Powered BY elecV2P: <a href='https://github.com/elecV2/elecV2P'>https://github.com/elecV2/elecV2P</a></p>`)
@@ -77,7 +75,7 @@ module.exports = () => {
     })
 
     server.listen(CONFIG_Port.webst, ()=>{
-      clog.notify('elecV2P', 'v' + CONFIG.version, 'started on port', CONFIG_Port.webst);
+      clog.notify('elecV2P', 'v' + CONFIG_Port.version, 'started on port', CONFIG_Port.webst);
     })
 
     websocketSer({ server, path: '/elecV2P' })
