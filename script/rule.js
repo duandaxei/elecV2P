@@ -1,5 +1,5 @@
 const { logger, sJson, sUrl, sType, sString, list, wsSer, errStack, sbufBody } = require('../utils')
-const clog = new logger({ head: 'elecV2P', level: 'debug' })
+const clog = new logger({ head: 'eV2Proxy', level: 'debug' })
 
 const { runJSFile } = require('./runJSFile')
 
@@ -133,7 +133,7 @@ const localResponse = {
   json: {
     statusCode: 200,
     header: { "Content-Type": "application/json;charset=utf-8" },
-    body: '{"data": "hello elecV2P"}'
+    body: '{"rescode": 0, "message": "local response from elecV2P"}'
   },
   array: {
     statusCode: 200,
@@ -152,19 +152,25 @@ const localResponse = {
       }
       return this.reject
     }
-    if (headers.Accept.includes('json')) {
+    const amatch = headers.Accept.match(/html|json|plain|image/)
+    if (!amatch) {
+      return this.reject
+    }
+    switch (amatch[0]) {
+    case 'html':
+      return {...this.imghtml, body: sString(body) }
+    case 'plain':
+      return {...this.reject, body: sString(body) }
+    case 'json':
       if (body) {
         return {...this.json, body: sString(body) }
       }
       return this.json
-    }
-    if (headers.Accept.includes('image')) {
-      if (body) {
-        return {...this.tinyimg, body }
-      }
+    case 'image':
       return this.tinyimg
+    default:
+      return this.reject
     }
-    return this.reject
   }
 }
 
@@ -227,7 +233,7 @@ function getRewriteRes(rtarget, { rmatch = '', type = 'response', request = {}, 
         $request: formRequest(request),
         $response: formResponse(response)
       }).then(jsres=>{
-        resolve({ response: getJsResponse(jsres, response) })
+        resolve(ruleResponse(jsres, response))
       }).catch(e=>{
         resolve(null)
         clog.error('rewrite', request.url, 'response error on run js', rtarget, errStack(e))
@@ -242,7 +248,9 @@ function formRequest($request) {
     protocol: $request.protocol,
     pathname: $request.requestOptions?.path,
     url: $request.url,
-    body: $request.requestData.toString(),
+    body: $request.requestOptions?.headers?.['Content-Type']?.startsWith('application/x-protobuf')
+          ? $request.requestData
+          : $request.requestData.toString(),
     bodyBytes: $request.requestData
   }
 }
@@ -252,13 +260,18 @@ function formResponse($response) {
     statusCode: $response.statusCode,
     status: $response.statusCode,
     headers: $response.header,
-    body: $response.body.toString(),
+    body: $response.header?.['Content-Type']?.startsWith('application/x-protobuf')
+          ? $response.body
+          : $response.body.toString(),
     bodyBytes: $response.body
   }
 }
 
 function getJsResponse(jsres, orires = { ...localResponse.reject }) {
   if (sType(jsres) === 'object') {
+    if (Object.keys(jsres).length === 0) {
+      return orires
+    }
     if (jsres.response) {
       return {
         statusCode: jsres.response.statusCode || jsres.response.status || orires.statusCode,
@@ -277,7 +290,7 @@ function getJsResponse(jsres, orires = { ...localResponse.reject }) {
     if (jsres.body === undefined && !jsres.statusCode && !jsres.status && !jsres.header && !jsres.headers) {
       return {
         statusCode: 200,
-        header: { "Content-Type": "application/json;charset=utf-8" },
+        header: { ...orires.header, "Content-Type": "application/json;charset=utf-8" },
         body: sbufBody(jsres)
       }
     }
@@ -292,12 +305,12 @@ function getJsResponse(jsres, orires = { ...localResponse.reject }) {
   }
 }
 
-function getJsRequest(jsres, requestDetail) {
+function getJsRequest(jsres, requestDetail={}) {
   if (sType(jsres) !== 'object') {
     return {
       response: {
         statusCode: 200,
-        header: { "Content-Type": "text/plain;charset=utf-8" },
+        header: requestDetail.requestOptions?.headers || { "Content-Type": "text/plain;charset=utf-8" },
         body: sbufBody(jsres)
       }
     }
@@ -357,10 +370,22 @@ function getJsRequest(jsres, requestDetail) {
   return newRequest
 }
 
+function ruleResponse(scriptRes, response) {
+  if (sType(scriptRes) === 'object' && Object.keys(scriptRes).length === 0) {
+    return null
+  } else {
+    return { response: getJsResponse(scriptRes, response) }
+  }
+}
+
 module.exports = {
   summary: 'elecV2P - customize personal network',
   CONFIG_RULE, getJsResponse, setRewriteRule,
   *beforeSendRequest(requestDetail) {
+    if (requestDetail.protocol === 'http' && requestDetail._req.url.startsWith('/')) {
+      // 禁止直接访问 no direct access to proxy
+      return { response: localResponse.get(requestDetail.requestOptions.headers, `<p>Congratulations! Anyproxy is enabled. Please use it as a proxy.</p><p><span>Powered BY </span><a target="_blank" href="https://github.com/elecV2/elecV2P">elecV2P</a></p><p><span>TG Channel </span><a target="_blank" href="https://t.me/elecV2">@elecV2</a></p>`) }
+    }
     if (/^multipart/.test(requestDetail.requestOptions.headers['Content-Type'])) {
       // 跳过文件类数据处理
       clog.info('skip modify', requestDetail.url, 'type:', requestDetail.requestOptions.headers['Content-Type'])
@@ -371,7 +396,7 @@ module.exports = {
       clog.error(error)
       return { response: localResponse.get(requestDetail.requestOptions.headers, error) }
     }
-    clog.debug('bCircle status:', bCircle.max, bCircle.count, bCircle.host)
+    clog.debug('bCircle status:', bCircle.host, `${bCircle.count}/${bCircle.max}`)
 
     if (CONFIG_RULE.rewriteenable === false) {
       // rewrite 列表不启用时不直接返回，继续 rule 匹配
@@ -613,7 +638,7 @@ module.exports = {
           $request: formRequest(requestDetail),
           $response: formResponse($response)
         }).then(jsres=>{
-          resolve({ response: getJsResponse(jsres, $response) })
+          resolve(ruleResponse(jsres, $response))
         }).catch(e=>{
           resolve(null)
           clog.error('modify', requestDetail.url, 'response error on run js', matchres.target, errStack(e))
@@ -660,5 +685,28 @@ module.exports = {
     clog.debug('no match for', requestDetail.host, 'in mitmhost list')
     CONFIG_RULE.cache.host.set(requestDetail.host, false)
     return false
+  },
+  onError(requestDetail, error) {
+    return {
+      response: {
+        statusCode: 200,
+        header: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json;charset=utf-8',
+          'X-Powered-By': 'elecV2P',
+        },
+        body: JSON.stringify({
+          rescode: -1,
+          message: error.message,
+          resdata: {
+            error: errStack(error),
+            url: requestDetail.url,
+            method: requestDetail.requestOptions.method,
+            headers: requestDetail.requestOptions.headers,
+            body: requestDetail.requestData.byteLength ? requestDetail.requestData.toString() : undefined,
+          }
+        }, null, 2)
+      }
+    }
   }
 }
