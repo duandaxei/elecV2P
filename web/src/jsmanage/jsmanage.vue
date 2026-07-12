@@ -74,7 +74,7 @@
         </div>
       </div>
       <mock :jslists="jslists" />
-      <log :logs="logs" :title="runlogs" :collapse="collapse" />
+      <log :logs="logs" :title="runlogs" :collapse="collapse" @clear="logs=[]" />
     </main>
     <footer class="footer">
       <ul class="footer_tip">
@@ -138,7 +138,6 @@ console.log('更多脚本相关说明请查看说明文档: https://github.com/e
         editor: true,
       },
       shownum: 100,
-      restnum: 0,
       menu: {
         pos: [0, 0],
         list: []
@@ -172,17 +171,22 @@ console.log('更多脚本相关说明请查看说明文档: https://github.com/e
       }
       return upfs.join(', ')
     },
+    restnum(){
+      let snum = this.shownum
+      if (snum === -1 || snum >= this.jslists.length) {
+        return 0
+      }
+      return this.jslists.length - snum
+    },
     jsshow(){
       let snum = this.shownum
       if (snum === -1 || snum >= this.jslists.length) {
-        this.restnum = 0
         return this.jslists
       }
       let i = 0, fshow = []
       while (i++ < snum) {
         fshow.push(this.jslists[i])
       }
-      this.restnum = this.jslists.length - i + 1
       return fshow
     },
     jslistsshow(){
@@ -190,17 +194,13 @@ console.log('更多脚本相关说明请查看说明文档: https://github.com/e
         return this.jsshow
       }
       let nregx = new RegExp(this.jsname, 'i')
-      let fshow = this.jsshow.filter(fn=>{
+      return this.jsshow.filter(fn=>{
         try {
           return nregx.test(fn)
         } catch(e) {
           return true
         }
       })
-      if (fshow.length === 0 && this.shownum !== -1) {
-        this.shownum = -1
-      }
-      return fshow
     }
   },
   created(){

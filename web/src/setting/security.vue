@@ -42,7 +42,7 @@
       </div></div>
       <div class="setting setting--inline border">
         <h4 class="title_inline">
-          <sapn class="title_main">{{ $ta('temp', 'access') }} TOKEN</sapn>
+          <span class="title_main">{{ $ta('temp', 'access') }} TOKEN</span>
           <button class="efloat--right elecBtn elecBtn--h32 radius_zero radius-bs--tr greenbk" @click="tokensNew()">{{ $t('new') }}</button>
         </h4>
         <div class="eflex eflex--wrap w100 margin0">
@@ -92,7 +92,7 @@ export default {
       },
       set(val){
         if (val) {
-          this.$set(this.config, 'whitelist', val.split(/\r|\n|,/).filter(v=>v.trim()))
+          this.config.whitelist = val.split(/\r|\n|,/).filter(v=>v.trim())
         } else {
           this.config.whitelist = []
         }
@@ -104,7 +104,7 @@ export default {
       },
       set(val){
         if (val) {
-          this.$set(this.config, 'blacklist', val.split(/\r|\n|,/).filter(v=>v.trim()))
+          this.config.blacklist = val.split(/\r|\n|,/).filter(v=>v.trim())
         } else {
           this.config.blacklist = []
         }
@@ -113,14 +113,14 @@ export default {
   },
   methods: {
     tokensNew(){
-      this.$set(this.config.tokens, this.$uStr.euid(), {
+      this.config.tokens[this.$uStr.euid()] = {
         enable: true,
         token: this.$uStr.UUID(),
         path: '',
         method: '',
         note: '',
         times: 0
-      })
+      }
     },
     securitySave(){
       if (this.config.webhook_only && !confirm('启用 仅开放 webhook 接口 后，webUI 等其他所有接口都不可用\n确定继续？')) {

@@ -1,7 +1,7 @@
 <template>
-  <section class="section" id="app" @click="edelegate($event)">
+  <section class="section app-root" @click="edelegate($event)">
     <hold /> <message /> <evui />
-    <asider class="sider" :class="{ 'sider--collapsed': collapsed, 'sider--mobile': sidermobile }">
+    <aside class="sider" :class="{ 'sider--collapsed': collapsed, 'sider--mobile': sidermobile }">
       <div class="sider_main">
         <div class="logo">
           <a class="logo_a" href="https://github.com/elecV2/elecV2P" target="elecV2PGit">
@@ -12,7 +12,7 @@
         <ul class="menu">
           <li v-for="(item, key) in navlist" class="menu_item" :class="{ 'menu_item--selected':currentpanel==key }" @click="nav(key)" :key="key">
             <span class="icon" v-html="icon[key]"></span>
-            <span class="menu_text fadein">{{ item.name || key.toUpperCase() }}</span>
+            <span class="menu_text fadein">{{ item.name || $t('nav_' + key) }}</span>
           </li>
         </ul>
       </div>
@@ -22,9 +22,9 @@
       <div class="sider_trigger sider_trigger--mobile" @click="sidermobile=!sidermobile">
         <span>{{ sidermobile ? '☰' : 'X' }}</span>
       </div>
-    </asider>
+    </aside>
     <keep-alive>
-      <panel class="section" :is="currentpanel" @menunav="menunav" @theme="themeApply" />
+      <component :is="currentpanel" @menunav="menunav" @theme="themeApply" />
     </keep-alive>
   </section>
 </template>
@@ -75,19 +75,22 @@ export default {
   created(){
     let hashtag = location.hash.slice(1).toLowerCase()
     this.currentpanel = this.menulist[hashtag] ? hashtag : 'overview'
+    this.setNavNames()
     let menunav_cache = this.$sJson(this.$uApi.store.get('menunav'))
     if (menunav_cache) {
-      this.menulist = menunav_cache
-    } else if (this.islangzh) {
-      this.menulist.overview.name = '基础信息'
-      this.menulist.task.name     = '定时任务'
-      this.menulist.rewrite.name  = '重写请求'
-      this.menulist.jsmanage.name = '脚本管理'
-      this.menulist.setting.name  = '设置相关'
-      this.menulist.cfilter.name  = '分流列表'
-      this.menulist.about.name    = '简介说明'
-      this.menulist.donation.name = '赞助打赏'
+      for (let nav in menunav_cache) {
+        if (this.menulist[nav]) {
+          if (menunav_cache[nav].name) {
+            this.menulist[nav].name = menunav_cache[nav].name
+          }
+          if (menunav_cache[nav].show !== undefined) {
+            this.menulist[nav].show = menunav_cache[nav].show
+          }
+        }
+      }
     }
+    this.menulist.setting.show = true
+    this.menulist.donation.show = true
     let theme_cache = this.$sJson(this.$uApi.store.get('theme'))
     if (theme_cache) {
       this.themeApply(theme_cache)
@@ -140,17 +143,33 @@ export default {
       let nlist = Object.create(null)
       let bSponsor = this.$uApi.store.getCache('bSponsor')
       for (let nav in this.menulist) {
-        if (nav === 'setting' || (nav === 'donation' && !bSponsor)) {
-          this.menulist[nav].show = true
-          nlist[nav] = this.menulist[nav]
-        } else if (this.menulist[nav].show !== false) {
-          nlist[nav] = this.menulist[nav]
+        let item = this.menulist[nav]
+        if (nav === 'setting') {
+          nlist[nav] = item
+        } else if (nav === 'donation') {
+          if (!bSponsor) {
+            nlist[nav] = item
+          }
+        } else if (item.show !== false) {
+          nlist[nav] = item
         }
       }
       return nlist
     }
   },
   methods: {
+    setNavNames(){
+      this.menulist.overview.name = this.$t('nav_overview')
+      this.menulist.task.name     = this.$t('nav_task')
+      this.menulist.mitm.name     = this.$t('nav_mitm')
+      this.menulist.rules.name    = this.$t('nav_rules')
+      this.menulist.rewrite.name  = this.$t('nav_rewrite')
+      this.menulist.jsmanage.name = this.$t('nav_jsmanage')
+      this.menulist.setting.name  = this.$t('nav_setting')
+      this.menulist.cfilter.name  = this.$t('nav_cfilter')
+      this.menulist.about.name    = this.$t('nav_about')
+      this.menulist.donation.name = this.$t('nav_donation')
+    },
     nav(key) {
       location.hash = '#' + key
       if (!this.sidermobile) {
@@ -172,19 +191,22 @@ export default {
         console.debug('menu nav are expect')
         return
       }
-      if (!force && (JSON.stringify(mlist) === JSON.stringify(this.menulist))) {
-        console.debug('same menu nav, no need to update')
-        return
-      }
-      let flist = { ...this.menulist }
+      this.setNavNames()
+      let custom = {}
       for (let nav in mlist) {
-        // 过滤不属于 menulist 中的 nav
-        if (flist[nav]) {
-          flist[nav] = mlist[nav]
+        if (this.menulist[nav]) {
+          if (mlist[nav].name !== this.$t('nav_' + nav)) {
+            this.menulist[nav].name = mlist[nav].name
+            custom[nav] = { name: mlist[nav].name }
+          }
+          if (mlist[nav].show !== undefined) {
+            this.menulist[nav].show = mlist[nav].show
+            if (!custom[nav]) custom[nav] = {}
+            custom[nav].show = mlist[nav].show
+          }
         }
       }
-      this.menulist = flist
-      this.$uApi.store.set('menunav', JSON.stringify(flist))
+      this.$uApi.store.set('menunav', JSON.stringify(Object.keys(custom).length ? custom : null))
     },
     themeApply(theme = null){
       if (!theme) {
@@ -234,7 +256,7 @@ export default {
             theme_css += `background: ${ theme.appbk };`
           }
           if (theme_css) {
-            theme_css = `#app{${ theme_css }}`
+            theme_css = `.app-root{${ theme_css }}`
           }
           if (theme.style) {
             theme_css += theme.style
@@ -423,5 +445,7 @@ export default {
   display: block;
   background: var(--main-bk);
 }
+
 }
 </style>
+

@@ -1,55 +1,55 @@
 <template>
   <div class="setting setting--vflex" :class="{ 'setting--collapsed': collapse }" @keydown.ctrl.83.prevent.stop="webuiSave()">
     <h4 class="setting_title">
-      <sapn class="title_main">webUI {{ $t('setting_of') }}</sapn>
+      <span class="title_main">webUI {{ $t('setting_of') }}</span>
       <span @click="collapse=!collapse" class="title_collapse" :class="{ 'title_collapse--collapsed': collapse }"></span>
     </h4>
     <div class="border setting setting--inline" v-show="!collapse">
       <div class="eflex">
-        <label title="左上角显示信息">自定义 LOGO：</label>
+        <label :title="$t('custom_logo')">{{ $t('custom_logo') }}</label>
         <checkbox :oCheck="logo" />
       </div>
-      <label class="eflex eflex--wrap emargin">图标链接：<input class="elecTable_input logo_src" v-model="logo.src" placeholder="比如 https://x.xx/x.png 或 efss/logo/my.png"></label>
-      <label class="eflex">显示名称：<input class="elecTable_input w120" v-model="logo.name" placeholder="elecV2P"></label>
-      <button class="elecBtn w120" @click.prevent="logoSave()">保存</button>
+      <label class="eflex eflex--wrap emargin">{{ $t('logo_link') }}<input class="elecTable_input logo_src" v-model="logo.src" placeholder="e.g. https://x.xx/x.png or efss/logo/my.png"></label>
+      <label class="eflex">{{ $t('display_name') }}<input class="elecTable_input w120" v-model="logo.name" placeholder="elecV2P"></label>
+      <button class="elecBtn w120" @click.prevent="logoSave()">{{ $t('save') }}</button>
     </div>
     <div class="border setting setting--inline" v-show="!collapse">
-      <h4 class="title_inline" title="SETTING/DONATION 暂时不支持隐藏">左侧导航栏设置</h4>
+      <h4 class="title_inline" :title="$t('navbar_settings')">{{ $t('navbar_settings') }}</h4>
       <ul class="eflex eflex--wrap emargin">
         <li class="menunav_item" v-for="(nav, key) in menulist" :key="key">
-          <label>{{ key.toUpperCase() }}: 别名</label>
-          <input class="emargin--left elecTable_input w220" type="text" v-model="nav.name" placeholder="显示为其他名称">
-          <label class="emargin--left">显示</label>
+          <label>{{ key.toUpperCase() }}: {{ $t('name') }}</label>
+          <input class="emargin--left elecTable_input w220" type="text" v-model="nav.name" :placeholder="$t('name')">
+          <label class="emargin--left">{{ $t('show') }}</label>
           <input class="echeckbox" type="checkbox" v-model="nav.show">
         </li>
       </ul>
-      <span class="tip tip--small"> • SETTING/DONATION 暂时不可隐藏      • 隐藏界面可通过 #hash 的形式直接访问</span>
+      <span class="tip tip--small"> • {{ $t('navbar_hint') }}</span>
     </div>
     <div class="border setting setting--inline" v-show="!collapse">
       <div class="eflex">
-        <label>启用主题：</label>
+        <label>{{ $t('enable_theme') }}</label>
         <checkbox :oCheck="theme_simple" />
-        <input class="emargin--left elecTable_input w220" type="text" v-model="theme_simple.name" placeholder="主题名称">
+        <input class="emargin--left elecTable_input w220" type="text" v-model="theme_simple.name" :placeholder="$t('theme_name')">
       </div>
       <div class="emargin">
-        <label>主色彩:</label>
+        <label>{{ $t('main_color') }}</label>
         <input class="elecTable_input w120" type="text" v-model="theme_simple.mainbk" placeholder="#326733">
       </div>
       <div class="emargin">
-        <label>文字色彩:</label>
+        <label>{{ $t('text_color') }}</label>
         <input class="elecTable_input w120" type="text" v-model="theme_simple.maincl" placeholder="#ff9800">
       </div>
       <div class="emargin">
-        <label>应用背景:</label>
+        <label>{{ $t('bg_image') }}</label>
         <input class="elecTable_input w220" type="text" v-model="theme_simple.appbk" placeholder="url(https://x.xx/x.png)">
       </div>
       <div class="emargin eflex eflex--wrap w100">
         <div class="theme_style">
-          <label>附加样式：</label>
+          <label>{{ $t('extra_style') }}</label>
           <textarea class="editor_textarea editor_textarea--oneline" v-model="theme_simple.style" placeholder="#app {--main-bk: #2E3784;--main-fc: #FFCB40;--main-cl: #64AAD0;}"></textarea>
         </div>
-        <button class="elecBtn greenbk" @click="themePreview()">预览</button>
-        <button class="elecBtn w120" @click="themeSave()">保存为常用</button>
+        <button class="elecBtn greenbk" @click="themePreview()">{{ $t('preview') }}</button>
+        <button class="elecBtn w120" @click="themeSave()">{{ $t('save_as_fav') }}</button>
       </div>
       <div class="w100">
         <ul class="w100">
@@ -61,14 +61,14 @@
               <span class="theme_viewitem" @click.prevent="copyColor(titem.appbk)" :style="{ 'background': titem.appbk }" :title="titem.appbk"></span>
             </div>
             <div class="theme_op">
-              <button class="elecBtn greenbk elecBtn--h32" @click="themePreview(idx)">预览</button>
-              <button class="elecBtn elecBtn--clear elecBtn--h32" @click="theme_list.splice(idx, 1)">删除</button>
+              <button class="elecBtn greenbk elecBtn--h32" @click="themePreview(idx)">{{ $t('preview') }}</button>
+              <button class="elecBtn elecBtn--clear elecBtn--h32" @click="theme_list.splice(idx, 1)">{{ $t('delete_theme') }}</button>
             </div>
           </li>
         </ul>
         <div class="theme_imexport">
-          <button class="elecBtn elecBtn--h32 minw160" @click.prevent="themeExport()">导出常用主题</button>
-          <button class="elecBtn elecBtn--h32 minw160" @click.prevent="themeImport()">导入常用主题</button>
+          <button class="elecBtn elecBtn--h32 minw160" @click.prevent="themeExport()">{{ $t('export_theme') }}</button>
+          <button class="elecBtn elecBtn--h32 minw160" @click.prevent="themeImport()">{{ $t('import_theme') }}</button>
         </div>
       </div>
     </div>
@@ -94,29 +94,37 @@ export default {
   },
   components: { checkbox },
   computed: {
-    menulist(){
-      for (let key of this.navkey) {
-        if (!this.menunav[key]) {
-          this.menunav[key] = Object.create(null)
+    menulist(){ return this.menunav },
+    theme_simple(){ return this.theme.simple },
+    theme_list(){ return this.theme.list || [] },
+  },
+  watch: {
+    menunav: {
+      immediate: true,
+      handler(nav){
+        if (!nav) return
+        for (let key of this.navkey) {
+          if (!nav[key]) {
+            nav[key] = Object.create(null)
+          }
+          if (nav[key].show !== false) {
+            nav[key].show = true
+          }
         }
-        if (this.menunav[key].show !== false) {
-          this.menunav[key].show = true
+      }
+    },
+    theme: {
+      immediate: true,
+      handler(t){
+        if (!t) return
+        if (!t.simple) {
+          t.simple = Object.create(null)
+        }
+        if (!t.list) {
+          t.list = []
         }
       }
-      return this.menunav
-    },
-    theme_simple(){
-      if (!this.theme.simple) {
-        this.theme.simple = Object.create(null)
-      }
-      return this.theme.simple
-    },
-    theme_list(){
-      if (!this.theme.list) {
-        this.theme.list = []
-      }
-      return this.theme.list
-    },
+    }
   },
   methods: {
     webuiSave(){
@@ -145,7 +153,7 @@ export default {
       }).finally(hideloading)
     },
     themeSave(){
-      let name = prompt('命名将要保存的主题', this.theme_simple.name || '主题名称')
+      let name = prompt(this.$t('theme_name'), this.theme_simple.name || this.$t('theme_name'))
       if (!name) {
         return
       }
@@ -156,7 +164,6 @@ export default {
         style: this.theme_simple.style,
       })
       this.$message.success(name, '已保存')
-      this.$forceUpdate()
     },
     themePreview(idx = -1){
       if (idx === -1) {
@@ -178,7 +185,6 @@ export default {
       this.$uApi.getFile({ accept: '.json' }).then(data=>{
         try {
           this.theme_list.push(...JSON.parse(data.content))
-          this.$forceUpdate()
           this.$message.success('常用主题列表导入成功')
         } catch(e) {
           this.$message.error('常用主题列表导入失败', e.message || e)

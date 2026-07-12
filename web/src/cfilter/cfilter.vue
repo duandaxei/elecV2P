@@ -5,13 +5,13 @@
       <div class="etable"><table class="elecTable" @keydown.ctrl.83.prevent.stop.exact="filterSave()">
         <caption class="elecTable_caption">
           <span>filter.list - {{ lists.length }}</span>
-          <span @click="cfInit()" class="icon icon_caption--sync" title="刷新当前列表" v-html="icon.sync"></span>
+          <span @click="cfInit()" class="icon icon_caption--sync" :title="$t('refresh_list')" v-html="icon.sync"></span>
         </caption>
         <thead>
           <tr>
-            <th class="elecTable_th elecTable_th--name">匹配方式</th>
-            <th class="elecTable_th">匹配内容</th>
-            <th class="elecTable_th minw62">操作</th>
+            <th class="elecTable_th elecTable_th--name">{{ $t('match_method') }}</th>
+            <th class="elecTable_th">{{ $t('match_content') }}</th>
+            <th class="elecTable_th minw62">{{ $t('operate') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -37,11 +37,11 @@
           </tr>
         </tfoot>
       </table></div>
-      <p class="center"><button class="elecBtn elecBtn--long" @click="filterSave()">保存当前列表</button></p>
+      <p class="center"><button class="elecBtn elecBtn--long" @click="filterSave()">{{ $t('save_list') }}</button></p>
     </main>
     <footer class="footer footer--h48">
       <div>
-        <span>该列表用于客户端分流（filter）订阅  地址:</span>
+        <span>{{ $t('filter_subscribe') }}</span>
         <strong><a href="/filter" target="elecV2PFilter">{{ homepage }}/filter</a></strong>
       </div>
     </footer>
@@ -55,7 +55,7 @@ import icon from '../utils/icon.js'
     data(){
       return {
         icon,
-        header: '客户端订阅分流列表',
+        header: this.$t('client_filter'),
         homepage: location.origin,
         orglist: [],
       }

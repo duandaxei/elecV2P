@@ -12,14 +12,14 @@
     </div>
     <div class="preview_toolbar">
       <ul class="preview_menu eflex eflex--wrap">
-        <li title="保存该文件到本地磁盘上">
-          <button class="elecBtn elecBtn--h32 folderbk" @click="fileSave()">下载该文件</button>
+        <li>
+          <button class="elecBtn elecBtn--h32 folderbk" @click="fileSave()">{{ $t('download_file') }}</button>
         </li>
         <li>
-          <button class="elecBtn elecBtn--clear elecBtn--h32" @click="fileDelete()">删除该文件</button>
+          <button class="elecBtn elecBtn--clear elecBtn--h32" @click="fileDelete()">{{ $t('delete_file') }}</button>
         </li>
-        <li title="在新标签页中查看该文件">
-          <button class="elecBtn elecBtn--check elecBtn--h32" @click="fileOpen()">新页面打开</button>
+        <li>
+          <button class="elecBtn elecBtn--check elecBtn--h32" @click="fileOpen()">{{ $t('open_new_tab') }}</button>
         </li>
       </ul>
     </div>
@@ -37,7 +37,7 @@
         </video>
       </div>
       <div v-else-if="preview.type">
-        <p>暂时无法预览文件类型 {{ preview.type }}。文件地址：<a :href="previewurl" target="_blank">{{previewurl}}</a></p>
+        <p>{{ $t('preview_unavailable') }} {{ preview.type }}。<a :href="previewurl" target="_blank">{{previewurl}}</a></p>
       </div>
       <div class="preview_list" v-show="listshow">
         <ul class="preview_listul">

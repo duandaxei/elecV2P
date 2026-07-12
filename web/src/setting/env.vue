@@ -1,7 +1,7 @@
 <template>
   <div class="setting setting--vflex" :class="{ 'setting--collapsed': collapse }" @keydown.ctrl.83.prevent.stop="envSave()">
     <h4 class="setting_title">
-      <sapn class="title_main">环境变量相关设置</sapn>
+      <span class="title_main">环境变量相关设置</span>
       <span @click="collapse=!collapse" class="title_collapse" :class="{ 'title_collapse--collapsed': collapse }"></span>
     </h4>
     <div v-show="!collapse" class="w100">

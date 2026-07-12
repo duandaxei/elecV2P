@@ -34,10 +34,14 @@ const WEBWS = {
     },
     dispatch(recver, data){
       if (this.lists.minishell) {
-        this.lists.minishell.forEach(cb=>cb({ type: recver, data }))
+        this.lists.minishell.forEach(cb=>{
+          try { cb({ type: recver, data }) } catch(e) { console.error(e) }
+        })
       }
       if (recver !== 'minishell' && this.lists[recver]) {
-        this.lists[recver].forEach(cb=>cb(data))
+        this.lists[recver].forEach(cb=>{
+          try { cb(data) } catch(e) { console.error(e) }
+        })
       } else if (!this.lists.minishell) {
         console.debug('there are no recver', recver, 'to render data', data)
       }

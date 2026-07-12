@@ -102,9 +102,9 @@
     </main>
     <footer class="footer">
       <ul>
-        <li><b>本页所有规则的更改在点击保存后才正式生效</b></li>
-        <li>订阅规则并不会自动加载更新，需手动获取及保存</li>
-        <li>规则匹配公式: `(new RegExp('正则表达式')).test(request.url)`</li>
+        <li><b>{{ $t('all_rules_notes') }}</b></li>
+        <li>{{ $t('sub_not_auto') }}</li>
+        <li>{{ $t('rule_match_tip') }}</li>
         <li>更多说明请查看 <a href="https://github.com/elecV2/elecV2P-dei/tree/master/docs/05-rewrite.md" target="elecV2PDoc">文档: 05-rewrite</a></li>
       </ul>
     </footer>
@@ -140,15 +140,9 @@ export default {
       let subkeys = Object.keys(this.rewritesub)
       let total = this.rewritelists.length, enbnum = this.rewritelists.filter(r=>r.enable).length
       subkeys.forEach(skey=>{
-        if (this.rewritesub[skey].list === undefined) {
-          this.rewritesub[skey].list = []
-        }
         if (this.rewritesub[skey].enable) {
           enbnum += this.rewritesub[skey].list.filter(r=>r.enable).length
           total += this.rewritesub[skey].list.length
-        }
-        if (this.rewritesub[skey].collapse === undefined) {
-          this.rewritesub[skey].collapse = false
         }
       })
       return enbnum + '/' + total + '/' + subkeys.length
@@ -185,6 +179,16 @@ export default {
     this.reInit()
   },
   methods: {
+    rewriteInit(){
+      Object.keys(this.rewritesub).forEach(skey=>{
+        if (this.rewritesub[skey].list === undefined) {
+          this.rewritesub[skey].list = []
+        }
+        if (this.rewritesub[skey].collapse === undefined) {
+          this.rewritesub[skey].collapse = false
+        }
+      })
+    },
     reInit(){
       const hideloading = this.$message.loading('正在获取 rewrite 列表...', 0)
       this.$axios.get('/data?type=rewritelists').then(res=>{
@@ -193,6 +197,7 @@ export default {
           this.rewritelists = res.data.rewrite.list
           this.rewriteCheck = []
           this.rewriteble.enable = res.data.rewrite.enable !== false
+          this.rewriteInit()
           this.dealOldList()
           this.$message.success('成功获取 REWRITE 规则列表', this.rewritestatus)
         } else {
@@ -229,7 +234,7 @@ export default {
           }
         }
       }
-      todelidx.reverse().forEach(idx=>this.$delete(this.rewritelists, idx))
+      todelidx.reverse().forEach(idx=>this.rewritelists.splice(idx, 1))
     },
     reSave(){
       let emptydata = []
@@ -378,16 +383,16 @@ export default {
       if (data && data.rewrite && data.rewrite.length) {
         data.list = data.rewrite   // 旧订阅格式转换
       }
-      if (data && data.list && data.list.length) {
-        let cftext = `<div class="emargin title_inline">${ data.note || "没有任何备注说明" }</div><div class="eflex eflex--center emargin w100"><label class="w220 cursor" data-method="nav" data-panel="rewrite">重写规则 ${data.list.length} 条</label><button class="elecBtn elecBtn--h32 greenbk" title="所有旧有规则将被替换" data-method="rewriteAdd">更新</button></div>`
+        if (data && data.list && data.list.length) {
+        let cftext = `<div class="emargin title_inline">${ data.note || this.$t('no_note') }</div><div class="eflex eflex--center emargin w100"><label class="w220 cursor" data-method="nav" data-panel="rewrite">${this.$t('rewrite')} ${data.list.length}</label><button class="elecBtn elecBtn--h32 greenbk" data-method="rewriteAdd">${this.$t('update')}</button></div>`
         if (data.mitmhost && data.mitmhost.length) {
-          cftext += `<div class="eflex eflex--center emargin w100"><label class="w220 cursor" data-method="nav" data-panel="mitm">MITM 域名 ${data.mitmhost.length} 个</label><button class="elecBtn elecBtn--h32 greenbk" data-method="hostAdd">添加</button></div>`
+          cftext += `<div class="eflex eflex--center emargin w100"><label class="w220 cursor" data-method="nav" data-panel="mitm">MITM ${data.mitmhost.length}</label><button class="elecBtn elecBtn--h32 greenbk" data-method="hostAdd">${this.$t('add')}</button></div>`
         }
         if (data.task && data.task.list) {
-          cftext += `<div class="eflex eflex--center emargin w100"><label class="w220 cursor" data-method="nav" data-panel="task">定时任务 ${data.task.list.length} 个</label><button class="elecBtn elecBtn--h32 greenbk" data-method="taskAdd">添加</button></div>`
+          cftext += `<div class="eflex eflex--center emargin w100"><label class="w220 cursor" data-method="nav" data-panel="task">${this.$t('task')} ${data.task.list.length}</label><button class="elecBtn elecBtn--h32 greenbk" data-method="taskAdd">${this.$t('add')}</button></div>`
         }
-        cftext += `<div class="emargin border_top1">作者: ${ data.author || '无' }  更新: ${ data.resource || '无' }</div>`
-        let rAxios = this.$axios, rMessage = this.$message, rewritesub = this.rewritesub
+        cftext += `<div class="emargin border_top1">${this.$t('author')}: ${ data.author || this.$t('unknown') }  ${this.$t('update')}: ${ data.resource || this.$t('unknown') }</div>`
+        let rAxios = this.$axios, rMessage = this.$message, rewritesub = this.rewritesub, $t = this.$t
         this.$evui({
           title: `${ data.name || this.rewritesub[subuid].name || '检测到如下规则' }`,
           width: 600,
@@ -402,7 +407,7 @@ export default {
               let el = document.querySelector('.elecBtn[data-method=rewriteAdd]')
               if (el) {
                 if (el.dataset.done) {
-                  rMessage.success('重写规则已添加')
+                  rMessage.success($t('done_no'))
                   return
                 }
                 el.dataset.done = '1'
@@ -430,18 +435,17 @@ export default {
               if (data.resource) {
                 rewritesub[subuid].resource = data.resource
               }
-              // 触发视图层更新
               rewritesub[subuid] = {
                 ...rewritesub[subuid],
                 list: datarlist
               }
-              rMessage.success('订阅', data.name, '内容更新完成（保存后正式生效）')
+              rMessage.success($t('save_success'))
             },
             taskAdd(){
               let el = document.querySelector('.elecBtn[data-method=taskAdd]')
               if (el) {
                 if (el.dataset.done) {
-                  rMessage.success('定时任务已添加')
+                  rMessage.success($t('done_no'))
                   return
                 }
                 el.dataset.done = '1'
@@ -457,12 +461,12 @@ export default {
                   }
                 }).then(res=>{
                   if (res.data.rescode === 0) {
-                    rMessage.success('添加定时任务', task.name, res.data.message)
+                    rMessage.success($t('save_success'), task.name)
                   } else {
-                    rMessage.error('添加定时任务失败', res.data.message)
+                    rMessage.error($t('save_fail'), res.data.message)
                   }
                 }).catch(e=>{
-                  rMessage.error('添加定时任务失败', e.message)
+                  rMessage.error($t('save_fail'), e.message)
                   console.error('添加定时任务失败', e)
                 })
               }
@@ -471,7 +475,7 @@ export default {
               let el = document.querySelector('.elecBtn[data-method=hostAdd]')
               if (el) {
                 if (el.dataset.done) {
-                  rMessage.success('解析域名已添加')
+                  rMessage.success($t('done_no'))
                   return
                 }
                 el.dataset.done = '1'
@@ -484,12 +488,12 @@ export default {
                 note: data.name
               }).then(res=>{
                 if (res.data.rescode === 0) {
-                  rMessage.success('成功更新 MITMHOST', data.mitmhost.join(', '))
+                  rMessage.success($t('save_success'))
                 } else {
-                  rMessage.error('MITMHOST 更新失败', res.data.message)
+                  rMessage.error($t('save_fail'), res.data.message)
                 }
               }).catch(e=>{
-                rMessage.error('更新 mitmhost 失败', e.message)
+                rMessage.error($t('save_fail'), e.message)
                 console.error('更新 mitmhost 失败', e)
               })
             },
@@ -517,13 +521,12 @@ export default {
     rewriteDel(index){
       switch(this.$sType(index)){
       case 'number':
-        this.$delete(this.rewritelists, index)
+        this.rewritelists.splice(index, 1)
         break
       case 'array':
         if (index.length && confirm(`确定删除这 ${index.length} 条规则吗？\n（手动保存后正式生效）`)) {
-          for (let idx of index) {
-            this.rewriteDel(idx)
-          }
+          index.filter(i=>typeof i === 'number').sort((a,b)=>b-a).forEach(idx=>this.rewritelists.splice(idx, 1))
+          index.filter(i=>typeof i === 'string').forEach(idx=>this.rewriteDel(idx))
           this.rewriteCheck = []
         }
         break
@@ -531,7 +534,6 @@ export default {
         let [subuid, idx] = index.split('|')
         if (subuid && idx && this.rewritesublist[subuid]) {
           this.rewritesublist[subuid].splice(Number(idx), 1)
-          this.$forceUpdate()
         }
         break
       default:
@@ -539,8 +541,8 @@ export default {
       }
     },
     rewritesubAdd(rid = this.$uStr.euid()){
-      this.$set(this.rewritesub, rid, {
-        name: this.$ta('rewrite', 'sub') + (Object.keys(this.rewritesub).length + 1),
+      this.rewritesub[rid] = {
+        name: this.$t('rewrite') + ' ' + this.$t('sub') + ' ' + (Object.keys(this.rewritesub).length + 1),
         resource: '',
         type: 'rewrite',
         note: '',
@@ -551,7 +553,7 @@ export default {
         bkcolor: this.$uStr.randomColor({ max: 200 }),
         collapse: false,
         list: []
-      })
+      }
     },
     rewritesubOp(subuid, op = 'delete'){
       if (op === 'collapse') {
@@ -561,10 +563,9 @@ export default {
         } else {
           this.rewritesublist[subuid] = this.rewritesub[subuid].list
         }
-        this.$forceUpdate()
       } else {
         if (this.rewritesub[subuid] && (this.rewritesub[subuid].list.length === 0 || confirm('确定删除重写订阅：' + this.rewritesub[subuid].name + ' 及其相关规则\n（并不会删除已添加的 MITMHOST/TASK 等）'))) {
-          this.$delete(this.rewritesub, subuid)
+          delete this.rewritesub[subuid]
           this.rewriteCheck = this.rewriteCheck.filter(idx=>!(typeof(idx) === 'string' && idx.startsWith(subuid)))
         }
       }

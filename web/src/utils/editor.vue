@@ -1,65 +1,62 @@
 <template>
-  <div class="codeditor" :class="{ 'codeditor--collapsed': collapse, 'codeditor--full': fullscreen }" v-show="bShow" @keydown.122.prevent.stop.exact="fullscreen=!fullscreen"
+  <div class="codeditor" :class="{ 'codeditor--collapsed': collapse, 'codeditor--full': fullscreen, 'codeditor--dragging': dragging }" v-show="bShow" @keydown.122.prevent.stop.exact="fullscreen=!fullscreen"
     :style="'transform: translate(' + tranposi[0] + 'px, ' + tranposi[1] + 'px);'"
-    :draggable="collapse"
-    @dragstart="dragStart($event)"
-    @dragend="dragEnd($event)"
   >
     <h3 class="title title--editview">
       <span class="title_close" @click.prevent="bShow=false" title="alt+w">X</span>
-      <span class="title_main" title="按 F2 或双击可修改文件名（原文件将保留）" @dblclick.prevent="nameChange()">{{ curtfile.path }}/{{ curtfile.name }}</span>
+      <span class="title_main" :title="$t('rename_prompt')" @dblclick.prevent="nameChange()" @mousedown.prevent="dragStart($event)">{{ curtfile.path }}/{{ curtfile.name }}</span>
       <span class="title_collapse" :class="{ 'title_collapse--collapsed': collapse }" @click.prevent="tranposi=[0, 0];collapse=!collapse;"></span>
     </h3>
     <div class="codeditor_toolbar">
       <ul class="codeditor_menu eflex">
         <li class="toolbar_item">
-          <label>自动换行</label>
+          <label>{{ $t('auto_wrap') }}</label>
           <input class="echeckbox" checked type="checkbox" name="autoWrap" @change="autoWrap($event)">
         </li>
         <li class="toolbar_item">
-          <label>行线显示</label>
+          <label>{{ $t('line_number') }}</label>
           <input class="echeckbox" checked type="checkbox" name="offUnder" @change="offUnder($event)">
         </li>
         <li class="toolbar_separate"></li>
         <li class="toolbar_item">
-          <label>显示不可见字符</label>
+          <label>{{ $t('show_invisibles') }}</label>
           <input class="echeckbox" checked type="checkbox" name="showInvi" @change="showInvi($event)">
         </li>
         <li class="toolbar_item">
-          <label>Tab 宽度</label>
+          <label>{{ $t('tab_width') }}</label>
           <select class="elecTable_select toolbar_select" @change="tabResize($event)">
-            <option value="4">4 个空格</option>
-            <option value="2">2 个空格</option>
+            <option value="4">4 {{ $t('spaces') }}</option>
+            <option value="2">2 {{ $t('spaces') }}</option>
           </select>
         </li>
         <li class="toolbar_item">
-          <label>使用空格代替 Tab</label>
+          <label>{{ $t('soft_tabs') }}</label>
           <input class="echeckbox" checked type="checkbox" name="softTabs" @change="softTabs($event)">
         </li>
         <li class="toolbar_separate"></li>
         <li class="toolbar_item">
-          <label>只读模式</label>
+          <label>{{ $t('read_only') }}</label>
           <input class="echeckbox" type="checkbox" name="readOnly" @change="readOnly($event)">
         </li>
-        <li v-if="curtfile.mode==='hex'" title="尝试将当前内容转化为文本">
-          <button class="elecBtn elecBtn--h32 emargin bk_main_cl" @click="hexstrToggle()">文本模式</button>
+        <li v-if="curtfile.mode==='hex'" :title="$t('convert_done')">
+          <button class="elecBtn elecBtn--h32 emargin bk_main_cl" @click="hexstrToggle()">{{ $t('text_mode') }}</button>
         </li>
-        <li class="toolbar_item" title="在新标签页中查看该文件">
-          <button class="elecBtn elecBtn--h32 emargin bk_main_cl" @click="fileView()">查看源文件</button>
+        <li class="toolbar_item" :title="$t('view_source')">
+          <button class="elecBtn elecBtn--h32 emargin bk_main_cl" @click="fileView()">{{ $t('view_source') }}</button>
         </li>
         <li class="toolbar_item">
-          <button class="elecBtn elecBtn--h32 emargin bk_main_cl" @click="moreSet()">更多设置</button>
+          <button class="elecBtn elecBtn--h32 emargin bk_main_cl" @click="moreSet()">{{ $t('more_settings') }}</button>
         </li>
-        <li class="toolbar_item toolbar_item--mergebtn" title="仅在 https 环境下有效">
-          <span class="toolbar_mergebtn" @click="editor.selectAll()">全选</span>
-          <span class="toolbar_copy" @click="copySelection()">复制</span>
-          <span class="toolbar_mergebtn" @click="pasteSelection()">粘贴</span>
+        <li class="toolbar_item toolbar_item--mergebtn" :title="$t('clipboard_https_only')">
+          <span class="toolbar_mergebtn" @click="editor.selectAll()">{{ $t('select_all') }}</span>
+          <span class="toolbar_copy" @click="copySelection()">{{ $t('copy') }}</span>
+          <span class="toolbar_mergebtn" @click="pasteSelection()">{{ $t('paste') }}</span>
         </li>
       </ul>
     </div>
     <div id="aceditor" @keydown.ctrl.83.prevent.stop.exact="save()" @keyup.113.prevent.stop.exact="nameChange()" @keydown.alt.enter.prevent.stop.exact="fileView()" @keydown.alt.87.prevent.stop.exact="bShow=false">elecV2P editor</div>
     <div class="codeditor_button center">
-      <button class="elecBtn" @click.prevent="save()">保存（Ctrl+S）</button>
+      <button class="elecBtn" @click.prevent="save()">{{ $t('save_ctrl_s') }}</button>
       <ul class="codeditor_tip" v-show="tipshow" @click.prevent="tipshow=!tipshow">
         <li>f2: 重命名文件 f11: 全屏</li>
         <li>alt+enter: 新标签页中查看该文件</li>
@@ -87,6 +84,7 @@ export default {
       tipshow: true,
       fullscreen: false,
       tranposi: [0, 0],
+      dragging: false,
       dragposi: [0, 0],
     }
   },
@@ -126,14 +124,14 @@ export default {
   },
   methods: {
     nameChange(){
-      let newname = prompt('新的文件名（不包含路径）', this.curtfile.name)
+      let newname = prompt(this.$t('rename_prompt'), this.curtfile.name)
       if (newname) {
         if (/\\|\/|\?|\||<|>|:|\*/.test(newname)) {
-          this.$message.error('文件名中保存特殊字符，请修改后重试')
+          this.$message.error(this.$t('save_fail'))
           return
         }
         this.curtfile.name = newname
-        this.$message.success('文件名修改成功')
+        this.$message.success(this.$t('save_success'))
         this.editor.focus()
       }
     },
@@ -150,17 +148,17 @@ export default {
       let mobj = this.modelist.getModeForPath(name), ext = mobj.name, mode = mobj.mode
       let badext = ext === 'text' && !/\.txt$/.test(name)
       if (badext) {
-        if (!confirm(name + ' 可能并不是文本文件\n点击确定-使用文本编辑器打开\n点击取消-在新标签页面中打开')) {
+        if (!confirm(name + ' ' + this.$t('file_maybe_not_text'))) {
           this.$uApi.open(this.file.burl + this.file.name)
           return
         }
       }
       if (this.file.start === 'url') {
         if (!/^https?:\/\/\S{4}/.test(burl)) {
-          this.$message.error('远程链接错误，无法获取文件内容', burl + name)
+          this.$message.error(this.$t('save_fail'), burl + name)
           return
         }
-        let loading = this.$message.loading('正在加载', name, '文件内容...', 0)
+        let loading = this.$message.loading(this.$t('loading'), name + '...', 0)
         try {
           content = await this.$axios.get(burl + name, {
             responseType: 'arraybuffer',
@@ -175,25 +173,25 @@ export default {
           })
           loading()
           this.curtfile.burl = burl
-          this.$message.success(name, '文件内容加载成功')
+          this.$message.success(name, this.$t('file_loaded'))
         } catch(e) {
           loading()
-          this.$message.error('无法加载', name, '文件内容', e.message)
+          this.$message.error(this.$t('save_fail'), name, e.message)
           console.error('无法加载', name, '文件内容', e)
           return
         }
       } else if (this.file.start === 'new') {
-        this.$message.success('新建文件', name)
+        this.$message.success(this.$t('create'), name)
         this.curtfile.burl = this.file.burl
         content = this.file.content || `欢迎使用 elecV2P 文本文件编辑器\n\nctrl+a 全选\nctrl+s保存`
       } else {
-        this.$message.error('未知指令', this.file.start, '无法打开文本编辑器')
+        this.$message.error(this.$t('unknown'), this.file.start)
         return
       }
       this.editor.session.setMode(mode)
       console.debug('elecV2P editor current mode', ext)
       if (this.$sType(content) !== 'string') {
-        this.$message.error('获取文件内容并非文本格式，已强制进行转换')
+        this.$message.error(this.$t('already_text'))
         content = this.$sString(content)
       }
       this.bShow = true
@@ -208,7 +206,7 @@ export default {
       if (/^https?:\/\/\S{4}/.test(this.curtfile.burl)) {
         this.$uApi.open(this.curtfile.burl + this.curtfile.name)
       } else {
-        this.$message.error('暂时无法获取该文件的远程查看链接')
+        this.$message.error(this.$t('preview_unavailable'))
       }
     },
     autoWrap(event){
@@ -241,15 +239,15 @@ export default {
     },
     hexstrToggle(){
       if (this.curtfile.mode === 'hex') {
-        const hideloading = this.$message.loading('正在尝试将当前内容转化为文本')
+        const hideloading = this.$message.loading(this.$t('loading') + '...', 0)
         let fcont = this.editor.getValue()
         fcont = new TextDecoder().decode(this.$uStr.hexToBuffer(fcont))
         this.editor.session.setValue(fcont)
         hideloading()
-        this.$message.success('转化完成')
+        this.$message.success(this.$t('convert_done'))
         this.curtfile.mode = 'string'
       } else {
-        console.log('当前编辑器内容已经是文本格式')
+        console.log(this.$t('already_text'))
       }
     },
     moreSet(){
@@ -257,51 +255,58 @@ export default {
       this.tipshow = !this.tipshow
     },
     dragStart(e){
-      e.dataTransfer.effectAllowed = 'move'
+      if (!this.collapse) return
+      this.dragging = true
       this.dragposi = [e.clientX, e.clientY]
-    },
-    dragEnd(e){
-      e.preventDefault()
-      this.tranposi = [this.tranposi[0] + e.clientX - this.dragposi[0], this.tranposi[1] + e.clientY - this.dragposi[1]]
+      const onMove = (e) => {
+        this.tranposi = [this.tranposi[0] + e.clientX - this.dragposi[0], this.tranposi[1] + e.clientY - this.dragposi[1]]
+        this.dragposi = [e.clientX, e.clientY]
+      }
+      const onUp = () => {
+        this.dragging = false
+        document.removeEventListener('mousemove', onMove)
+        document.removeEventListener('mouseup', onUp)
+      }
+      document.addEventListener('mousemove', onMove)
+      document.addEventListener('mouseup', onUp)
     },
     copySelection(){
       if (!navigator.clipboard) {
-        this.$message.error('粘贴板仅在 https 页面中可访问')
+        this.$message.error(this.$t('clipboard_https_only'))
         return
       }
       let copyText = this.editor.getCopyText()
       if (copyText === '') {
-        this.$message.error('请先选择文字')
+        this.$message.error(this.$t('select_text_first'))
         return
       }
       navigator.clipboard.writeText(copyText).then(()=>{
-        this.$message.success('复制成功')
+        this.$message.success(this.$t('copied'))
       }).catch(e=>{
-        this.$message.error('复制失败', e.message)
+        this.$message.error(this.$t('copy'), this.$t('fail'))
         console.error('复制选择文字失败', e)
       })
     },
     pasteSelection(){
       if (!navigator.clipboard) {
-        this.$message.error('粘贴板仅在 https 页面中可访问')
+        this.$message.error(this.$t('clipboard_https_only'))
         return
       }
       navigator.clipboard.readText().then(data=>{
         if (data) {
           this.editor.insert('')  // 替换选择内容
           this.editor.session.insert(this.editor.getCursorPosition(), data)
-          this.$message.success('粘贴成功')
+          this.$message.success(this.$t('paste_success'))
         } else {
-          this.$message.error('没有检测到文字内容')
-          console.log('没有检测到文字内容')
+          this.$message.error(this.$t('no_text'))
         }
       }).catch(e=>{
-        this.$message.error('粘贴失败', e.message)
+        this.$message.error(this.$t('paste'), this.$t('fail'))
         console.error('粘贴失败', e)
       })
     },
     save(){
-      const hideloading = this.$message.loading(this.curtfile.name, '上传保存中...', 0)
+      const hideloading = this.$message.loading(this.curtfile.name + ' ' + this.$t('saving') + '...', 0)
       let fcont = this.editor.getValue()
       if (this.curtfile.mode === 'hex') {
         fcont = Array.from(this.$uStr.hexToBuffer(fcont))
@@ -312,14 +317,14 @@ export default {
         params: [this.curtfile.path + '/' + this.curtfile.name, fcont, this.curtfile.mode]
       }).then(res=>{
         if (res.data.rescode === 0) {
-          this.$message.success(this.curtfile.name, '保存成功')
+          this.$message.success(this.curtfile.name, this.$t('save_success'))
         } else {
-          this.$message.error(this.curtfile.name, '保存失败', res.data.message)
-          console.error(this.curtfile.name, '保存失败', res.data.message)
+          this.$message.error(this.curtfile.name, this.$t('save_fail'), res.data.message)
+          console.error(this.curtfile.name, this.$t('save_fail'), res.data.message)
         }
       }).catch(e=>{
-        this.$message.error(this.curtfile.name, '保存失败', e.message)
-        console.error(this.curtfile.name, '保存失败', e)
+        this.$message.error(this.curtfile.name, this.$t('save_fail'), e.message)
+        console.error(this.curtfile.name, this.$t('save_fail'), e)
       }).finally(hideloading)
     }
   }
@@ -381,6 +386,9 @@ export default {
   width: 360px;
   overflow: hidden;
   border-radius: 8px;
+}
+.codeditor--dragging {
+  user-select: none;
 }
 .codeditor--collapsed .title_main {
   white-space: pre;

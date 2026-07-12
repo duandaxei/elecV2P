@@ -6,8 +6,6 @@
 - [ ] EAPP 订阅/分类
 - [ ] RULE mock 修改方式
 - [ ] RULE repeat 网络请求
-- [ ] EFSS 自定义文件处理脚本
-- [ ] 自定义常用功能的快捷键
 - [ ] require 自定义可运行/禁用模块
 </pre>
 </div>

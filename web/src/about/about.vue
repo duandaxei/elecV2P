@@ -3,25 +3,32 @@
     <header class="header">{{ header }}</header>
     <main class="content">
       <div class="about">
-        <h4 class="about_title">简介</h4>
+        <h4 class="about_title">{{ $t('about_intro') }}</h4>
         <p>elecV2P - customize personal network.</p>
-        <p>elecV2P 是一款基于 NodeJS，可通过 JS 修改网络请求，以及定时运行脚本或 SHELL 指令的网络工具。</p>
+        <p v-if="islangzh">elecV2P 是一款基于 NodeJS，可通过 JS 修改网络请求，以及定时运行脚本或 SHELL 指令的网络工具。</p>
+        <p v-else>elecV2P is a NodeJS-based network tool that modifies HTTP requests via JS, runs scripts on a timer, and executes SHELL commands.</p>
         <br>
-        <p>项目地址：<a href="https://github.com/elecV2/elecV2P" target="elecV2PGit">https://github.com/elecV2/elecV2P</a><br>说明文档：<a href="https://github.com/elecV2/elecV2P-dei/tree/master/docs" target="elecV2PDoc">https://github.com/elecV2/elecV2P-dei/tree/master/docs</a></p>
+        <p>{{ $t('homepage') }}：<a href="https://github.com/elecV2/elecV2P" target="elecV2PGit">https://github.com/elecV2/elecV2P</a><br>{{ $t('document') }}：<a href="https://github.com/elecV2/elecV2P-dei/tree/master/docs" target="elecV2PDoc">https://github.com/elecV2/elecV2P-dei/tree/master/docs</a></p>
 
-        <h4 class="about_title">功能</h4>
+        <h4 class="about_title">{{ $t('about_features') }}</h4>
         <ul>
-          <li>查看/修改 网络请求 (MITM)</li>
-          <li>定时执行 JS/SHELL 脚本</li>
-          <li>FEED/IFTTT/自定义 通知</li>
-          <li>EFSS 基础文件管理</li>
+          <li v-if="islangzh">查看/修改 网络请求 (MITM)</li>
+          <li v-else>View/Modify HTTP requests (MITM)</li>
+          <li v-if="islangzh">定时执行 JS/SHELL 脚本</li>
+          <li v-else>Scheduled JS/SHELL scripts</li>
+          <li v-if="islangzh">FEED/IFTTT/自定义 通知</li>
+          <li v-else>FEED/IFTTT/Custom notifications</li>
+          <li v-if="islangzh">EFSS 基础文件管理</li>
+          <li v-else>EFSS file management</li>
         </ul>
 
-        <h4 class="about_title">项目已开源</h4>
-        <p>前端源文件位于 web/src 目录，修改后使用 yarn build 命令进行打包。</p>
-        <p>在使用时，如果有任何问题或建议，欢迎一起交流 <a href="https://github.com/elecV2/elecV2P/issues" target="elecV2PGit">open a issue</a>。</p>
+        <h4 class="about_title">{{ $t('about_opensource') }}</h4>
+        <p v-if="islangzh">前端源文件位于 web/src 目录，修改后使用 yarn build 命令进行打包。</p>
+        <p v-else>Source files are in the web/src directory. Use `yarn build` to rebuild.</p>
+        <p v-if="islangzh">在使用时，如果有任何问题或建议，欢迎一起交流 <a href="https://github.com/elecV2/elecV2P/issues" target="elecV2PGit">open a issue</a>。</p>
+        <p v-else>If you have any questions or suggestions, feel free to <a href="https://github.com/elecV2/elecV2P/issues" target="elecV2PGit">open an issue</a>.</p>
 
-        <h4 class="about_title">贡献/参考</h4>
+        <h4 class="about_title">{{ $t('about_credits') }}</h4>
         <ul>
           <li><a href="https://github.com/alibaba/anyproxy" target="_blank">anyproxy</a></li>
           <li><a href="https://github.com/axios/axios" target="_blank">axios</a></li>
@@ -50,11 +57,17 @@
 </template>
 
 <script>
+import { langset } from '../i18n/lang'
   export default {
     name: "about",
     data(){
       return {
         header: 'ABOUT'
+      }
+    },
+    computed: {
+      islangzh(){
+        return langset.locale.startsWith('zh')
       }
     }
   }

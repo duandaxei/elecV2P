@@ -46,7 +46,7 @@ alt +enter: 查看任务日志">{{ $t('task') }}</th>
             </td>
           </tr>
           <tr v-for="(titem, tid) in tlist" :key="tid" :class="{ 'elecTable_tr--disabled': !titem.running, 'elecTable_tr--selected': taskChecked[tid] }">
-            <td class="elecTable_td"><input type="checkbox" :value="tid" v-model="taskChecklist" class="echeckbox"></td>
+            <td class="elecTable_td"><input type="checkbox" :value="tid" @change="taskSingleCheck(tid, $event)" class="echeckbox"></td>
             <td class="elecTable_td">
               <input v-model.trim="titem.name" class="elecTable_input" :data-tid="tid" :placeholder="'id: ' + titem.id">
             </td>
@@ -186,7 +186,7 @@ alt +enter: 查看任务日志">{{ $t('task') }}</th>
             </td>
           </tr>
           <tr v-for="(titem, ind) in subimport.list" :key="ind" :class="{ 'elecTable_tr--selected': tasksubChecklist.indexOf(ind) !== -1 }">
-            <td class="elecTable_td"><input type="checkbox" :value="ind" v-model="tasksubChecklist" class="echeckbox"></td>
+            <td class="elecTable_td"><input type="checkbox" :checked="tasksubChecklist.includes(ind)" @change="eTasksubCheck(ind, $event)" class="echeckbox"></td>
             <td class="elecTable_td"><input v-model.lazy.trim="titem.name" class="elecTable_input"></td>
             <td class="elecTable_td">
               <select v-model="titem.type" class="elecTable_select" @change="titem.time = titem.type === 'cron' ? '30 10 0 * * *' : titem.type === 'schedule' ? '3 2 3 2' : ''">
@@ -222,7 +222,7 @@ alt +enter: 查看任务日志">{{ $t('task') }}</th>
         <button class="elecBtn elecBtn--long elecBtn--tasksave" @click="taskSave()">{{ $t('save') }}</button>
       </p>
 
-      <log :logs="logs" :title="tasklogs" :collapse="collapse" />
+      <log :logs="logs" :title="tasklogs" :collapse="collapse" @clear="logs=[]" />
     </main>
     <footer class="footer">
       <ul>
@@ -344,61 +344,28 @@ export default {
     },
     grouplist(){
       let glist = {}, normal = {}
-      let status = {
-        running: 0,
-        total: 0,
-        sub: Object.keys(this.sublist).length
-      }
       for (let t in this.searchlist) {
         if (this.searchlist[t].type === 'sub') {
-          if (!this.searchlist[t].update_type) {
-            this.searchlist[t].update_type = 'none'
-          }
           continue;
         }
         if (this.searchlist[t].type === 'group') {
           if (!glist[t]) {
             glist[t] = {}
-            this.searchlist[t].total = 0
-            this.searchlist[t].active = 0
-            if (!this.searchlist[t].bkcolor) {
-              this.searchlist[t].bkcolor = this.$uStr.randomColor({ max: 200 })
-            }
-            if (this.searchlist[t].collapse === undefined) {
-              this.searchlist[t].collapse = false
-            }
           }
           continue
-        }
-        status.total++
-        if (this.searchlist[t].running) {
-          status.running++
         }
         let gid = this.searchlist[t].group
         if (gid && this.searchlist[gid] && this.searchlist[gid].type === 'group') {
           if (!glist[gid]) {
             glist[gid] = {}
-            this.searchlist[gid].total = 0
-            this.searchlist[gid].active = 0
-            if (!this.searchlist[gid].bkcolor) {
-              this.searchlist[gid].bkcolor = this.$uStr.randomColor({ max: 200 })
-            }
-            if (this.searchlist[gid].collapse === undefined) {
-              this.searchlist[gid].collapse = false
-            }
           }
           if (!this.searchlist[gid].collapse) {
             glist[gid][t] = this.searchlist[t]
-          }
-          this.searchlist[gid].total++
-          if (this.searchlist[t].running) {
-            this.searchlist[gid].active++
           }
         } else {
           normal[t] = this.searchlist[t]
         }
       }
-      this.taskstatus = status.running + '/' + status.total + '/' + status.sub
       glist.normal = normal
       return glist
     },
@@ -437,7 +404,7 @@ export default {
   watch: {
     taskimorn(val){
       if (val === false) {
-        this.$delete(this.tasklists, 'localtemp')
+        delete this.tasklists['localtemp']
       } else {
         this.taskimtid = Object.keys(this.sublist)[0]
       }
@@ -468,6 +435,7 @@ export default {
       if (!this.tasklists[data.tid]) {
         if (data.tid && data.taskinfo && this.taskCheck(data.taskinfo)) {
           this.tasklists[data.tid] = data.taskinfo
+          this.taskGroupInit()
         } else {
           console.error('任务暂不存在', data)
         }
@@ -475,10 +443,12 @@ export default {
       }
       switch (data.op) {
       case 'start':
-        this.$set(this.tasklists[data.tid], 'running', true)
+        this.tasklists[data.tid].running = true
+        this.taskGroupInit()
         break
       case 'stop':
-        this.$set(this.tasklists[data.tid], 'running', false)
+        this.tasklists[data.tid].running = false
+        this.taskGroupInit()
         break
       default:
         console.error('unknow task operation')
@@ -498,7 +468,8 @@ export default {
         this.subexport = {}
         this.subimport = {}
         this.subeishow = 0
-        console.debug(`[${this.$logHead('taskInit info')}][${this.$sTime(null, 1)}]`, '当前 elecV2P 任务分组数', Object.keys(this.grouplist).length - 1);   // 更新 this.taskstatus
+        this.taskGroupInit()
+        console.debug(`[${this.$logHead('taskInit info')}][${this.$sTime(null, 1)}]`, '当前 elecV2P 任务分组数', Object.keys(this.grouplist).length - 1);
         this.$message.success('成功获取任务列表', this.taskstatus)
         this.logs.unshift(`[${this.$logHead('taskInit info')}][${this.$sTime(null, 1)}] 成功获取任务列表: ${this.taskstatus}`)
       }).catch(e=>{
@@ -532,14 +503,14 @@ export default {
         rjob.type = 'exec'
         rjob.target = 'node -v'
       }
-      this.$set(this.tasklists, tid, {
+      this.tasklists[tid] = {
         id: tid,
         name: this.$ta('new', 'task') + (Object.keys(this.normlist).length + 1),
         type: rand.type,
         time: rand.time,
         job: rjob,
         running: false
-      })
+      }
     },
     taskCheck(titem){
       if (!titem) {
@@ -664,7 +635,7 @@ export default {
           this.$axios.put('/task', { op: 'delete', data: { tid }}).then(res=>{
             if (res.data.rescode === 0) {
               this.$message.success('定时任务批量删除完成')
-              tid.forEach(id=>this.$delete(this.tasklists, id))
+              tid.forEach(id=>delete this.tasklists[id])
               this.logs.unshift(`[${this.$logHead('taskDelete info')}][${this.$sTime(null, 1)}] 定时任务批量删除完成`)
               this.taskChecked = 'none'
             } else {
@@ -683,7 +654,7 @@ export default {
           if (res.data.rescode === 0) {
             this.$message.success('成功删除任务:', this.tasklists[tid].name)
             this.logs.unshift(`[${this.$logHead('taskDelete info')}][${this.$sTime(null, 1)}] 成功删除任务: ${this.tasklists[tid].name}`)
-            this.$delete(this.tasklists, tid)
+            delete this.tasklists[tid]
           } else {
             this.$message.error('任务:', this.tasklists[tid].name, '删除失败')
             this.logs.unshift(`[${this.$logHead('taskDelete error')}][${this.$sTime(null, 1)}] 任务: ${this.tasklists[tid].name} 删除失败 ${res.data.message}`)
@@ -766,7 +737,7 @@ export default {
       }
     },
     subNew(tid = this.taskNewId()){
-      this.$set(this.tasklists, tid, {
+      this.tasklists[tid] = {
         name: this.$ta('task', 'sub') + (Object.keys(this.sublist).length + 1),
         type: "sub",
         update_type: "none",
@@ -775,7 +746,7 @@ export default {
           type: 'skip',
           target: ''
         }
-      })
+      }
     },
     async subGet(url, tid) {
       if (!(url && /^https?:\/\/\S{4}|^\/?efss\//.test(url))) {
@@ -822,7 +793,7 @@ export default {
       if (data && data.name && data.list) {
         if (tid === 'localtemp') {
           tid = this.taskNewId()
-          this.$set(this.tasklists, tid, this.tasklists['localtemp'])
+          this.tasklists[tid] = this.tasklists['localtemp']
         }
         data.tid = tid
         data.resource = data.resource || data.surl
@@ -855,7 +826,7 @@ export default {
         this.$axios.put('/task', { op: 'delete', data: { tid }}).then(res=>{
           this.$message.success('成功删除订阅:', this.tasklists[tid].name)
           this.logs.unshift(`[${this.$logHead('taskSub info')}][${this.$sTime(null, 1)}] 成功删除订阅: ${this.tasklists[tid].name}`)
-          this.$delete(this.tasklists, tid)
+          delete this.tasklists[tid]
         }).catch(e=>{
           console.error(e)
           this.$message.error('删除订阅失败', e.message)
@@ -1049,7 +1020,7 @@ export default {
             this.$message.success('定时任务添加成功')
             this.logs.unshift(`[${this.$logHead('taskSubAdd info')}][${this.$sTime(null, 1)}] 定时任务添加完成`)
             JSON.parse(JSON.stringify(tinfolist)).forEach(tinfo=>{
-              this.$set(this.tasklists, tinfo.id, tinfo)
+              this.tasklists[tinfo.id] = tinfo
             }) // 浅拷，不影响订阅里的内容
           } else {
             this.$message.error('定时任务添加失败')
@@ -1084,6 +1055,13 @@ export default {
         this.logs.unshift(`[${this.$logHead('taskSubAdd error')}][${this.$sTime(null, 1)}] 当前订阅列表为空`)
       }
     },
+    eTasksubCheck(ind, e) {
+      if (e.target.checked) {
+        this.tasksubChecklist.push(ind)
+      } else {
+        this.tasksubChecklist.splice(this.tasksubChecklist.indexOf(ind), 1)
+      }
+    },
     tasksubCheck(tid, e){
       if (tid && e) {
         if (e.target.checked) {
@@ -1110,6 +1088,18 @@ export default {
     },
     taskCkall(e){
       this.taskChecked = e.target.checked ? 'all' : 'none'
+    },
+    taskSingleCheck(tid, e){
+      if (e.target.checked) {
+        if (this.taskChecklist.indexOf(tid) === -1) {
+          this.taskChecklist.push(tid)
+        }
+      } else {
+        const idx = this.taskChecklist.indexOf(tid)
+        if (idx > -1) {
+          this.taskChecklist.splice(idx, 1)
+        }
+      }
     },
     taskMenu(event, tid){
       let menuitems = [], taskTest = this.taskTest, taskLog = this.taskLog
@@ -1166,9 +1156,10 @@ export default {
           this.$message.success('成功删除分组', name, `${ gkeys.length ? gkeys.length + '个任务已移动到普通列表' : ''}`)
           this.logs.unshift(`[${this.$logHead('taskGroup info')}][${this.$sTime(null, 1)}] 成功删除分组: ${name}`)
           gkeys.forEach(tid=>{
-            this.$delete(this.normlist[tid], 'group')
+            delete this.normlist[tid].group
           })
-          this.$delete(this.tasklists, gid)
+          delete this.tasklists[gid]
+          this.taskGroupInit()
           console.debug(res.data)
         }).catch(e=>{
           console.error(e)
@@ -1178,29 +1169,59 @@ export default {
       }
     },
     taskGroupOp(gid){
-      this.$set(this.tasklists[gid], 'collapse', !this.tasklists[gid].collapse)
+      this.tasklists[gid].collapse = !this.tasklists[gid].collapse
+    },
+    taskGroupInit(){
+      for (let t in this.searchlist) {
+        if (this.searchlist[t].type === 'sub') {
+          this.searchlist[t].update_type = this.searchlist[t].update_type || 'none'
+        }
+        if (this.searchlist[t].type === 'group') {
+          this.searchlist[t].total = 0
+          this.searchlist[t].active = 0
+          if (!this.searchlist[t].bkcolor) {
+            this.searchlist[t].bkcolor = this.$uStr.randomColor({ max: 200 })
+          }
+          if (this.searchlist[t].collapse === undefined) {
+            this.searchlist[t].collapse = false
+          }
+        }
+      }
+      let rtotal = 0, rrun = 0
+      for (let t in this.searchlist) {
+        if (this.searchlist[t].type === 'sub' || this.searchlist[t].type === 'group') continue
+        rtotal++
+        if (this.searchlist[t].running) rrun++
+        let gid = this.searchlist[t].group
+        if (gid && this.searchlist[gid] && this.searchlist[gid].type === 'group') {
+          this.searchlist[gid].total++
+          if (this.searchlist[t].running) this.searchlist[gid].active++
+        }
+      }
+      this.taskstatus = rrun + '/' + rtotal + '/' + Object.keys(this.sublist).length
     },
     taskMoveToGroup(e){
       if (e === 'new') {
         e = this.taskNewId()
-        this.$set(this.tasklists, e, {
+        this.tasklists[e] = {
           name: "新的分组 " + Object.keys(this.grouplist).length,
           type: "group",
           note: "关于该分组的一些备注说明",
           bkcolor: this.$uStr.randomColor({ max: 200 }),
           collapse: false
-        })
+        }
       }
       if (e === 'none' || (this.tasklists[e] && this.tasklists[e].type === 'group')) {
         this.taskChecklist.forEach(tid=>{
           if (e === 'none') {
-            this.$delete(this.tasklists[tid], 'group')
+            delete this.tasklists[tid].group
           } else {
-            this.$set(this.tasklists[tid], 'group', e)
+            this.tasklists[tid].group = e
           }
         })
         this.$message.success('成功移动', this.taskChecklist.length, '个定时任务到', e === 'none' ? '普通列表' : this.tasklists[e].name)
         this.logs.unshift(`[${this.$logHead('taskGroup info')}][${this.$sTime(null, 1)}] 成功移动 ${this.taskChecklist.length} 个定时任务到 ${ e === 'none' ? '普通列表' : this.tasklists[e].name }，保存后生效`)
+        this.taskGroupInit()
         this.show.groupchoose = false
         this.taskChecked = 'none'
       } else {

@@ -166,7 +166,7 @@ export default {
     ruleDel(index){
       switch(this.$sType(index)){
       case 'number':
-        this.$delete(this.eplists, index)
+        this.eplists.splice(index, 1)
         break
       case 'array':
         if (index.length && confirm(`确定删除这 ${index.length} 条规则吗？\n（手动保存后正式生效）`)) {

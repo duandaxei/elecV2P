@@ -7,34 +7,34 @@
     <div class='efssset' :class="{ 'efssset--collapsed': collapse.efssset }" @keydown.ctrl.83.prevent.stop="efssSave()">
       <h4 class="efssset_title">
         <a class="efssset_titlea" href="/" title="回到 webUI 管理界面" v-html="icon.home"></a>
-        <a class="efssset_titlea efssset_titlea--main" href="https://github.com/elecV2/elecV2P-dei/tree/master/docs/08-logger&efss.md" target="_blank" title="点击查看相关说明">EFSS 相关设置</a>
+        <a class="efssset_titlea efssset_titlea--main" href="https://github.com/elecV2/elecV2P-dei/tree/master/docs/08-logger&efss.md" target="_blank">{{ $t('setting_of') }} EFSS</a>
         <span class="title_collapse" :class="{ 'title_collapse--collapsed': collapse.efssset }" @click="collapse.efssset=!collapse.efssset"></span>
       </h4>
       <div class="efssset_item">
-        <label class="efssset_label">是否开启 EFSS 功能</label>
+        <label class="efssset_label">EFSS {{ $t('enable') }}</label>
         <checkbox :oCheck="esconfig" />
       </div>
       <div class="efssset_item">
-        <label class="efssset_label">目录</label>
-        <input class="efssset_input" @keyup.enter.prevent="efssSave()" v-model.trim="esconfig.directory" name="esconfig" placeholder="例如: script/Shell, ./logs, D:/video, $home 等">
+        <label class="efssset_label">{{ $t('root') }} {{ $t('directory') }}</label>
+        <input class="efssset_input" @keyup.enter.prevent="efssSave()" v-model.trim="esconfig.directory" name="esconfig" placeholder="e.g. script/Shell, ./logs, D:/video, $home">
       </div>
       <div class="efssset_item">
-        <label class="efssset_label">是否显示 dot(.) 开头文件</label>
+        <label class="efssset_label">{{ $t('show') }} dot(.) {{ $t('file') }}</label>
         <checkbox :oCheck="esconfig.dotshow" />
       </div>
       <div class="efssset_item">
-        <label class="efssset_label">最大读取文件数量</label>
+        <label class="efssset_label">{{ $t('file') }} {{ $t('max') }}</label>
         <input class="efssset_input efssset_input--number" type="number" name="esconfigmax" v-model.number="esconfig.max" placeholder="600">
       </div>
       <div class="efssset_item">
-        <label class="efssset_label">跳过文件夹</label>
-        <input class="efssset_input" v-model.lazy.trim="skipfolder" name="esconfigskfd" placeholder="完整的文件夹名称 例如: node_modules, logs">
+        <label class="efssset_label">{{ $t('skip') }} {{ $t('folder') }}</label>
+        <input class="efssset_input" v-model.lazy.trim="skipfolder" name="esconfigskfd" :placeholder="$t('skip') + ' ' + $t('folder') + ' e.g. node_modules, logs'">
       </div>
       <div class="efssset_item">
-        <label class="efssset_label">跳过文件</label>
-        <input class="efssset_input" v-model.lazy.trim="skipfile" name="esconfigskfl" placeholder="完整的文件名称 例如: Readme.md, Dockerfile">
+        <label class="efssset_label">{{ $t('skip') }} {{ $t('file') }}</label>
+        <input class="efssset_input" v-model.lazy.trim="skipfile" name="esconfigskfl" :placeholder="$t('skip') + ' ' + $t('file') + ' e.g. Readme.md, Dockerfile'">
       </div>
-      <button class="efss_btn" @click.prevent="efssSave()">保存并刷新</button>
+      <button class="efss_btn" @click.prevent="efssSave()">{{ $t('save') }} & {{ $t('refresh') }}</button>
     </div>
     <favend :favendlist="esconfig.favend" :efssdir="esconfig.directory" @init="eInit" />
     </div>
@@ -50,27 +50,27 @@
         <span class="title_arrow" :class="{ 'title_arrow--up': collapse.titlearrow }" @click.prevent.self="collapse.titlearrow=!collapse.titlearrow"></span>
       </div>
       <div class="efsslist_op eflex" :class="{ 'efsslist_op--show': filecheck.length }">
-        <button class="elecBtn elecBtn--uncheck elecBtn--h32" @click.prevent="editFile()" v-show="isSingleCheck && !isZipCheck">编辑</button>
-        <button class="elecBtn elecBtn--uncheck elecBtn--h32" @click.prevent="unzipFile()" v-show="isSingleCheck && isZipCheck">解压</button>
-        <button class="elecBtn greenbk elecBtn--h32 emargin" @click.prevent="fileMCheck('all')">全选</button>
-        <button class="elecBtn elecBtn--file elecBtn--h32 emargin" @click.prevent="renameFile()" v-show="isSingleCheck">重命名</button>
-        <button class="elecBtn elecBtn--file elecBtn--h32 emargin" @click.prevent="zipFiles()" v-show="filecheck.length>1">ZIP打包</button>
-        <button class="elecBtn greenbk elecBtn--h32 emargin" @click.prevent="operateFiles()" v-show="fileop.name">粘贴</button>
-        <button class="elecBtn greenbk elecBtn--h32 emargin" @click.prevent="copyFiles()">复制</button>
-        <button class="elecBtn greenbk elecBtn--h32 emargin" @click.prevent="moveFiles()">剪切</button>
-        <button class="elecBtn elecBtn--clear elecBtn--h32 emargin" @click.prevent="deltFiles()">删除</button>
+        <button class="elecBtn elecBtn--uncheck elecBtn--h32" @click.prevent="editFile()" v-show="isSingleCheck && !isZipCheck">{{ $t('edit') }}</button>
+        <button class="elecBtn elecBtn--uncheck elecBtn--h32" @click.prevent="unzipFile()" v-show="isSingleCheck && isZipCheck">{{ $t('unzip') }}</button>
+        <button class="elecBtn greenbk elecBtn--h32 emargin" @click.prevent="fileMCheck('all')">{{ $t('select_all') }}</button>
+        <button class="elecBtn elecBtn--file elecBtn--h32 emargin" @click.prevent="renameFile()" v-show="isSingleCheck">{{ $t('rename') }}</button>
+        <button class="elecBtn elecBtn--file elecBtn--h32 emargin" @click.prevent="zipFiles()" v-show="filecheck.length>1">{{ $t('zip') }}</button>
+        <button class="elecBtn greenbk elecBtn--h32 emargin" @click.prevent="operateFiles()" v-show="fileop.name">{{ $t('paste') }}</button>
+        <button class="elecBtn greenbk elecBtn--h32 emargin" @click.prevent="copyFiles()">{{ $t('copy') }}</button>
+        <button class="elecBtn greenbk elecBtn--h32 emargin" @click.prevent="moveFiles()">{{ $t('cut') }}</button>
+        <button class="elecBtn elecBtn--clear elecBtn--h32 emargin" @click.prevent="deltFiles()">{{ $t('delete') }}</button>
       </div>
       <div class="efssupload" v-show="collapse.titlearrow">
-        <div class="eflex w100 eflex--between" title="远程文件链接 -rename=文件名">
-          <input class="elecTable_input wp80" type="text" placeholder="远程文件链接 -rename=xxx.xx" v-model.trim="filedownloadurl" @keyup.enter="fileDownload()">
-          <button class="elecBtn wp19" @click="fileDownload()" title="远程文件下载到服务器">开始下载</button>
+        <div class="eflex w100 eflex--between">
+          <input class="elecTable_input wp80" type="text" :placeholder="$t('download') + ' -rename=xxx'" v-model.trim="filedownloadurl" @keyup.enter="fileDownload()">
+          <button class="elecBtn wp19" @click="fileDownload()">{{ $t('start_download') }}</button>
         </div>
         <div class="eflex w100 eflex--between emargin--top">
           <div class="eupload w80">
             <input type="file" ref="efssfiles" name="efss" multiple @change="nUpload" class="eupload_file"/>
             <span v-show="upflists.length" class="eupload_span">{{ efssfilesname }}</span>
           </div>
-          <button @click="eUpload" class="elecBtn wp19">开始上传</button>
+          <button @click="eUpload" class="elecBtn wp19">{{ $t('start_upload') }}</button>
         </div>
       </div>
       <ul class="efsslist_content" @contextmenu.prevent="eMenu($event)" @click="fileOpdelegate($event)"
@@ -78,7 +78,7 @@
         @keyup.esc.prevent.exact="fileMCheck('none')">
         <li v-for="(fpath, index) in showlist" :key="fpath.name" class="efssa" :class="{ 'efssa--directory': fpath.type === 'directory' }">
           <div v-if="fpath.type === 'file'" class="efssa_check">
-            <input type="checkbox" :value="fpath.name" v-model="filecheck" class="echeckbox">
+            <input type="checkbox" :checked="filecheck.includes(fpath.name)" @change="eFileCheck(fpath.name, $event)" class="echeckbox">
           </div>
           <span class="efssa_name" data-op="open" :data-type="fpath.type" :data-index="fpath.index" :data-name="fpath.name" :data-size="fpath.size">{{ fpath.name }}</span>
           <span class="efssa_mtime" data-op="mkdir">{{ $sTime(fpath.mtime) }}</span>
@@ -337,12 +337,12 @@ export default {
           let clist = this.curtshow.list.map(cf=>cf.name)
           let ulist = toUlist.map(uf=>{
             let cind = clist.indexOf(uf[0])
-            this.$set(this.curtshow.list, cind === -1 ? this.curtshow.list.length : cind, {
+            this.curtshow.list[cind === -1 ? this.curtshow.list.length : cind] = {
               type: 'file',
               name: uf[0],
               size: uf[1],
               mtime: this.$sTime()
-            })
+            }
             return uf[0]
           })
           this.$message.success(ulist.join(','), '上传成功')
@@ -940,6 +940,13 @@ export default {
         this.$message.error('下载失败', e.message);
         console.error(downloadurl, '下载失败', e);
       }).finally(hideloading)
+    },
+    eFileCheck(name, e) {
+      if (e.target.checked) {
+        this.filecheck.push(name)
+      } else {
+        this.filecheck.splice(this.filecheck.indexOf(name), 1)
+      }
     },
     fileMCheck(type = 'none') {
       switch(type){

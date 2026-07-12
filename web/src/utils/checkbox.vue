@@ -20,7 +20,7 @@ export default {
         return !!this.oCheck[this.bKey]
       },
       set(val) {
-        this.$set(this.oCheck, this.bKey, val)
+        this.oCheck[this.bKey] = val
       }
     }
   }

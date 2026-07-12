@@ -344,7 +344,7 @@ export default {
       }).finally(hideloading)
     },
     mhostDel(index){
-      this.$delete(this.mitmhost, index)
+      this.mitmhost.splice(index, 1)
     },
     mhostDelCks(){
       this.mitmhost = this.mitmhost.filter((host, idx)=>!this.mitmChecked[idx])

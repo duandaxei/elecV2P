@@ -3,13 +3,13 @@
     <header class="header">{{ $t('donation') }}</header>
     <main class="content">
       <div class="donation">
-        <p>如果你觉得本项目还不错的话，<a href="https://github.com/elecV2/elecV2P" target="elecV2PGit">给个 Star</a> ，或者赞助打赏一下</p>
+        <p>{{ $t('support_text') }} <a href="https://github.com/elecV2/elecV2P" target="elecV2PGit">Star</a></p>
         <div class="donationpic">
           <img class="donationpic_item" alt="wechat" src="https://elecv2.github.io/src/wechat.png"/>
           <img class="donationpic_item" alt="alipay" src="https://elecv2.github.io/src/alipay.png"/>
         </div>
-        <div v-show="userid" title="可多台设备共用（设置相同 WEBHOOK TOKEN）">
-          <p>当前用户 ID: {{ userid }}</p>
+        <div v-show="userid" :title="$t('support_text')">
+          <p>{{ $t('current_user_id') }} {{ userid }}</p>
         </div>
       </div>
       <div class="todo">

@@ -4,7 +4,7 @@
       <caption class="elecTable_caption">
         <div class="title padding0">
           <span class="icon cursor title_sync" @click="$emit('init', 'config')" title="刷新 EFSS 相关设置" v-html="icon.sync"></span>
-          <span class="title_main" title="EFSS favorite&backend">favend 相关设置 - {{ favend_total }}</span>
+          <span class="title_main" title="EFSS favorite&backend">favend {{ $t('setting_of') }} - {{ favend_total }}</span>
           <span class="title_collapse" :class="{ 'title_collapse--collapsed': collapse }" @click="collapse=!collapse"></span>
         </div>
       </caption>
@@ -13,12 +13,12 @@
           <th class="elecTable_th elecTable_th--check" title="全选/全不选">
             <input type="checkbox" class="echeckbox" @change="favendCkall($event)">
           </th>
-          <th class="elecTable_th elecTable_th--name">名称</th>
-          <th class="elecTable_th elecTable_th--input">关键字</th>
-          <th class="elecTable_th elecTable_th--input">类型</th>
-          <th class="elecTable_th minw480">目标</th>
-          <th class="elecTable_th elecTable_th--enable">启用</th>
-          <th class="elecTable_th elecTable_cell100">操作</th>
+          <th class="elecTable_th elecTable_th--name">{{ $t('name') }}</th>
+          <th class="elecTable_th elecTable_th--input">{{ $t('keyword') }}</th>
+          <th class="elecTable_th elecTable_th--input">{{ $t('type') }}</th>
+          <th class="elecTable_th minw480">{{ $t('target') }}</th>
+          <th class="elecTable_th elecTable_th--enable">{{ $t('enable') }}</th>
+          <th class="elecTable_th elecTable_cell100">{{ $t('operate') }}</th>
         </tr>
       </thead>
       <tbody v-show="!collapse" @keydown.alt.enter.prevent.exact="favendOpenDelegate($event)">
@@ -36,8 +36,8 @@
           </td>
           <td class="elecTable_td">
             <select v-model="favend.type" class="elecTable_select">
-              <option value="favorite">收藏目录</option>
-              <option value="runjs">运行脚本</option>
+              <option value="favorite">{{ $t('fav_dir') }}</option>
+              <option value="runjs">{{ $t('run_script') }}</option>
             </select>
           </td>
           <td class="elecTable_td">
@@ -54,11 +54,11 @@
         <tr>
           <td class="center cursor border_top1 border_right1 favend_collanum" :class="{ 'favend_collanum--show': coll_show }" @click.prevent.self="coll_show=!coll_show">{{ coll_keys.length }}</td>
           <td colspan="6" class="center border_top1">
-            <span class="elecTable_addbtn elecBtn--file" @click="favendCol(true)" v-show="hasChecks">隐藏选择规则</span>
-            <span class="elecTable_addbtn elecTable_addbtn--stop" @click="favendCol(false)" v-show="hasCheckCols">规则隐藏取消</span>
-            <span class="elecTable_addbtn elecTable_addbtn--clear" @click="favendDelCks()" v-show="hasChecks">删除选择规则</span>
-            <span class="elecTable_addbtn" @click="favendNew()">添加新的规则</span>
-            <span class="elecTable_addbtn" @click="favendSave()" title="（CTRL+S）保存后正式生效">保存当前列表</span>
+            <span class="elecTable_addbtn elecBtn--file" @click="favendCol(true)" v-show="hasChecks">{{ $t('hide_checked') }}</span>
+            <span class="elecTable_addbtn elecTable_addbtn--stop" @click="favendCol(false)" v-show="hasCheckCols">{{ $t('unhide_rule') }}</span>
+            <span class="elecTable_addbtn elecTable_addbtn--clear" @click="favendDelCks()" v-show="hasChecks">{{ $t('del_checked_rule') }}</span>
+            <span class="elecTable_addbtn" @click="favendNew()">{{ $t('add_new_rule') }}</span>
+            <span class="elecTable_addbtn" @click="favendSave()">{{ $t('save_current_list') }}</span>
           </td>
         </tr>
       </tfoot>

@@ -1,7 +1,7 @@
 <template>
   <div class="setting setting--vflex" :class="{ 'setting--collapsed': collapse }" @keydown.ctrl.83.prevent.stop="eAxiosSave()">
     <h4 class="setting_title">
-      <sapn class="title_main">{{ $ta('web', 'request', 'setting_of') }}</sapn>
+      <span class="title_main">{{ $ta('web', 'request', 'setting_of') }}</span>
       <span @click="collapse=!collapse" class="title_collapse" :class="{ 'title_collapse--collapsed': collapse }"></span>
     </h4>
     <div class="w100" v-show="!collapse"><div class="setting setting--inline">
@@ -134,9 +134,9 @@ export default {
       },
       set(val){
         if (val) {
-          this.$set(this.config.proxy, 'auth', {})
+          this.config.proxy.auth = {}
         } else {
-          this.$delete(this.config.proxy, 'auth')
+          delete this.config.proxy.auth
         }
       }
     }
@@ -147,13 +147,13 @@ export default {
   methods: {
     uaDelete(key){
       this.$message.success('User-Agent:', this.uagent[key].name, '已删除，保存后生效')
-      this.$delete(this.uagent, key)
+      delete this.uagent[key]
     },
     uaAdd(){
-      this.$set(this.uagent, this.$uStr.euid(), {
+      this.uagent[this.$uStr.euid()] = {
         name: '我的 UA',
         header: this.$uApi.getUA()
-      })
+      }
     },
     uaSave(){
       const hideloading = this.$message.loading('User-Agent 列表上传更新中...', 0)

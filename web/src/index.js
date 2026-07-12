@@ -1,35 +1,28 @@
-import Vue from 'vue';
+import { createApp } from 'vue'
 import App from './App.vue';
 
 import axios from 'axios'
-// axios.defaults.timeout = 5000
-Vue.prototype.$axios = axios
-
 import wsrecv from './utils/webws'
-Vue.prototype.$wsrecv = wsrecv
-
 import * as string from './utils/string.js'
-Vue.prototype.$sType = string.sType
-Vue.prototype.$sString = string.sString
-Vue.prototype.$sJson = string.sJson
-Vue.prototype.$sTime = string.sTime
-Vue.prototype.$logHead = string.logHead
-Vue.prototype.$uStr = string
-
 import * as api from './utils/api.js'
-Vue.prototype.$uApi = api
-Vue.prototype.$evui = e=>api.vue2Proto.evui(e)
-Vue.prototype.$message = api.vue2Proto.message
-
 import { t, ta } from './i18n/lang'
-Vue.prototype.$t = t
-Vue.prototype.$ta = ta
 
 import './assets/css/global.css'
+import 'vue-draggable-resizable/style.css'
 
-Vue.config.productionTip = false
+const app = createApp(App)
+app.config.globalProperties.$axios = axios
+app.config.globalProperties.$wsrecv = wsrecv
+app.config.globalProperties.$sType = string.sType
+app.config.globalProperties.$sString = string.sString
+app.config.globalProperties.$sJson = string.sJson
+app.config.globalProperties.$sTime = string.sTime
+app.config.globalProperties.$logHead = string.logHead
+app.config.globalProperties.$uStr = string
+app.config.globalProperties.$uApi = api
+app.config.globalProperties.$evui = e=>api.vue2Proto.evui(e)
+app.config.globalProperties.$message = api.vue2Proto.message
+app.config.globalProperties.$t = t
+app.config.globalProperties.$ta = ta
 
-new Vue({
-  el: '#app',
-  render: h => h(App),
-})
+app.mount('#app')

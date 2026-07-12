@@ -120,7 +120,7 @@
       </div>
       <div class="setting" :class="{ 'setting--collapsed': collapse.other }" @keydown.ctrl.83.prevent.stop="mergeSave()">
         <h4 class="setting_title">
-          <sapn class="title_main">{{ $ta('default', 'notify', 'setting_of') }}</sapn>
+          <span class="title_main">{{ $ta('default', 'notify', 'setting_of') }}</span>
           <span class="title_collapse" @click="collapse.other=!collapse.other" :class="{ 'title_collapse--collapsed': collapse.other }"></span>
         </h4>
         <div class="setting setting--other">
@@ -157,7 +157,7 @@
       </div>
       <div class="setting setting--vflex" :class="{ 'setting--collapsed': collapse.runjs }" @keydown.ctrl.83.prevent.stop="runjsSave()">
         <h4 class="setting_title">
-          <sapn class="title_main">{{ $ta('script', 'run', 'setting_of') }}</sapn>
+          <span class="title_main">{{ $ta('script', 'run', 'setting_of') }}</span>
           <span class="title_collapse" @click="collapse.runjs=!collapse.runjs" :class="{ 'title_collapse--collapsed': collapse.runjs }"></span>
         </h4>
         <div class="setting--other"><div class="eflex eflex--wrap w100">
@@ -200,12 +200,12 @@
         </div>
       </div><button @click="runjsSave()" class="elecBtn elecBtn--stlong">{{ $t('save') }}</button></div>
       <eAxios :config="CONFIG_Axios" :uagent="uagent" />
-      <webui :menunav="webUI.nav" :theme="webUI.theme" :logo="webUI.logo" v-on="$listeners" />
+      <webui :menunav="webUI.nav" :theme="webUI.theme" :logo="webUI.logo" v-bind="$attrs" />
       <security :config="CONFIG_SECURITY" />
       <env :config="CONFIG_env" />
       <div :class="{ 'setting--collapsed': collapse.init }" class="setting setting--init">
         <h4 class="setting_title">
-          <sapn class="title_main" title="重启后生效">初始化相关设置</sapn>
+          <span class="title_main" title="重启后生效">初始化相关设置</span>
           <span @click="collapse.init=!collapse.init" class="title_collapse" :class="{ 'title_collapse--collapsed': collapse.init }"></span>
         </h4>
         <div class="setting setting--inline" @keydown.ctrl.83.prevent.stop="initSave()">
@@ -289,7 +289,7 @@
         <li>关于通知类相关设置参考: <a href="https://github.com/elecV2/elecV2P-dei/tree/master/docs/07-feed&notify.md" target="elecV2PDoc">07-feed.md</a>。 其他参考: <a href="https://github.com/elecV2/elecV2P-dei/tree/master/docs" target="elecV2PDoc">全部说明文档</a> 相关项</li>
       </ul>
     </footer>
-    <div v-if='bShowMinishell' is="minishell"></div>
+    <minishell v-if='bShowMinishell' />
   </section>
 </template>
 
@@ -496,10 +496,10 @@ export default {
       if (res.data.uagent) {
         for (let ua in res.data.uagent) {
           if (res.data.uagent[ua].name) {
-            this.$set(this.uagent, ua, {
+            this.uagent[ua] = {
               name: res.data.uagent[ua].name,
               header: res.data.uagent[ua].header
-            })
+            }
           }
         }
       }
@@ -877,7 +877,7 @@ export default {
     },
     setLanguage() {
       const clang = setLang(this.lang)
-      this.$forceUpdate()
+      this.lang = this.lang
       return clang
     },
     langSave(){
@@ -888,8 +888,8 @@ export default {
       const hideloading = this.$message.loading('语言偏好设置保存中...', 0)
       this.$axios.put('/config', { type: 'lang', data: this.lang }).then(response => {
         if (response.data.rescode === 0) {
-          let clang = this.setLanguage()
-          this.$message.success('成功设置当前语言偏好为', clang)
+          this.setLanguage()
+          location.reload()
         } else {
           this.$message.error('语言偏好修改失败', response.data.message)
         }

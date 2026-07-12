@@ -1,6 +1,6 @@
 <template>
   <div class="evui">
-    <VueDragResize v-for="(ediv, drid) in draglist" :key="drid" className="ediv" dragHandle=".ediv_title--name" :parent="true" :prevent-deactivation="false" :active="ediv.active" :w="ediv.width" :h="ediv.height" :x="ediv.left" :y="ediv.top" :z="ediv.z" :resizable="ediv.resizable" :draggable="ediv.draggable" :handles="['tl','tr','bl','br']" :lock-aspect-ratio="false" @deactivated="ediv.z=1" @activated="ediv.z=2" @resizestop="updateVal(arguments, drid)" @dragstop="updateVal(arguments, drid)">
+    <VueDragResize v-for="(ediv, drid) in draglist" :key="drid" className="ediv" dragHandle=".ediv_title--name" :parent="true" :prevent-deactivation="false" :active="ediv.active" :w="ediv.width" :h="ediv.height" :x="ediv.left" :y="ediv.top" :z="ediv.z" :resizable="ediv.resizable" :draggable="ediv.draggable" :handles="['tl','tr','bl','br']" :lock-aspect-ratio="false" @deactivated="ediv.z=1" @activated="ediv.z=2" @resizestop="(...args) => updateVal(args, drid)" @dragstop="(...args) => updateVal(args, drid)">
       <h3 class="ediv_title" :style="ediv.style.title" @click="ediv.z=2">
         <span class="ediv_title--name" :title="drid">{{ ediv.title }}</span>
         <span class="ediv_title--close" @click="evRemove(drid)">x</span>
@@ -35,14 +35,14 @@ export default {
         active: true,
         resizable: false,
         draggable: true,
-        content: `<h1>暂时没有添加任何内容</h1><p>关于 $evui 的使用可参考：<a href='https://github.com/elecV2/elecV2P-dei/tree/master/docs/04-JS.md' target='elecV2PDoc'>说明文档 $evui 部分</a></p>`,
+        content: `<h1>${this.$t('no_content')}</h1><p>About $evui: <a href='https://github.com/elecV2/elecV2P-dei/tree/master/docs/04-JS.md' target='elecV2PDoc'>DOCS $evui</a></p>`,
         style: {
           content: "font-size: 15px",
         },
         cbable: false,
         cbdata: '',
-        cblabel: '提交',
-        cbhint: '输入返回给后台的数据',
+        cblabel: this.$t('submit'),
+        cbhint: this.$t('input_return_data'),
       },
       script: '',
       draglist: { },
@@ -75,18 +75,18 @@ export default {
           }
           break
         case 'contentadd':
-          this.$set(this.draglist[sobj.id], 'content', this.draglist[sobj.id].content + this.$sString(sobj.data))
+          this.draglist[sobj.id].content = this.draglist[sobj.id].content + this.$sString(sobj.data)
           break
         case 'content':
-          this.$set(this.draglist[sobj.id], 'content', this.$sString(sobj.data))
+          this.draglist[sobj.id].content = this.$sString(sobj.data)
           break
         case 'cbdataadd':
           let newdata = this.draglist[sobj.id].cbdata + '\n' + this.$sString(sobj.data)
-          this.$set(this.draglist[sobj.id], 'cbdata', newdata)
+          this.draglist[sobj.id].cbdata = newdata
           break
         case 'cbdata':
         default:
-          this.$set(this.draglist[sobj.id], 'cbdata', this.$sString(sobj.data))
+          this.draglist[sobj.id].cbdata = this.$sString(sobj.data)
         }
       })
     }
@@ -120,7 +120,7 @@ export default {
       if (evui.cbdata) evui.cbdata = this.$sString(evui.cbdata)
       if (this.$sType(evui.style) !== 'object') evui.style = { content: evui.style }
       if (evui.script) this.script = evui.script
-      this.$set(this.draglist, id, evui)
+      this.draglist[id] = evui
     },
     evRemove(id){
       if (!id) {
@@ -131,7 +131,7 @@ export default {
         if (this.draglist[id].type !== 'local' && this.$wsrecv && this.$wsrecv.connected) {
           this.$wsrecv.send(id, 'close')
         }
-        this.$delete(this.draglist, id)
+        delete this.draglist[id]
       }
     },
     cbsubmit(id){

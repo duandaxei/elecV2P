@@ -24,7 +24,7 @@
         <button class="elecBtn elecBtn--h36" :class="{ 'bk_main_bk': !bEdit }" @click.prevent="epSave()">{{ bEdit ? $t('editexit') : $t('editmode') }}</button>
       </div>
     </div>
-    <log :logs="logs" :title="'EAPP ' + $t('logs')" />
+    <log :logs="logs" :title="'EAPP ' + $t('logs')" @clear="logs=[]" />
   </div>
 </template>
 
@@ -114,7 +114,7 @@ export default {
     epOpen(idx = 0){
       const app = { ...this.apps[idx] }
       if (!(app.name && app.type && app.target)) {
-        this.$message.error('eapp 内容不完整')
+        this.$message.error(this.$t('incomplete'))
         return
       }
       if (this.bRun[idx]) {
@@ -127,7 +127,7 @@ export default {
       }
       let tararg = app.target.split('%ei%'),
           tarcont = this.$uStr.escapeHtml(app.target).replace(/%ei%/g, '<input name="eapp_arg" class="elecTable_input" style="width: 120px;" placeholder="%ei%">');
-      let rAxios = this.$axios, rMessage = this.$message, rRun = this.epRun, eid = 'eapp_' + this.$uStr.euid(4);
+      let rAxios = this.$axios, rMessage = this.$message, rRun = this.epRun, eid = 'eapp_' + this.$uStr.euid(4), $t = this.$t;
       this.$evui({
         id: eid,
         title: app.name + ' - ' + app.type.toUpperCase(),
@@ -136,7 +136,7 @@ export default {
         style: {
           content: 'margin: .3em; font-family: var(--font-fm);'
         },
-        content: `<div class="w100 center ${eid}">${tarcont}</div><div class="center" style="margin-top: .5em;"><button class="elecBtn greenbk" data-method="epRun" data-close="true">执行</button></div>`,
+        content: `<div class="w100 center ${eid}">${tarcont}</div><div class="center" style="margin-top: .5em;"><button class="elecBtn greenbk" data-method="epRun" data-close="true">${$t('execute')}</button></div>`,
         methods: {
           epRun(){
             let eargs = document.querySelectorAll(`.${eid} .elecTable_input[name=eapp_arg]`)
@@ -198,7 +198,7 @@ export default {
         type: 'js',
         target: 'test.js',
       }
-      let rAxios = this.$axios, rMessage = this.$message;
+      let rAxios = this.$axios, rMessage = this.$message, $t = this.$t;
       this.$evui({
         id: 'eapp_new',
         title: app.hash ? this.$t('edit') + ' EAPP - ' + app.name : this.$t('new') + ' EAPP',
@@ -207,7 +207,7 @@ export default {
         style: {
           content: 'margin: .3em; font-family: var(--font-fm);'
         },
-        content: `<div class="eflex w100"><input name="eapp_name" class="elecTable_input" style="width: 120px;margin-right: 5px;" placeholder="应用名称" value="${ this.$uStr.escapeHtml(app.name) }"><input name="eapp_logo" class="elecTable_input" placeholder="显示图标 logo https://xxx/x.png，可省略" value="${ this.$uStr.escapeHtml(app.logo) }"></div><div class="eflex w100 emargin--top"><select name="eapp_type" class="elecTable_select" style="width: 120px;margin-right: 5px;" title="应用类型"><option value="js" ${ app.type === 'js' ? 'selected' : '' }>JS</option><option value="efh" ${ app.type === 'efh' ? 'selected' : '' }>EFH</option><option value="shell" ${ app.type === 'shell' ? 'selected' : '' }>SHELL</option><option value="url" ${ app.type === 'url' ? 'selected' : '' }>打开网址</option><option value="eval" ${ app.type === 'eval' ? 'selected' : '' }>EVALRUN</option></select><textarea name="eapp_target" class="editor_textarea editor_textarea--oneline" placeholder="执行目标 比如 test.js 或 node -v 等">${ this.$uStr.escapeHtml(app.target) }</textarea></div><div class="eflex w100 emargin--top eapp_more hide" style="border-top: 1px solid;padding-top: 3px;"><select name="eapp_run" class="elecTable_select" style="width: 120px;margin-right: 5px;" title="运行方式（在打开首页时）"><option value="auto" ${ app.run === 'auto' ? 'selected' : '' }>${ this.$t('autorun') }</option><option value="click" ${ (!app.run || app.run === 'click') ? 'selected' : '' }>${ this.$t('clickrun') }</option></select><input name="eapp_note" class="elecTable_input" placeholder="备注信息，可省略" value="${ this.$uStr.escapeHtml(app.note) }"></div><div class="center" style="margin-top: .5em;"><button class="elecBtn elecBtn--more efloat--left" data-method="moreToggle">≫</button><button class="elecBtn greenbk" data-method="save" data-close="true">保存</button></div>`,
+        content: `<div class="eflex w100"><input name="eapp_name" class="elecTable_input" style="width: 120px;margin-right: 5px;" placeholder="${$t('app_name')}" value="${ this.$uStr.escapeHtml(app.name) }"><input name="eapp_logo" class="elecTable_input" placeholder="${$t('app_logo')}" value="${ this.$uStr.escapeHtml(app.logo) }"></div><div class="eflex w100 emargin--top"><select name="eapp_type" class="elecTable_select" style="width: 120px;margin-right: 5px;" title="${$t('app_type')}"><option value="js" ${ app.type === 'js' ? 'selected' : '' }>JS</option><option value="efh" ${ app.type === 'efh' ? 'selected' : '' }>EFH</option><option value="shell" ${ app.type === 'shell' ? 'selected' : '' }>SHELL</option><option value="url" ${ app.type === 'url' ? 'selected' : '' }>${$t('open_url')}</option><option value="eval" ${ app.type === 'eval' ? 'selected' : '' }>EVALRUN</option></select><textarea name="eapp_target" class="editor_textarea editor_textarea--oneline" placeholder="${$t('app_target')}">${ this.$uStr.escapeHtml(app.target) }</textarea></div><div class="eflex w100 emargin--top eapp_more hide" style="border-top: 1px solid;padding-top: 3px;"><select name="eapp_run" class="elecTable_select" style="width: 120px;margin-right: 5px;" title="${$t('app_run_mode')}"><option value="auto" ${ app.run === 'auto' ? 'selected' : '' }>${ $t('autorun') }</option><option value="click" ${ (!app.run || app.run === 'click') ? 'selected' : '' }>${ $t('clickrun') }</option></select><input name="eapp_note" class="elecTable_input" placeholder="${$t('app_note')}" value="${ this.$uStr.escapeHtml(app.note) }"></div><div class="center" style="margin-top: .5em;"><button class="elecBtn elecBtn--more efloat--left" data-method="moreToggle">≫</button><button class="elecBtn greenbk" data-method="save" data-close="true">${$t('save')}</button></div>`,
         methods: {
           moreToggle(event){
             const classes = event.target.classList,
@@ -228,23 +228,23 @@ export default {
             app.run = document.querySelector('.elecTable_select[name=eapp_run]').value;
             app.note = document.querySelector('.elecTable_input[name=eapp_note]').value;
             if (!(app.name && app.type && app.target)) {
-              rMessage.error('EAPP 内容填写不完整，请修改后再保存');
+              rMessage.error($t('incomplete'));
               return;
             }
             rAxios.put('/eapp', {
               idx, ...app,
             }).then(res=>{
               if (res.data.rescode === 0) {
-                rMessage.success('成功添加应用', app.name);
+                rMessage.success($t('save_success'), app.name);
                 app.hash = res.data.resdata;
                 if (idx === -1) {
                   apps.push(app);
                 }
               } else {
-                rMessage.error('添加应用失败', res.data.message);
+                rMessage.error($t('save_fail'), res.data.message);
               }
             }).catch(e=>{
-              rMessage.error('添加应用失败', e.message);
+              rMessage.error($t('save_fail'), e.message);
               console.error('添加应用失败', e);
             })
           }
@@ -253,16 +253,16 @@ export default {
     },
     epMove(idx){
       idx = Number(idx)
-      if (this.apps[idx] && confirm(`确定移除应用 ${this.apps[idx].name}？`)) {
+      if (this.apps[idx] && confirm(`${this.$t('delete_confirm')} ${this.apps[idx].name}？`)) {
         const name = this.apps[idx].name
-        const hideloading = this.$message.loading(`正在删除应用 ${name}...`, 0)
+        const hideloading = this.$message.loading(`${this.$t('deleting')} ${name}...`, 0)
         this.$axios.delete(`/eapp/${idx}`).then(res=>{
           if (res.data.rescode === 0) {
             this.apps.splice(idx, 1)
           }
         }).catch(e=>{
-          this.$message.error(`${name} 删除失败`, e.message)
-          console.error(`${name} 删除失败`, e)
+          this.$message.error(`${name} ${this.$t('delete')} ${this.$t('fail')}`, e.message)
+          console.error(`${name} ${this.$t('delete')} ${this.$t('fail')}`, e)
         }).finally(hideloading)
       }
     },
@@ -272,38 +272,34 @@ export default {
         this.logo_type_org = this.eapp.logo_type || 1
         return
       }
-      if (this.toSave && confirm(`确定保存当前应用列表 ${ this.apps.length }？`)) {
-        const hideloading = this.$message.loading(`应用列表保存中...`, 0)
+      if (this.toSave && confirm(this.$t('save') + ' ' + this.apps.length + '?')) {
+        const hideloading = this.$message.loading(this.$t('saving') + '...', 0)
         this.$axios.post(`/eapp`, {
           enable: this.eapp.enable,
           logo_type: this.eapp.logo_type,
           apps: this.apps,
         }).then(res=>{
           if (res.data.rescode === 0) {
-            this.$message.success('保存成功')
+            this.$message.success(this.$t('save_success'))
           } else {
-            this.$message.error('保存失败', res.data.message)
-            console.error('保存失败', res.data)
+            this.$message.error(this.$t('save_fail'), res.data.message)
           }
         }).catch(e=>{
-          this.$message.error(`保存失败`, e.message)
-          console.error(`保存失败`, e)
+          this.$message.error(this.$t('save_fail'), e.message)
         }).finally(hideloading)
       } else if (this.eapp.logo_type !== this.logo_type_org) {
-        const hideloading = this.$message.loading(`应用 LOGO 风格 ${this.eapp.logo_type}...`, 0)
+        const hideloading = this.$message.loading(`LOGO ${this.eapp.logo_type}...`, 0)
         this.$axios.put(`/eapp/logo_type`, {
           logo_type: this.eapp.logo_type,
         }).then(res=>{
           if (res.data.rescode === 0) {
-            this.$message.success('新的 LOGO 风格应用成功')
-            this.logs.unshift(`[${this.$logHead('eapp notify')}][${this.$sTime(null, 1)}] 成功应用新的 LOGO 风格 ${ this.eapp.logo_type }`)
+            this.$message.success(this.$t('save_success'))
+            this.logs.unshift(`[${this.$logHead('eapp notify')}][${this.$sTime(null, 1)}] ${this.$t('save_success')} LOGO ${ this.eapp.logo_type }`)
           } else {
-            this.$message.error('新的 LOGO 风格应用失败', res.data.message)
-            console.error('新的 LOGO 风格应用失败', res.data)
+            this.$message.error(this.$t('save_fail'), res.data.message)
           }
         }).catch(e=>{
-          this.$message.error(`新的 LOGO 风格保存失败`, e.message)
-          console.error(`新的 LOGO 风格应用失败`, e)
+          this.$message.error(this.$t('save_fail'), e.message)
         }).finally(hideloading)
       }
       this.bEdit = false

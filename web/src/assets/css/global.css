@@ -64,7 +64,7 @@ noscript {
   color: var(--main-fc);
 }
 
-#app {
+#app, .section.app-root {
   display: flex;
   flex-direction: row;
   outline: none;
@@ -111,6 +111,13 @@ noscript {
   flex-direction: column;
   box-sizing: border-box;
   min-height: 100vh;
+}
+
+.app-root > section, .app-root > main {
+  flex: auto;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .section > .section {

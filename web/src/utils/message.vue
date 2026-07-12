@@ -104,10 +104,10 @@ export default {
         secd = (msg.match(/\W/g) || msg).length / 5 + (3 * Object.keys(this.msgs).length || 5)
       }
 
-      this.$set(this.msgs, mid, {
+      this.msgs[mid] = {
         text: msg,
         type, secd, url, align
-      })
+      }
 
       if (secd !== 0) {
         this.msgs[mid].sTout = setTimeout(this.msgRemove, secd * 1000, mid)
@@ -120,7 +120,7 @@ export default {
     msgRemove(mid){
       if (this.msgs[mid]) {
         clearTimeout(this.msgs[mid].sTout)
-        this.$delete(this.msgs, mid)
+        delete this.msgs[mid]
       }
     },
     async getNotifyPerm(){

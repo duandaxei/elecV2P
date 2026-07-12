@@ -1,30 +1,25 @@
-import Vue from 'vue';
+import { createApp } from 'vue'
 import efss from './efss.vue'
 
 import axios from 'axios'
-Vue.prototype.$axios = axios
-
 import * as string from '../utils/string.js'
-Vue.prototype.$sType = string.sType
-Vue.prototype.$sString = string.sString
-Vue.prototype.$sJson = string.sJson
-Vue.prototype.$sTime = string.sTime
-Vue.prototype.$logHead = string.logHead
-Vue.prototype.$uStr = string
-
 import * as api from '../utils/api.js'
-Vue.prototype.$uApi = api
-Vue.prototype.$message = api.vue2Proto.message
-
 import { t, ta } from '../i18n/lang'
-Vue.prototype.$t = t
-Vue.prototype.$ta = ta
-
-Vue.config.productionTip = false
 
 import '../assets/css/global.css'
+import 'vue-draggable-resizable/style.css'
 
-new Vue({
-  el: '#efss',
-  render: h => h(efss),
-})
+const app = createApp(efss)
+app.config.globalProperties.$axios = axios
+app.config.globalProperties.$sType = string.sType
+app.config.globalProperties.$sString = string.sString
+app.config.globalProperties.$sJson = string.sJson
+app.config.globalProperties.$sTime = string.sTime
+app.config.globalProperties.$logHead = string.logHead
+app.config.globalProperties.$uStr = string
+app.config.globalProperties.$uApi = api
+app.config.globalProperties.$message = api.vue2Proto.message
+app.config.globalProperties.$t = t
+app.config.globalProperties.$ta = ta
+
+app.mount('#efss')

@@ -2,3 +2,24 @@
 **/.git
 **/.github
 **/node_modules
+**/yarn.lock
+**/package-lock.json
+
+# Docker Hub post_checkout hook 下载的 qemu 交叉编译文件（~70MB each）
+qemu-*-static
+
+# 构建/开发时文件，运行时不需要
+Docker/hooks/
+Docker/docker-compose*.yaml
+Docker/readme.md
+web/src/
+web/public/
+vite.config.js
+
+# 文档
+*.md
+
+# 运行时数据
+logs/
+rootCA/
+efss/

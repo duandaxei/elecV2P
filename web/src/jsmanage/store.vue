@@ -71,21 +71,25 @@ export default {
       collapse: true,
       icon,
       shownum: 50,
-      restnum: 0,
     }
   },
   computed:{
+    restnum(){
+      let snum = this.shownum
+      if (snum === -1 || snum >= this.store.length) {
+        return 0
+      }
+      return this.store.length - snum
+    },
     storeshow(){
       let snum = this.shownum
       if (snum === -1 || snum >= this.store.length) {
-        this.restnum = 0
         return this.store
       }
       let i = 0, fshow = []
       while (i++ < snum) {
         fshow.push(this.store[i])
       }
-      this.restnum = this.store.length - i + 1
       return fshow
     }
   },
@@ -168,7 +172,7 @@ export default {
             } else if (this.edvalue.type === 'boolean') {
               this.edvalue.value = this.$uStr.sBool(this.edvalue.value)
             }
-            this.$set(this.edvalue, 'update', this.$sTime(null, 0, 0))
+            this.edvalue.update = this.$sTime(null, 0, 0)
           }
         }).catch(e=>{
           this.$message.error('保存失败:', e.message)
