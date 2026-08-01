@@ -154,7 +154,6 @@
   "sign": "签发",
   "six": "六",
   "skip": "跳过",
-  "sponsors": "广告",
   "start": "开始",
   "startat": "启动时间",
   "status": "状态",
@@ -310,5 +309,7 @@
   "rename": "重命名",
   "zip": "ZIP打包",
   "cut": "剪切",
-  "type": "类型"
+  "type": "类型",
+  "fullscreen": "全屏",
+  "exit_fullscreen": "退出全屏"
 }

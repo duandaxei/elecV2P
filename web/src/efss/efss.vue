@@ -143,8 +143,8 @@ export default {
       },
       filecheck: [],
       collapse: {
-        titlearrow: this.$uStr.iRandom(0, 10) > 5,
-        efssset: this.$uStr.iRandom(0, 10) > 7,
+        titlearrow: false,
+        efssset: true,
       },
       filedownloadurl: '',
       preview: {
@@ -251,12 +251,9 @@ export default {
         } else {
           this.$message.success('EFSS 目前处于关闭状态')
         }
-        let userid = res.data.userid
-        if (userid && this.$uApi.store.getCache('sponsors').has(userid)) {
-          let theme_cache = this.$sJson(this.$uApi.store.get('theme'))
-          if (theme_cache) {
-            this.theme(theme_cache)
-          }
+        let theme_cache = this.$sJson(this.$uApi.store.get('theme'))
+        if (theme_cache) {
+          this.theme(theme_cache)
         }
         this.fileMCheck('none')
       }).catch(e=>{

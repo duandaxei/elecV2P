@@ -141,15 +141,10 @@ export default {
   computed: {
     navlist(){
       let nlist = Object.create(null)
-      let bSponsor = this.$uApi.store.getCache('bSponsor')
       for (let nav in this.menulist) {
         let item = this.menulist[nav]
         if (nav === 'setting') {
           nlist[nav] = item
-        } else if (nav === 'donation') {
-          if (!bSponsor) {
-            nlist[nav] = item
-          }
         } else if (item.show !== false) {
           nlist[nav] = item
         }
@@ -253,7 +248,7 @@ export default {
             if (/^http/.test(theme.appbk)) {
               theme.appbk = `url(${theme.appbk})`
             }
-            theme_css += `background: ${ theme.appbk };`
+            theme_css += `background: ${ theme.appbk };--app-bg: ${ theme.appbk };`
           }
           if (theme_css) {
             theme_css = `.app-root{${ theme_css }}`
