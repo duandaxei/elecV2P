@@ -126,6 +126,7 @@
       background: rgba(255,255,255,.03); border: 1px solid var(--bd); border-radius: 6px;
       padding: 6px 10px; margin: 4px 0; line-height: 1.5; max-height: 260px; overflow-y: auto;
     }
+    .msg .stream-text { white-space: pre-wrap; word-break: break-word; line-height: 1.7; }
     .cursor { display: inline-block; width: 7px; height: 16px; background: var(--ac); animation: blink .7s infinite; vertical-align: text-bottom; margin-left: 2px; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
     .reasoning { margin-bottom: 8px; }
@@ -251,6 +252,46 @@
     .todo-item .td { color: var(--fc3); margin-right: 6px; }
     .todo-item .do { color: var(--ac); margin-right: 6px; }
     .todo-item .done { text-decoration: line-through; color: var(--fc3); }
+    .stream-par.err-text { color: var(--del); }
+    .stream-par.err-text pre, .stream-par.err-text code { color: var(--del); }
+    .msg .meta.ok { color: var(--ok); }
+    .msg .meta.err { color: var(--del); }
+    .question-panel {
+      flex-shrink: 0; background: var(--bk2); border-top: 1px solid var(--bd);
+      padding: 10px 16px; max-height: 45%; overflow-y: auto;
+    }
+    .question-panel .q-item { margin-bottom: 12px; }
+    .question-panel .q-header { font-size: 11px; color: var(--ac); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+    .question-panel .q-text { font-size: 14px; color: var(--fc); margin: 2px 0 8px; }
+    .q-opt {
+      display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+      border: 1px solid var(--bd); border-radius: 8px; cursor: pointer;
+      margin-bottom: 6px; background: var(--bk3); transition: all .15s;
+    }
+    .q-opt:hover { border-color: var(--ac); }
+    .q-opt.sel { border-color: var(--ac); background: rgba(88,166,255,.12); }
+    .q-opt .q-check {
+      width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--fc3);
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: #000;
+    }
+    .q-opt.sel .q-check { background: var(--ac); border-color: var(--ac); }
+    .q-opt .q-label { font-weight: bold; color: var(--fc); }
+    .q-opt .q-desc { color: var(--fc2); font-size: 12px; }
+    .q-custom { display: flex; gap: 8px; margin: 6px 0; }
+    .q-custom input {
+      flex: 1; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--bd);
+      background: var(--bk3); color: var(--fc); font-size: 13px; outline: none;
+    }
+    .q-custom input:focus { border-color: var(--ac); }
+    .q-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .q-actions button {
+      padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 13px;
+    }
+    .q-submit { background: var(--ac); color: #000; font-weight: bold; border: 1px solid var(--ac); }
+    .q-submit:disabled { opacity: .5; cursor: not-allowed; }
+    .q-reject { background: var(--bk3); color: var(--fc2); border: 1px solid var(--bd); }
+    .q-reject:hover { color: var(--fc); border-color: var(--fc3); }
   </style>
 </head>
 <body>
@@ -343,10 +384,15 @@
         <div v-for="(p, pi) in m.parts" :key="pi">
           <div v-if="p.t === 'ref'" :class="['ref', p.cls || refClass(p.c)]">{{ p.c }}</div>
           <pre v-else-if="p.t === 'out'" class="tool-out">{{ p.c }}</pre>
-          <div v-else v-html="renderMd(p.c)"></div>
+          <template v-else-if="p.t === 'text'">
+            <div v-for="(v, vi) in mdViews(p, m.streaming)" :key="vi" class="stream-par" :class="p.cls || ''">
+              <pre v-if="v.plain" class="stream-text">{{ v.text }}</pre>
+              <div v-else v-html="v.html"></div>
+            </div>
+          </template>
         </div>
         <span class="cursor" v-if="m.streaming"></span>
-        <div class="meta" v-if="m.meta">{{ m.meta }}</div>
+        <div class="meta" :class="m.errored ? 'err' : 'ok'" v-if="m.meta">{{ m.meta }}</div>
       </template>
     </div>
   </div>
@@ -356,6 +402,26 @@
     <div v-for="(t, ti) in todos" :key="ti" class="todo-item">
       <span class="td">{{ t.status==='completed' ? '✓' : t.status==='in_progress' ? '◐' : '○' }}</span>
       <span :class="{done: t.status==='completed'}">{{ t.content }}</span>
+    </div>
+  </div>
+
+  <div class="question-panel" v-if="question">
+    <div v-for="(q, qi) in question.questions" :key="qi" class="q-item">
+      <div class="q-header">{{ q.header || 'Question' }}</div>
+      <div class="q-text">{{ q.question }}</div>
+      <div v-for="(opt, oi) in q.options" :key="oi" class="q-opt"
+           :class="{sel: qSel[qi] && qSel[qi].indexOf(opt.label) >= 0}" @click="qToggle(qi, opt.label)">
+        <span class="q-check">{{ qSel[qi] && qSel[qi].indexOf(opt.label) >= 0 ? '✓' : '' }}</span>
+        <span class="q-label">{{ opt.label }}</span>
+        <span class="q-desc">{{ opt.description }}</span>
+      </div>
+      <div class="q-custom" v-if="q.custom !== false">
+        <input type="text" v-model="qCustom[qi]" placeholder="Type a custom answer..." @keydown.enter.prevent="qSubmit">
+      </div>
+    </div>
+    <div class="q-actions">
+      <button class="q-submit" @click="qSubmit" :disabled="qSubmitting">Submit</button>
+      <button class="q-reject" @click="qReject">Dismiss</button>
     </div>
   </div>
 
@@ -378,6 +444,9 @@
   let _inited = false
   const installId = Date.now() + '-' + Math.random().toString(36).slice(2, 8)
   let notifyTimer = null
+  const blockCache = new Map()
+  const BLOCK_CACHE_MAX = 400
+  const STREAM_PARSE_MAX = 4000
 
   const app = Vue.createApp({
     data() {
@@ -389,7 +458,8 @@
         sessionPanelOpen: false, dropdown: '',
         notifyMsg: '', notifyShow: false, loading: false,
         ocVersion: '', installOverlay: true, installErr: '', installProgress: 'This may take a minute',
-        ctxUsed: 0, ctxLimit: 0, ctxPct: 0, ctxModel: ''
+        ctxUsed: 0, ctxLimit: 0, ctxPct: 0, ctxModel: '',
+        question: null, qSel: [], qCustom: [], qSubmitting: false
       }
     },
     computed: {
@@ -443,6 +513,78 @@
         html = html.replace(/<a href=/g, '<a target="_blank" href=')
         return html
       },
+      mdBlocks(t) {
+        if (!t) return []
+        const lines = String(t).replace(/\r\n/g, '\n').split('\n')
+        const blocks = []
+        let cur = []
+        let inFence = false
+        let fenceChar = ''
+        const flush = () => {
+          if (cur.length && cur.join('\n').trim() !== '') blocks.push(cur.join('\n'))
+          cur = []
+        }
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i]
+          if (!inFence) {
+            const fm = /^\s*(`{3,}|~{3,})\s*[a-zA-Z0-9_-]*\s*$/.exec(line)
+            if (fm) {
+              flush()
+              cur = [line]
+              inFence = true
+              fenceChar = fm[1]
+              continue
+            }
+          } else if (line.replace(/\s+$/, '').indexOf(fenceChar) >= 0) {
+            cur.push(line)
+            inFence = false
+            flush()
+            continue
+          }
+          cur.push(line)
+          if (!inFence && line.trim() === '') flush()
+        }
+        flush()
+        return blocks
+      },
+      isOpenFence(blk) {
+        const lines = String(blk).split('\n')
+        let fenceChar = ''
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i]
+          if (!fenceChar) {
+            const fm = /^\s*(`{3,}|~{3,})\s*[a-zA-Z0-9_-]*\s*$/.exec(line)
+            if (fm) fenceChar = fm[1]
+          } else if (line.replace(/\s+$/, '').indexOf(fenceChar) >= 0) {
+            fenceChar = ''
+          }
+        }
+        return !!fenceChar
+      },
+      cachedMd(blk) {
+        if (blockCache.has(blk)) return blockCache.get(blk)
+        const html = this.renderMd(blk)
+        blockCache.set(blk, html)
+        if (blockCache.size > BLOCK_CACHE_MAX) {
+          const firstKey = blockCache.keys().next().value
+          if (firstKey) blockCache.delete(firstKey)
+        }
+        return html
+      },
+      mdViews(p, streaming) {
+        if (!p || p.t !== 'text') return []
+        const blocks = this.mdBlocks(p.c)
+        const views = []
+        for (let i = 0; i < blocks.length; i++) {
+          const blk = blocks[i]
+          let plain = false
+          if (streaming && i === blocks.length - 1 && (this.isOpenFence(blk) || blk.length > STREAM_PARSE_MAX)) {
+            plain = true
+          }
+          views.push({ text: blk, html: plain ? null : this.cachedMd(blk), plain: plain })
+        }
+        return views
+      },
       refClass(c) {
         let rc = 'ref'
         if (/^>\s*build/.test(c)) rc += ' info'
@@ -468,6 +610,7 @@
       },
       loadSessions() {
         const self = this
+        this.loading = true
         return Promise.all([
           this.fetchFend('sessions', {}, 10000).catch((e) => { self.showNotify('sessions: ' + e.message); return { pinned: [] } }),
           this.fetchFend('models', {}, 15000).catch((e) => { self.showNotify('models: ' + e.message); return { models: [] } })
@@ -477,7 +620,7 @@
           return self.fetchFend('opencode_sessions', {}, 8000).catch((e) => { self.showNotify('opencode sessions: ' + e.message); return { sessions: [] } })
         }).then((oc) => {
           if (oc && oc.sessions) self.sessions = oc.sessions
-        })
+        }).finally(() => { self.loading = false })
       },
       fetchFend(key, data, timeout) {
         return fetch('', {
@@ -497,6 +640,7 @@
         localStorage.setItem('aichat_last_session', id)
         this.dropdown = ''
         this.loadSessions()
+        this.syncCtx(id)
       },
       deleteLocalSession(id) {
         if (this.deleting[id]) return
@@ -699,23 +843,44 @@
         if (this.currentModel) this.ctxModel = this.currentModel
 
         const es = new EventSource('/sse/elecV2P/' + runId)
+        let textBuf = ''
+        let textFlush = null
+        const flushText = () => {
+          if (textFlush) { clearTimeout(textFlush); textFlush = null }
+          if (!textBuf) return
+          const last = el.parts[el.parts.length - 1]
+          if (last && last.t === 'text') {
+            last.c += textBuf
+          } else {
+            el.parts.push({ t: 'text', c: textBuf })
+          }
+          textBuf = ''
+        }
 
         es.onmessage = (e) => {
           try {
             const data = JSON.parse(e.data)
-            if (data.type === 'init') return
+            if (data.type === 'init') {
+              if (data.content && el.initShown !== data.content) {
+                flushText()
+                el.parts.push({ t: 'ref', c: data.content, cls: 'info' })
+                el.initShown = data.content
+              }
+              return
+            }
             if (data.type === 'ref') {
+              flushText()
               el.parts.push({ t: 'ref', c: data.content, cls: data.cls || '' })
             }
             if (data.type === 'out') {
+              flushText()
               const lastOut = el.parts[el.parts.length - 1]
               if (lastOut && lastOut.t === 'out') lastOut.c += data.content
               else el.parts.push({ t: 'out', c: data.content })
             }
             if (data.type === 'text') {
-              const last = el.parts[el.parts.length - 1]
-              if (last && last.t === 'text') last.c += data.content
-              else el.parts.push({ t: 'text', c: data.content })
+              textBuf += data.content
+              if (!textFlush) textFlush = setTimeout(flushText, 50)
             }
             if (data.type === 'todo') {
               self.todos = data.data || []
@@ -730,20 +895,58 @@
                 if (self.ctxModel) localStorage.setItem('aichat_ctx_model', self.ctxModel)
               } catch(e) {}
             }
+            if (data.type === 'session') {
+              self.sessionId = data.id || ''
+              try {
+                if (self.sessionId) localStorage.setItem('aichat_last_session', self.sessionId)
+              } catch(e) {}
+            }
+            if (data.type === 'question') {
+              self.question = data.data || null
+              self.qSel = []
+              self.qCustom = []
+              if (self.question && self.question.questions) {
+                for (let i = 0; i < self.question.questions.length; i++) {
+                  self.qSel.push([])
+                  self.qCustom.push('')
+                }
+              }
+              self.scrollBottom()
+              return
+            }
+            if (data.type === 'question_done') {
+              if (self.question && data.data && self.question.requestID === data.data.requestID) {
+                self.question = null
+                self.qSel = []
+                self.qCustom = []
+              }
+              return
+            }
             if (data.type === 'done') {
+              flushText()
               if (data.content) el.parts.push({ t: 'text', c: data.content })
               el.streaming = false
+              self.question = null
+              self.qSel = []
+              self.qCustom = []
               es.close()
-              let meta = Math.round((Date.now() - startTime) / 1000) + 's'
-              if (data.tokens) meta += ' | ⚙ ' + data.tokens.total + ' tokens'
-              if (data.steps) meta += ' | ' + data.steps + ' steps'
-              if (data.model) meta += ' | ' + data.model
-              if (data.timeout) meta += ' | timed out'
-              el.meta = meta
-              if (data.model) self.ctxModel = data.model
-              try {
-                if (data.model) localStorage.setItem('aichat_ctx_model', data.model)
-              } catch(e) {}
+              if (!el.stopped) {
+                let meta = Math.round((Date.now() - startTime) / 1000) + 's'
+                if (data.tokens) meta += ' | ⚙ ' + data.tokens.total + ' tokens'
+                if (data.steps) meta += ' | ' + data.steps + ' steps'
+                if (data.model) meta += ' | ' + data.model
+                if (data.timeout) {
+                  meta += ' | ⚠ timed out'
+                  el.errored = true
+                } else {
+                  meta = '✓ ' + meta
+                }
+                el.meta = meta
+                if (data.model) self.ctxModel = data.model
+                try {
+                  if (data.model) localStorage.setItem('aichat_ctx_model', data.model)
+                } catch(e) {}
+              }
               self.busy = false
               self.runId = ''
               self.todos = []
@@ -758,8 +961,28 @@
               return
             }
             if (data.type === 'error') {
-              el.role = 'error'; el.streaming = false
-              el.parts = [{ t: 'text', c: 'Error: ' + data.content }]
+              flushText()
+              el.streaming = false
+              el.errored = true
+              self.question = null
+              self.qSel = []
+              self.qCustom = []
+              if (el.stopped) {
+                if (data.content && data.content !== 'client disconnected') {
+                  el.meta = (el.meta ? el.meta + ' | ' : '') + '⚠ ' + data.content
+                }
+                es.close()
+                self.busy = false
+                self.runId = ''
+                self.todos = []
+                self.scrollBottom()
+                return
+              }
+              if (el.parts.length) {
+                el.meta = (el.meta ? el.meta + ' | ' : '') + '⚠ ' + data.content
+              } else {
+                el.parts = [{ t: 'text', c: 'Error: ' + data.content, cls: 'err-text' }]
+              }
               es.close()
               self.busy = false
               self.runId = ''
@@ -774,8 +997,8 @@
 
         this.fetchFend('start', { prompt: prompt, runId: runId, session: this.sessionId, model: this.currentModel }, 120000).then((data) => {
           if (!data.ok) {
-            el.role = 'error'; el.streaming = false
-            el.parts = [{ t: 'text', c: 'Error: ' + (data.error || 'failed to start') }]
+            el.errored = true; el.streaming = false
+            el.parts = [{ t: 'text', c: 'Error: ' + (data.error || 'failed to start'), cls: 'err-text' }]
             self.busy = false
             self.runId = ''
             self.todos = []
@@ -783,14 +1006,18 @@
             self.scrollBottom()
           } else if (data.sessionId) {
             self.sessionId = data.sessionId
+            try {
+              if (self.sessionId) localStorage.setItem('aichat_last_session', self.sessionId)
+            } catch(e) {}
           }
         }).catch((e) => {
+          flushText()
           if (el.parts.length) {
             el.streaming = false
             el.meta = 'Connection closed'
           } else {
-            el.role = 'error'; el.streaming = false
-            el.parts = [{ t: 'text', c: 'Error: ' + e.message }]
+            el.errored = true; el.streaming = false
+            el.parts = [{ t: 'text', c: 'Error: ' + e.message, cls: 'err-text' }]
           }
           self.busy = false
           self.runId = ''
@@ -803,6 +1030,13 @@
         const self = this
         const runId = this.runId
         const sessionId = this.sessionId
+        const last = this.messages[this.messages.length - 1]
+        if (last && last.role === 'assistant' && last.streaming) {
+          last.streaming = false
+          last.stopped = true
+          last.errored = true
+          last.meta = (last.meta ? last.meta + ' | ' : '') + '⏹ stopped'
+        }
         this.fetchFend('stop', { runId: runId, session: sessionId }, 15000).then((data) => {
           if (!data.ok && !data.error) {
             self.showNotify('stop failed' + (data.code ? ' (' + data.code + ')' : ''))
@@ -813,9 +1047,67 @@
           self.busy = false
         })
       },
+      qToggle(qi, label) {
+        if (!this.question || this.qSubmitting) return
+        const q = this.question.questions[qi]
+        const cur = (this.qSel[qi] || []).slice()
+        const idx = cur.indexOf(label)
+        if (idx >= 0) cur.splice(idx, 1)
+        else cur.push(label)
+        this.qSel[qi] = q.multiple ? cur : cur.slice(-1)
+        this.qSel = this.qSel.slice()
+      },
+      qSubmit() {
+        const self = this
+        if (!this.question || this.qSubmitting) return
+        const answers = this.question.questions.map((q, qi) => {
+          const arr = (this.qSel[qi] || []).slice()
+          const custom = (this.qCustom[qi] || '').trim()
+          if (custom && q.custom !== false && arr.indexOf(custom) < 0) arr.push(custom)
+          return arr
+        })
+        this.qSubmitting = true
+        this.fetchFend('question_reply', { requestID: this.question.requestID, sessionID: this.question.sessionID, answers: answers }, 15000).then((data) => {
+          self.qSubmitting = false
+          if (data && data.ok) {
+            self.question = null
+            self.qSel = []
+            self.qCustom = []
+          } else {
+            self.showNotify('Reply failed: ' + ((data && data.error) || 'unknown'))
+          }
+        }).catch((e) => {
+          self.qSubmitting = false
+          self.showNotify('Reply failed: ' + e.message)
+        })
+      },
+      qReject() {
+        const self = this
+        if (!this.question || this.qSubmitting) return
+        this.qSubmitting = true
+        this.fetchFend('question_reject', { requestID: this.question.requestID }, 15000).then((data) => {
+          self.qSubmitting = false
+          if (data && data.ok) {
+            self.question = null
+            self.qSel = []
+            self.qCustom = []
+          } else {
+            self.showNotify('Reject failed: ' + ((data && data.error) || 'unknown'))
+          }
+        }).catch((e) => {
+          self.qSubmitting = false
+          self.showNotify('Reject failed: ' + e.message)
+        })
+      },
       clearChat() {
         this.messages = []
         this.sessionId = ''
+        this.question = null
+        this.qSel = []
+        this.qCustom = []
+        this.ctxUsed = 0
+        this.ctxPct = 0
+        try { localStorage.removeItem('aichat_last_session') } catch(e) {}
       },
       compactChat() {
         const self = this
@@ -851,9 +1143,7 @@
         const self = this
         this.fetchFend('ctxinfo', { model: this.currentModel }, 10000).then((data) => {
           if (data && data.limit) {
-            self.ctxUsed = 0
             self.ctxLimit = data.limit
-            self.ctxPct = 0
             if (data.model) self.ctxModel = data.model
           } else {
             const saved = localStorage.getItem('aichat_ctx_limit')
@@ -861,6 +1151,19 @@
             const savedModel = localStorage.getItem('aichat_ctx_model')
             if (savedModel && !self.ctxModel) self.ctxModel = savedModel
           }
+          if (self.sessionId) self.syncCtx(self.sessionId)
+        }).catch(() => {})
+      },
+      syncCtx(sessionId) {
+        if (!sessionId) return
+        const self = this
+        this.fetchFend('session_ctx', { id: sessionId, model: this.currentModel || this.ctxModel }, 12000).then((data) => {
+          if (!data) return
+          if (data.limit) self.ctxLimit = data.limit
+          if (!self.ctxLimit) return
+          self.ctxUsed = data.used || 0
+          self.ctxPct = Math.round((self.ctxUsed || 0) / self.ctxLimit * 1000) / 10
+          try { localStorage.setItem('aichat_ctx_limit', String(self.ctxLimit)) } catch(e) {}
         }).catch(() => {})
       },
     },
@@ -889,6 +1192,9 @@
           installEs.close()
           if (data.version) self.ocVersion = data.version
           self.initApp()
+        } else if (data && !data.ok && data.error) {
+          installEs.close()
+          self.installErr = data.error
         }
       }).catch(() => {})
     }
@@ -898,7 +1204,7 @@
 </script>
 
 <script favend>
-const { spawn, execSync } = require('child_process')
+const { spawn, exec } = require('child_process')
 
 const OC_HOST = 'http://localhost:14096'
 const OC_BIN = 'opencode'
@@ -907,30 +1213,61 @@ const stripAnsi = (s) => { return String(s).replace(/\u001b\[[0-9;]*[a-zA-Z]/g, 
 const isAlive = (pid) => { try { process.kill(Number(pid), 0); return true } catch(e) { return false } }
 
 const IS_WIN = process.platform === 'win32'
+const IS_PAAS = !!process.env.PAAS
 const DEVNULL = IS_WIN ? 'nul' : '/dev/null'
-const curlCmd = (extra) => {
-  return (IS_WIN ? 'curl.exe' : 'curl') + ' -s ' + (extra || '') + ' --connect-timeout 3 2>' + DEVNULL
-}
+let serverProc = null
 const redirCmd = (cmd) => { return cmd + ' 2>' + DEVNULL }
-const sleepCmd = (sec) => { return IS_WIN ? 'timeout /t ' + sec + ' /nobreak >nul 2>&1' : 'sleep ' + sec }
+const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms) }) }
+
+const execAsync = (cmd, timeout) => {
+  return new Promise((resolve, reject) => {
+    exec(cmd, { timeout: timeout || 15000, windowsHide: true, encoding: 'utf-8', maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) reject(error)
+      else resolve({ stdout: stdout || '', stderr: stderr || '' })
+    })
+  })
+}
+
+const httpGet = (path, port, timeout) => {
+  return new Promise((resolve) => {
+    const httpMod = require('http')
+    const req = httpMod.get({ host: '127.0.0.1', port: port || 14096, path: path }, (res) => {
+      let buf = ''
+      res.on('data', (c) => { buf += c })
+      res.on('end', () => { resolve({ status: res.statusCode, body: buf }) })
+    })
+    req.on('error', () => { resolve({ status: 0, body: '' }) })
+    req.setTimeout(timeout || 8000, () => { req.destroy(); resolve({ status: 0, body: '' }) })
+  })
+}
 
 const serverReady = () => {
-  try {
-    const code = execSync(curlCmd('-o ' + DEVNULL + ' -w "%{http_code}" ' + OC_HOST + '/'), { encoding: 'utf-8', timeout: 5000, windowsHide: true, shell: true })
-    console.log('[serverReady] http code:', code.trim())
-    if (code && code.trim() === '200') return true
-  } catch(e) {}
-  return false
+  return httpGet('/', 14096, 3000).then((r) => { return r.status === 200 })
 }
 
-const ensureServer = () => {
+const emitOut = (lastStore, callId, out, sendFn) => {
+  if (!out) return
+  const last = lastStore[callId] || ''
+  let delta
+  if (out.indexOf(last) === 0) {
+    delta = out.slice(last.length)
+  } else {
+    delta = last ? '\n' + out : out
+  }
+  if (delta) sendFn(delta)
+  lastStore[callId] = out
+}
+
+const ensureServer = async () => {
+  let pid = ''
   try {
-    const pid = $store.get('opencode_server_pid')
-    if (pid && isAlive(pid) && serverReady()) return true
+    pid = $store.get('opencode_server_pid')
+    if (pid && isAlive(pid) && (await serverReady())) return true
   } catch(e) {}
-  if (serverReady()) {
+  if (await serverReady()) {
     try {
-      const found = execSync(IS_WIN ? 'netstat -ano | findstr :14096' : 'lsof -t -iTCP:14096', { encoding: 'utf-8', timeout: 5000, windowsHide: true, shell: true })
+      const r = await execAsync(IS_WIN ? 'netstat -ano | findstr :14096' : 'lsof -t -iTCP:14096', 5000)
+      const found = r.stdout
       const fpid = String(found).trim().split(/\s+/).pop()
       if (fpid && fpid !== pid) $store.set('opencode_server_pid', fpid)
     } catch(e) {}
@@ -940,19 +1277,41 @@ const ensureServer = () => {
     const shell = process.env.COMSPEC || process.env.SHELL || (IS_WIN ? 'cmd.exe' : '/bin/sh')
     const shellArgs = IS_WIN ? ['/d', '/s', '/c', OC_BIN + ' serve --port 14096'] : ['-c', OC_BIN + ' serve --port 14096']
     const env = Object.assign({}, process.env, { NODE_OPTIONS: '--no-warnings' })
-    const proc = spawn(shell, shellArgs, { detached: true, stdio: 'ignore', windowsHide: true, env: env })
-    proc.unref()
+    const proc = spawn(shell, shellArgs, { detached: !IS_PAAS, stdio: 'ignore', windowsHide: true, env: env })
+    serverProc = proc
+    proc.on('exit', (code, signal) => {
+      console.log('[opencode] server exited', code, signal)
+      if (serverProc === proc) serverProc = null
+      try { $store.set('opencode_server_pid', '') } catch(e) {}
+    })
+    if (IS_PAAS) proc.unref()
     $store.set('opencode_server_pid', String(proc.pid))
     const deadline = Date.now() + 15000
     while (Date.now() < deadline) {
-      if (serverReady()) return true
-      execSync(sleepCmd(1), { timeout: 2000, windowsHide: true, shell: true })
+      if (await serverReady()) return true
+      await sleep(1000)
     }
     return false
   } catch(e) {
     return false
   }
 }
+
+const shutdownServer = () => {
+  if (serverProc && !serverProc.killed) {
+    try { serverProc.kill('SIGTERM') } catch(e) {}
+  }
+}
+try {
+  if (!process.__oc_shutdown_added) {
+    process.__oc_shutdown_added = true
+    process.on('SIGTERM', shutdownServer)
+    process.on('SIGINT', shutdownServer)
+    process.on('exit', shutdownServer)
+  }
+} catch(e) {}
+
+const runProcs = {}
 
 const parseModel = (modelStr) => {
   let pid = 'opencode', mid = ''
@@ -1005,10 +1364,245 @@ $fend('ctxinfo', (data) => {
   })
 })
 
-$fend('start', (data) => {
+const getSessionUsage = (sessionId) => {
+  return new Promise((resolve) => {
+    if (!sessionId) return resolve(0)
+    const httpMod = require('http')
+    let used = 0
+    let offset = 0
+    const LIMIT = 100
+    const MAXPAGE = 20
+    const fetchPage = () => {
+      const req = httpMod.get({ host: '127.0.0.1', port: 14096, path: '/session/' + encodeURIComponent(sessionId) + '/message?limit=' + LIMIT + '&offset=' + offset }, (res) => {
+        let buf = ''
+        res.on('data', (c) => { buf += c })
+        res.on('end', () => {
+          let msgs
+          try { msgs = JSON.parse(buf) } catch(e) { return resolve(used) }
+          if (!Array.isArray(msgs) || !msgs.length) return resolve(used)
+          for (let i = 0; i < msgs.length; i++) {
+            const t = msgs[i].info && msgs[i].info.tokens ? msgs[i].info.tokens.total : 0
+            if (t > used) used = t
+          }
+          if (msgs.length < LIMIT || offset >= MAXPAGE * LIMIT) return resolve(used)
+          offset += msgs.length
+          fetchPage()
+        })
+      })
+      req.on('error', () => resolve(used))
+      req.setTimeout(10000, () => { req.destroy(); resolve(used) })
+    }
+    fetchPage()
+  })
+}
+
+$fend('session_ctx', (data) => {
+  const id = data && data.id
+  const modelStr = (data && data.model || '').replace(/\r/g, '')
+  return getSessionUsage(id).then((used) => {
+    return getCtxLimit(modelStr).then((limit) => {
+      return { used: used, limit: limit }
+    })
+  })
+})
+
+const runCliMode = (data, runId) => {
+  const prompt = data.prompt
+  const sessionId = data.session || ''
+  const modelStr = (data.model || '').replace(/\r/g, '')
+
+  const args = ['run', '--format', 'json']
+  if (sessionId) args.push('--session', sessionId)
+  if (modelStr) args.push('--model', modelStr)
+  args.push(prompt)
+
+  let streamEnded = false
+  let stepCount = 0
+  let tokens = null
+  let model = modelStr || null
+  let knownSession = !!sessionId
+  let seenSessionSent = false
+  const seenTools = {}
+  const lastToolOut = {}
+  const runningTools = {}
+  let watchdog = null
+  let aliveTimer = null
+  let toolHeartbeat = null
+
+  const send = (type, payload) => {
+    $ws.sse(runId, JSON.stringify(Object.assign({ type: type }, payload || {})))
+  }
+  const sendRef = (line, cls) => {
+    send('ref', { content: line, cls: cls || '' })
+  }
+  const pushCtx = (used, limit) => {
+    send('ctx', {
+      used: used || 0, limit: limit || 0,
+      pct: limit ? Math.round((used || 0) / limit * 1000) / 10 : 0,
+      model: model
+    })
+  }
+  const emitCtx = (used) => {
+    if (!used) return
+    getCtxLimit(model).then((limit) => { pushCtx(used, limit) }).catch(() => { pushCtx(used, 0) })
+  }
+  const finish = (payload) => {
+    if (streamEnded) return
+    streamEnded = true
+    if (watchdog) clearTimeout(watchdog)
+    if (aliveTimer) clearInterval(aliveTimer)
+    if (toolHeartbeat) clearInterval(toolHeartbeat)
+    try { proc.kill() } catch(e) {}
+    send('done', Object.assign({ steps: stepCount }, payload || {}))
+  }
+  const fail = (msg) => {
+    if (streamEnded) return
+    streamEnded = true
+    if (watchdog) clearTimeout(watchdog)
+    if (aliveTimer) clearInterval(aliveTimer)
+    if (toolHeartbeat) clearInterval(toolHeartbeat)
+    try { proc.kill() } catch(e) {}
+    send('error', { content: msg })
+  }
+
+  const handleEvent = (ev) => {
+    const sid = ev.sessionID
+    if (sid && !seenSessionSent) {
+      seenSessionSent = true
+      if (!knownSession) send('session', { id: sid })
+    }
+    const t = ev.type
+    const part = ev.part || {}
+    if (t === 'step_start') { stepCount++; return }
+    if (t === 'step_finish') {
+      if (part.tokens && part.tokens.total) {
+        tokens = part.tokens
+        emitCtx(part.tokens.total)
+      }
+      return
+    }
+    if (t === 'text') {
+      if (part.text) send('text', { content: part.text })
+      return
+    }
+    if (t === 'reasoning') { sendRef('✱ reasoning', 'reasoning'); return }
+    if (t === 'file') { sendRef('▸ file ' + ((part.file && part.file.path) || ''), 'info'); return }
+    if (t === 'tool_use') {
+      const st = part.state || {}
+      const inp = st.input || {}
+      const arg = inp.command || inp.filePath || inp.path || inp.url || inp.pattern || inp.query || ''
+      const callId = part.callID || part.id || (part.tool || 'tool')
+      const out = st.output || (st.metadata && st.metadata.output) || ''
+      if (part.tool === 'question') {
+        if (!seenTools[callId] && (st.status === 'pending' || st.status === 'running')) {
+          seenTools[callId] = true
+          sendRef('◈ question asked', 'tool')
+        }
+        return
+      }
+      if (st.status === 'pending' || st.status === 'running') {
+        if (!seenTools[callId] && arg) {
+          seenTools[callId] = true
+          sendRef('◈ ' + (part.tool || 'tool') + ' · ' + arg, 'tool')
+        } else if (!seenTools[callId] && st.status === 'running') {
+          seenTools[callId] = true
+          sendRef('◈ ' + (part.tool || 'tool'), 'tool')
+        }
+        if (!runningTools[callId]) runningTools[callId] = { tool: part.tool || 'tool', arg: arg, started: Date.now() }
+        if (out) runningTools[callId].lastOutput = out
+        runningTools[callId].lastUpdate = Date.now()
+        if (out) emitOut(lastToolOut, callId, out, (d) => { send('out', { content: d }) })
+      } else if (st.status === 'completed') {
+        delete runningTools[callId]
+        if (!seenTools[callId]) {
+          seenTools[callId] = true
+          sendRef('◈ ' + (part.tool || 'tool') + (arg ? ' · ' + arg : ''), 'tool')
+        }
+        sendRef('✓ ' + (part.tool || 'tool') + ' done', 'tool')
+        if (out) emitOut(lastToolOut, callId, out, (d) => { send('out', { content: d }) })
+      } else if (st.status === 'error') {
+        delete runningTools[callId]
+        sendRef('✗ ' + (part.tool || 'tool') + ' failed', 'tool')
+        if (out) emitOut(lastToolOut, callId, out, (d) => { send('out', { content: d }) })
+      }
+      return
+    }
+    if (t === 'todo') {
+      send('todo', { data: part.todos || ev.todos || [] })
+      return
+    }
+    if (t === 'error' || t === 'session_error') {
+      const errObj = ev.error || part || {}
+      const errMsg = (typeof errObj === 'string' ? errObj : (errObj.message || errObj.name || 'opencode error'))
+      fail(String(errMsg).split('\n')[0])
+      return
+    }
+  }
+
+  const proc = spawn(OC_BIN, args, { env: Object.assign({}, process.env, { NODE_OPTIONS: '--no-warnings' }), windowsHide: true })
+  runProcs[runId] = proc
+
+  let buf = ''
+  proc.stdout.setEncoding('utf8')
+  proc.stdout.on('data', (chunk) => {
+    buf += chunk
+    let nl
+    while ((nl = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, nl)
+      buf = buf.slice(nl + 1)
+      if (!line.trim()) continue
+      let ev
+      try { ev = JSON.parse(line.trim()) } catch(e) { continue }
+      try { handleEvent(ev) } catch(e) {}
+    }
+  })
+  proc.stderr.on('data', (chunk) => {
+    const t = stripAnsi(chunk.toString()).trim()
+    if (t) console.log('[opencode run]', t)
+  })
+
+  toolHeartbeat = setInterval(() => {
+    if (streamEnded) { clearInterval(toolHeartbeat); return }
+    const now = Date.now()
+    for (const id in runningTools) {
+      const tool = runningTools[id]
+      if (now - tool.lastUpdate > 10000) {
+        sendRef('◈ ' + tool.tool + ' running (' + Math.floor((now - tool.started) / 1000) + 's)', 'tool')
+        tool.lastUpdate = now
+      }
+      if (tool.lastOutput) emitOut(lastToolOut, id, tool.lastOutput, (d) => { send('out', { content: d }) })
+    }
+  }, 15000)
+
+  proc.on('error', (e) => { fail(e.message || String(e)) })
+  proc.on('close', (code) => {
+    try { delete runProcs[runId] } catch(e) {}
+    if (streamEnded) return
+    if (code !== 0) fail('opencode exited with code ' + code)
+    else finish({ content: '', model: model, tokens: tokens })
+  })
+
+  watchdog = setTimeout(() => {
+    finish({ content: '', model: model, tokens: tokens, timeout: true })
+  }, 600000)
+  aliveTimer = setInterval(() => {
+    try {
+      if (typeof $ws.sseExists !== 'function' || $ws.sseExists(runId)) return
+      clearInterval(aliveTimer)
+      aliveTimer = null
+      try { proc.kill() } catch(e) {}
+      fail('client disconnected')
+    } catch(e) {}
+  }, 15000)
+
+  return { ok: true, runId: runId }
+}
+
+$fend('start', async (data) => {
   if (!data || !data.prompt) return { error: 'prompt is required' }
   const runId = data.runId || Date.now() + '-' + Math.random().toString(36).slice(2, 8)
-  if (!ensureServer()) return { error: 'failed to start opencode server' }
+  $ws.sse(runId, JSON.stringify({ type: 'init', content: 'starting opencode server...' }))
+  if (!(await ensureServer())) return runCliMode(data, runId)
   const prompt = data.prompt
   const httpMod = require('http')
 
@@ -1041,9 +1635,11 @@ $fend('start', (data) => {
       let stepCount = 0
       const seenTools = {}
       const lastToolOut = {}
+      const runningTools = {}
       let tokens = null
       let watchdog = null
       let aliveTimer = null
+      let toolHeartbeat = null
 
       const pushCtx = (used, limit) => {
         $ws.sse(runId, JSON.stringify({
@@ -1073,20 +1669,41 @@ $fend('start', (data) => {
         let buf = ''
         res.setEncoding('utf8')
         res.on('data', (chunk) => {
-          try {
-            buf += chunk
-            let idx
-            while ((idx = buf.indexOf('\n\n')) >= 0) {
-              const frame = buf.slice(0, idx)
-              buf = buf.slice(idx + 2)
-              const match = frame.match(/^data:\s*(.+)$/m)
-              if (!match) continue
-              const ev = JSON.parse(match[1].trim())
-              handleEvent(ev)
-            }
-          } catch(e) {}
+          buf += chunk
+          let idx
+          while ((idx = buf.indexOf('\n\n')) >= 0) {
+            const frame = buf.slice(0, idx)
+            buf = buf.slice(idx + 2)
+            const match = frame.match(/^data:\s*(.+)$/m)
+            if (!match) continue
+            let ev
+            try { ev = JSON.parse(match[1].trim()) } catch(e) { continue }
+            try { handleEvent(ev) } catch(e) {}
+          }
         })
+        const streamClosed = () => {
+          if (streamEnded) return
+          finish({ content: '', model: model, tokens: tokens })
+        }
+        res.on('end', streamClosed)
+        res.on('close', streamClosed)
       })
+      toolHeartbeat = setInterval(() => {
+        if (streamEnded) {
+          clearInterval(toolHeartbeat)
+          return
+        }
+        const now = Date.now()
+        for (const id in runningTools) {
+          const tool = runningTools[id]
+          if (now - tool.lastUpdate > 10000) {
+            const elapsed = Math.floor((now - tool.started) / 1000)
+            sendRef('◈ ' + tool.tool + ' running (' + elapsed + 's)', 'tool')
+            tool.lastUpdate = now
+          }
+          if (tool.lastOutput) emitOut(lastToolOut, id, tool.lastOutput, (d) => { $ws.sse(runId, JSON.stringify({ type: 'out', content: d })) })
+        }
+      }, 15000)
       const sendRef = (line, cls) => {
         $ws.sse(runId, JSON.stringify({ type: 'ref', content: line, cls: cls || '' }))
       }
@@ -1096,6 +1713,7 @@ $fend('start', (data) => {
         streamEnded = true
         if (watchdog) clearTimeout(watchdog)
         if (aliveTimer) clearInterval(aliveTimer)
+        if (toolHeartbeat) clearInterval(toolHeartbeat)
         try { es.destroy() } catch(e) {}
         $ws.sse(runId, JSON.stringify(Object.assign({ type: 'done', steps: stepCount }, payload || {})))
       }
@@ -1105,6 +1723,7 @@ $fend('start', (data) => {
         streamEnded = true
         if (watchdog) clearTimeout(watchdog)
         if (aliveTimer) clearInterval(aliveTimer)
+        if (toolHeartbeat) clearInterval(toolHeartbeat)
         try { es.destroy() } catch(e) {}
         $ws.sse(runId, JSON.stringify({ type: 'error', content: msg }))
       }
@@ -1115,6 +1734,17 @@ $fend('start', (data) => {
 
       const handleEvent = (ev) => {
         const p = ev.properties || {}
+        if (ev.type === 'question.asked') {
+          const qsid = p.sessionID
+          if (qsid && sessionId && qsid !== sessionId) return
+          $ws.sse(runId, JSON.stringify({ type: 'question', data: { requestID: p.id, sessionID: p.sessionID, questions: p.questions || [], tool: p.tool || null } }))
+          return
+        }
+        if (ev.type === 'question.replied' || ev.type === 'question.rejected') {
+          if (p.sessionID && sessionId && p.sessionID !== sessionId) return
+          $ws.sse(runId, JSON.stringify({ type: 'question_done', data: { requestID: p.requestID } }))
+          return
+        }
         if (ev.type === 'message.part.delta') {
           if (p.field === 'text' && p.delta) {
             $ws.sse(runId, JSON.stringify({ type: 'text', content: p.delta }))
@@ -1149,6 +1779,13 @@ $fend('start', (data) => {
             const arg = inp.command || inp.filePath || inp.path || inp.url || inp.pattern || inp.query || ''
             const callId = part.callID || part.id || (part.tool || 'tool')
             const out = st.output || (st.metadata && st.metadata.output) || ''
+            if (part.tool === 'question') {
+              if (!seenTools[callId] && (st.status === 'pending' || st.status === 'running')) {
+                seenTools[callId] = true
+                sendRef('◈ question asked', 'tool')
+              }
+              return
+            }
             if (st.status === 'pending' || st.status === 'running') {
               if (!seenTools[callId] && arg) {
                 seenTools[callId] = true
@@ -1157,23 +1794,22 @@ $fend('start', (data) => {
                 seenTools[callId] = true
                 sendRef('◈ ' + (part.tool || 'tool'), 'tool')
               }
-              if (out && out !== lastToolOut[callId]) {
-                lastToolOut[callId] = out
-                $ws.sse(runId, JSON.stringify({ type: 'out', content: out }))
-              }
+              if (!runningTools[callId]) runningTools[callId] = { tool: part.tool || 'tool', arg: arg, status: st.status, started: Date.now() }
+              if (out) runningTools[callId].lastOutput = out
+              runningTools[callId].lastUpdate = Date.now()
+              if (out) emitOut(lastToolOut, callId, out, (d) => { $ws.sse(runId, JSON.stringify({ type: 'out', content: d })) })
             } else if (st.status === 'completed') {
+              delete runningTools[callId]
               if (!seenTools[callId]) {
                 seenTools[callId] = true
                 sendRef('◈ ' + (part.tool || 'tool') + (arg ? ' · ' + arg : ''), 'tool')
               }
               sendRef('✓ ' + (part.tool || 'tool') + ' done', 'tool')
-              if (out && out !== lastToolOut[callId]) {
-                lastToolOut[callId] = out
-                $ws.sse(runId, JSON.stringify({ type: 'out', content: out }))
-              }
+              if (out) emitOut(lastToolOut, callId, out, (d) => { $ws.sse(runId, JSON.stringify({ type: 'out', content: d })) })
             } else if (st.status === 'error') {
+              delete runningTools[callId]
               sendRef('✗ ' + (part.tool || 'tool') + ' failed', 'tool')
-              if (out) $ws.sse(runId, JSON.stringify({ type: 'out', content: out }))
+              if (out) emitOut(lastToolOut, callId, out, (d) => { $ws.sse(runId, JSON.stringify({ type: 'out', content: d })) })
             }
             return
           }
@@ -1340,10 +1976,18 @@ $fend('start', (data) => {
   return (async () => {
     let sessionId = data.session || ''
     try {
+      const title = String(prompt || '').replace(/\s+/g, ' ').trim().slice(0, 60)
       if (!sessionId) {
-        const created = await api('POST', '/session', { title: '' })
+        const created = await api('POST', '/session', { title: title })
         if (created.status !== 200) throw new Error('create session failed: ' + created.body.slice(0, 120))
         sessionId = JSON.parse(created.body).id
+      } else if (title) {
+        try {
+          const got = await api('GET', '/session/' + sessionId)
+          let cur = ''
+          try { cur = (JSON.parse(got.body) || {}).title || '' } catch(e) {}
+          if (!cur) api('PATCH', '/session/' + sessionId, { title: title })
+        } catch(e) {}
       }
       streamRun(sessionId)
       return { ok: true, runId: runId, sessionId: sessionId }
@@ -1353,7 +1997,7 @@ $fend('start', (data) => {
   })()
 })
 
-$fend('commands', (data) => {
+$fend('commands', async (data) => {
   const out = [
     { name: 'compact', description: 'compact the current conversation (via summarize)' },
     { name: 'new', description: 'start a new session' },
@@ -1361,9 +2005,9 @@ $fend('commands', (data) => {
     { name: 'redo', description: 'redo last undone message' }
   ]
   try {
-    const raw = execSync(curlCmd(OC_HOST + '/command'), { encoding: 'utf-8', timeout: 8000, windowsHide: true, shell: true })
+    const r = await httpGet('/command')
     let list = []
-    try { list = JSON.parse(raw.trim()) } catch(e) {}
+    try { list = JSON.parse(r.body) } catch(e) {}
     if (Array.isArray(list)) {
       for (let i = list.length - 1; i >= 0; i--) {
         out.unshift({ name: list[i].name || '', description: list[i].description || '' })
@@ -1373,10 +2017,21 @@ $fend('commands', (data) => {
   return { ok: true, commands: out }
 })
 
-$fend('stop', (data) => {
+$fend('stop', async (data) => {
   if (!data) return { ok: false }
   const runId = data.runId
   const sessionId = data.session || ''
+  const rp = runProcs[runId]
+  if (rp) {
+    try {
+      if (IS_WIN) await execAsync('taskkill /PID ' + rp.pid + ' /T /F', 5000)
+      else rp.kill('SIGTERM')
+    } catch(e) {
+      try { rp.kill() } catch(e2) {}
+    }
+    try { delete runProcs[runId] } catch(e) {}
+    return { ok: true, mode: 'run' }
+  }
   try {
     if (!sessionId) return { ok: false, error: 'no active session' }
     const httpMod = require('http')
@@ -1397,18 +2052,27 @@ $fend('stop', (data) => {
   }
 })
 
-$fend('ensure_opencode', (data) => {
+$fend('ensure_opencode', async (data) => {
   const runId = data && data.installId
   try {
-    const version = execSync(redirCmd(OC_BIN + ' --version'), { encoding: 'utf-8', timeout: 10000, windowsHide: true, shell: true })
-    console.log('[ensure_opencode] version:', version.trim())
-    if (version && version.trim()) {
-      if (runId) $ws.sse(runId, JSON.stringify({ type: 'done', version: version.trim() }))
-      return { ok: true, installing: false, version: version.trim() }
+    const v = await execAsync(redirCmd(OC_BIN + ' --version'), 10000)
+    const version = v.stdout.trim()
+    console.log('[ensure_opencode] version:', version)
+    if (version) {
+      if (runId) $ws.sse(runId, JSON.stringify({ type: 'done', version: version }))
+      return { ok: true, installing: false, version: version }
     }
   } catch(e) {}
   if (!runId) return { error: 'no installId' }
   try {
+    const freeMem = require('os').freemem()
+    const freeMB = Math.round(freeMem / 1024 / 1024)
+    if (freeMem < 1024 * 1024 * 1024) {
+      const msg = '当前可用内存 ' + freeMB + 'M，内存过小，opencode 无法使用'
+      console.log('[ensure_opencode] memory too low:', freeMB + 'M')
+      $ws.sse(runId, JSON.stringify({ type: 'error', content: msg }))
+      return { ok: false, error: msg }
+    }
     const proc = spawn(process.platform === 'win32' ? process.env.COMSPEC : 'sh',
       process.platform === 'win32' ? ['/d', '/s', '/c', 'npm install -g opencode-ai@latest 2>&1'] : ['-c', 'npm install -g opencode-ai@latest 2>&1'],
       { timeout: 120000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
@@ -1421,12 +2085,13 @@ $fend('ensure_opencode', (data) => {
     }
     proc.stdout.on('data', sendProgress)
     proc.stderr.on('data', sendProgress)
-    proc.on('close', (code) => {
+    proc.on('close', async (code) => {
       try {
         if (code === 0) {
-          const ver = execSync(redirCmd(OC_BIN + ' --version'), { encoding: 'utf-8', timeout: 10000, windowsHide: true, shell: true })
-          console.log('[npm install] done, version:', (ver || 'unknown').trim())
-          $ws.sse(runId, JSON.stringify({ type: 'done', version: (ver || 'unknown').trim() }))
+          const ver = await execAsync(redirCmd(OC_BIN + ' --version'), 10000)
+          const version = ver.stdout.trim() || 'unknown'
+          console.log('[npm install] done, version:', version)
+          $ws.sse(runId, JSON.stringify({ type: 'done', version: version }))
         } else {
           $ws.sse(runId, JSON.stringify({ type: 'error', content: 'npm install failed (code ' + code + ')' }))
         }
@@ -1444,7 +2109,7 @@ $fend('ensure_opencode', (data) => {
   }
 })
 
-$fend('models', () => {
+$fend('models', async () => {
   const now = Date.now()
   let cached, cachedTime
   try { cached = JSON.parse($store.get('aichat_models_cache') || 'null') } catch(e) {}
@@ -1452,7 +2117,8 @@ $fend('models', () => {
   if (cached && now - cachedTime < 60000) return { models: cached, cached: true }
   if (cached) {
     try {
-      const raw = execSync(redirCmd(OC_BIN + ' models'), { encoding: 'utf-8', timeout: 10000, windowsHide: true, shell: true })
+      const r = await execAsync(redirCmd(OC_BIN + ' models'), 10000)
+      const raw = r.stdout
       console.log('[models cached-refresh] raw:', raw.trim())
       if (raw && raw.trim()) {
         const list = raw.trim().split('\n').filter(Boolean).map((s) => { return s.trim() })
@@ -1464,7 +2130,8 @@ $fend('models', () => {
     return { models: cached }
   }
   try {
-    const raw = execSync(redirCmd(OC_BIN + ' models'), { encoding: 'utf-8', timeout: 10000, windowsHide: true, shell: true })
+    const r = await execAsync(redirCmd(OC_BIN + ' models'), 10000)
+    const raw = r.stdout
     console.log('[models] raw:', raw.trim())
     if (!raw || !raw.trim()) return { models: [] }
     const list = raw.trim().split('\n').filter(Boolean).map((s) => { return s.trim() })
@@ -1501,7 +2168,7 @@ $fend('delete_session', (data) => {
   }
 })
 
-$fend('opencode_sessions', () => {
+$fend('opencode_sessions', async () => {
   const now = Date.now()
   let cached, cachedTime
   try { cached = JSON.parse($store.get('aichat_oc_sessions_cache') || 'null') } catch(e) {}
@@ -1510,7 +2177,8 @@ $fend('opencode_sessions', () => {
   if (cached && now - cachedTime < 15000) return { sessions: cached, cached: true }
   if (cached) {
     try {
-      const raw = execSync(redirCmd(OC_BIN + ' session list --format json -n 30'), { encoding: 'utf-8', timeout: 8000, windowsHide: true, shell: true })
+      const r = await execAsync(redirCmd(OC_BIN + ' session list --format json -n 30'), 8000)
+      const raw = r.stdout
       console.log('[opencode_sessions cached-refresh] raw:', raw.trim())
       if (raw && raw.trim()) {
         const list = JSON.parse(raw.trim())
@@ -1522,7 +2190,8 @@ $fend('opencode_sessions', () => {
     return { sessions: cached }
   }
   try {
-    const raw = execSync(redirCmd(OC_BIN + ' session list --format json -n 30'), { encoding: 'utf-8', timeout: 8000, windowsHide: true, shell: true })
+    const r = await execAsync(redirCmd(OC_BIN + ' session list --format json -n 30'), 8000)
+    const raw = r.stdout
     console.log('[opencode_sessions] raw:', raw.trim())
     if (!raw || !raw.trim()) return { sessions: [] }
     const sessions = JSON.parse(raw.trim())
@@ -1534,10 +2203,51 @@ $fend('opencode_sessions', () => {
   }
 })
 
-$fend('opencode_delete_session', (data) => {
+$fend('opencode_delete_session', async (data) => {
   if (!data || !data.id) return { ok: false }
   try {
-    execSync(redirCmd(OC_BIN + ' session delete ' + data.id), { encoding: 'utf-8', timeout: 10000, windowsHide: true, shell: true })
+    await execAsync(redirCmd(OC_BIN + ' session delete ' + data.id), 10000)
+    return { ok: true }
+  } catch(e) {
+    return { ok: false, error: e.message }
+  }
+})
+
+const ocPost = (path, body) => {
+  return new Promise((resolve, reject) => {
+    const httpMod = require('http')
+    const payload = body ? JSON.stringify(body) : ''
+    const req = httpMod.request({
+      host: '127.0.0.1', port: 14096, path: path, method: 'POST',
+      headers: body ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } : {}
+    }, (res) => {
+      let buf = ''
+      res.on('data', (c) => { buf += c })
+      res.on('end', () => { resolve({ status: res.statusCode, body: buf }) })
+    })
+    req.on('error', reject)
+    req.setTimeout(8000, () => { req.destroy(); reject(new Error('timeout')) })
+    if (body) req.write(payload)
+    req.end()
+  })
+}
+
+$fend('question_reply', async (data) => {
+  if (!data || !data.requestID || !Array.isArray(data.answers)) return { ok: false, error: 'invalid params' }
+  try {
+    const r = await ocPost('/question/' + encodeURIComponent(data.requestID) + '/reply', { answers: data.answers })
+    if (r.status !== 200) return { ok: false, error: r.body.slice(0, 200) }
+    return { ok: true }
+  } catch(e) {
+    return { ok: false, error: e.message }
+  }
+})
+
+$fend('question_reject', async (data) => {
+  if (!data || !data.requestID) return { ok: false, error: 'invalid params' }
+  try {
+    const r = await ocPost('/question/' + encodeURIComponent(data.requestID) + '/reject')
+    if (r.status !== 200) return { ok: false, error: r.body.slice(0, 200) }
     return { ok: true }
   } catch(e) {
     return { ok: false, error: e.message }
