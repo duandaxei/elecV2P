@@ -21,7 +21,7 @@
     }
     #app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     .header {
-      display: flex; align-items: center; gap: 10px; padding: 10px 16px; position: relative;
+      display: flex; align-items: center; gap: 12px; padding: 12px 22px; position: relative;
       background: var(--bk2); border-bottom: 1px solid var(--bd); flex-shrink: 0;
     }
     .header h1 { font-size: 16px; color: var(--ac); white-space: nowrap; cursor: pointer; }
@@ -31,10 +31,18 @@
     .dot.run { background: var(--ac); animation: pulse 1s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
     .header button {
-      padding: 4px 10px; border-radius: 6px; border: 1px solid var(--bd);
+      padding: 5px 12px; border-radius: 7px; border: 1px solid var(--bd);
       background: var(--bk3); color: var(--fc2); font-size: 12px; cursor: pointer;
     }
     .header button:hover { color: var(--fc); border-color: var(--fc3); }
+    .header .provider-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      border-color: rgba(88,166,255,.45); background: rgba(88,166,255,.08);
+      color: var(--ac); font-weight: 600;
+    }
+    .header .provider-btn:hover { border-color: var(--ac); background: rgba(88,166,255,.16); color: #79b8ff; }
+    .header .provider-btn .pc-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+    .header .provider-btn .pc-dot.none { background: var(--fc3); }
     .header .dropdown-trigger { font-size: 12px; color: var(--fc2); cursor: pointer; position: relative; white-space: nowrap; }
     .header .dropdown-trigger b { color: var(--ok); }
     .header .dropdown-trigger:hover b { text-decoration: underline; }
@@ -260,14 +268,22 @@
     @keyframes installSpin { to { transform: rotate(360deg) } }
     .provider-overlay {
       position: fixed; inset: 0; z-index: 9997;
-      background: var(--bk); display: flex; align-items: center; justify-content: center;
+      background: rgba(13,17,23,.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
       flex-direction: column; gap: 16px; padding: 20px;
     }
     .provider-panel {
       width: min(560px, 94vw); max-height: 86vh; overflow-y: auto;
       background: var(--bk2); border: 1px solid var(--bd); border-radius: 12px;
       padding: 22px; display: flex; flex-direction: column; gap: 10px;
+      position: relative;
     }
+    .provider-panel .pp-close {
+      position: absolute; top: 10px; right: 12px;
+      background: none; border: none; color: var(--fc2); cursor: pointer;
+      font-size: 20px; line-height: 1; padding: 4px 8px; border-radius: 6px;
+    }
+    .provider-panel .pp-close:hover { background: var(--bk3); color: var(--fc); }
     .provider-panel .pp-title { font-size: 17px; color: var(--fc); font-weight: bold; }
     .provider-panel .pp-sub { font-size: 12px; color: var(--fc2); margin-bottom: 6px; }
     .provider-card {
@@ -287,12 +303,21 @@
     }
     .provider-card .pc-key:focus { border-color: var(--ac); }
     .provider-card .pc-btn {
-      padding: 6px 14px; border: 1px solid var(--ac); border-radius: 6px;
+      height: 30px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid var(--ac); border-radius: 6px;
       background: transparent; color: var(--ac); font-size: 12px; cursor: pointer; white-space: nowrap;
     }
     .provider-card .pc-btn:hover { background: rgba(88,166,255,.12); }
     .provider-card .pc-btn.used { border-color: var(--ok); color: var(--ok); }
     .provider-card .pc-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .provider-card .pc-del {
+      height: 30px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid var(--bd); border-radius: 6px;
+      background: transparent; color: var(--fc3); font-size: 15px; line-height: 1; cursor: pointer;
+      white-space: nowrap; margin-left: 4px;
+    }
+    .provider-card .pc-del:hover { border-color: var(--del); color: var(--del); background: rgba(248,81,73,.10); }
+    .provider-card .pc-del:disabled { opacity: .5; cursor: not-allowed; }
     .provider-card .pc-omni-status { font-size: 11px; color: var(--fc2); white-space: nowrap; }
     .provider-add {
       margin-top: 6px; padding: 10px 12px; border: 1px dashed var(--bd); border-radius: 10px;
@@ -330,6 +355,7 @@
       background: var(--del); color: #fff; opacity: 0; transition: opacity .25s;
       pointer-events: none; white-space: nowrap;
     }
+    .notify.success { background: var(--ok); }
     .notify.show { opacity: 1; }
     .todo-panel {
       flex-shrink: 0; max-height: 140px; overflow-y: auto;
@@ -396,6 +422,7 @@
 
   <div class="provider-overlay" v-if="!installOverlay && providerOverlay">
     <div class="provider-panel">
+      <button class="pp-close" @click="providerOverlay=false" title="Close">×</button>
       <div class="pp-title">Choose model provider</div>
       <div class="pp-sub">Enter an API key for the provider, or start use OmniRoute. Selection is saved for next time.</div>
       <div class="provider-card" v-for="p in providerList" :key="p.name" :class="{active: p.current}">
@@ -405,6 +432,7 @@
         </div>
         <input class="pc-key" v-model="providerKeys[p.name]" :placeholder="p.hasKey ? 'key saved · re-enter to change' : 'API key'" type="password">
         <button class="pc-btn" :class="{used: p.current}" :disabled="providerBusy" @click="useProvider(p.name)">{{ p.current ? 'current' : 'use' }}</button>
+        <button class="pc-del" :disabled="providerBusy || p.current" :title="p.current ? 'Cannot delete the current provider' : 'Delete provider'" @click="deleteProvider(p.name)">×</button>
       </div>
       <div class="provider-card" :class="{active: omniCurrent}">
         <div class="pc-info">
@@ -453,7 +481,7 @@
     </div>
   </div>
 
-  <div class="notify" :class="{show: notifyShow}">{{ notifyMsg }}</div>
+  <div class="notify" :class="[{show: notifyShow}, notifyType === 'success' ? 'success' : 'error']">{{ notifyMsg }}</div>
 
   <div class="overlay" :class="{show: sessionPanelOpen}" @click="sessionPanelOpen=false"></div>
 
@@ -496,7 +524,9 @@
     <span class="dot" :class="{run: busy}"></span>
     <span class="load" v-if="loading">&#8226; &#8226; &#8226;</span>
     <span class="ver">{{ piVersion }}</span>
-    <button @click="showProviderPicker" title="Switch model provider">provider</button>
+    <button class="provider-btn" @click="showProviderPicker" :title="'Switch model provider · current: ' + (currentProvider || 'none')">
+      <span class="pc-dot" :class="{none: !currentProvider}"></span>{{ currentProvider || 'provider' }}
+    </button>
     <span class="dropdown-trigger" @click.stop="toggleDropdown('session')" title="Click to select session">
       <b>{{ sessionLabel }}</b> <span class="arr">&#9660;</span>
       <div class="dropdown" :class="{show: dropdown==='session'}" @click.stop>
@@ -611,13 +641,14 @@
         commands: [], cmdOpen: false, cmdIdx: -1,
         histList: [], histIdx: -1, histDraft: '',
         sessionPanelOpen: false, dropdown: '',
-        notifyMsg: '', notifyShow: false, loading: false,
+        notifyMsg: '', notifyShow: false, notifyType: 'error', loading: false,
         piVersion: '', installOverlay: true, installErr: '', installProgress: 'This may take a minute',
         ctxUsed: 0, ctxLimit: 0, ctxPct: 0, ctxModel: '',
         question: null, qSel: [], qCustom: [], qSubmitting: false, qEl: null,
         workspace: '', wsBusy: false,
         sseMain: null, mainReady: false, sseHandlers: {}, switching: false,
         providerOverlay: false, providerList: [], providerKeys: {}, providerBusy: false,
+        currentProvider: '',
         omniCurrent: false, omniStatus: 'checking…',
         customOpen: false, customBusy: false,
         customForm: { name: '', baseUrl: '', apiKey: '', api: 'openai-completions', models: '' }
@@ -763,8 +794,9 @@
         this.sessionPanelOpen = true
         this.loadSessions()
       },
-      showNotify(msg) {
+      showNotify(msg, type) {
         this.notifyMsg = msg
+        this.notifyType = type === 'success' ? 'success' : 'error'
         this.notifyShow = true
         clearTimeout(notifyTimer)
         notifyTimer = setTimeout(() => { this.notifyShow = false }, 6000)
@@ -779,7 +811,7 @@
           self.wsBusy = false
           if (data && data.ok) {
             self.workspace = data.cwd
-            self.showNotify('workspace set: ' + data.cwd)
+            self.showNotify('workspace set: ' + data.cwd, 'success')
             self.sessionId = ''
             self.clearChat()
             self.loadSessions()
@@ -820,12 +852,14 @@
         localStorage.setItem('aichat_pi_last_model', this.currentModel)
         this.dropdown = ''
         this.refreshCtx()
+        this.loadProviders().catch(() => {})
       },
       switchDefaultModel(m) {
         this.currentModel = (m || '').replace(/\r/g, '')
         localStorage.setItem('aichat_pi_last_model', this.currentModel)
         this.dropdown = ''
         this.refreshCtx()
+        this.loadProviders().catch(() => {})
       },
       selectSession(id) {
         const prev = this.sessionId
@@ -855,7 +889,7 @@
         this.fetchFend('delete_session', { id: id }, 10000).then(() => {
           if (self.sessionId === id) self.sessionId = ''
           self.loadSessions()
-          self.showNotify('Session deleted')
+          self.showNotify('Session deleted', 'success')
         }).catch((e) => {
           self.showNotify('Delete failed: ' + e.message)
         }).then(() => { delete self.deleting[id] })
@@ -868,7 +902,7 @@
           if (data.ok) {
             if (self.sessionId === id) self.sessionId = ''
             self.loadSessions()
-            self.showNotify('Session deleted')
+            self.showNotify('Session deleted', 'success')
           } else {
             self.showNotify('Delete failed: ' + (data.error || 'unknown'))
           }
@@ -908,12 +942,14 @@
       },
       loadProviders() {
         const self = this
-        return this.fetchFend('providers', {}, 10000).then((data) => {
+        return this.fetchFend('providers', { model: this.currentModel }, 10000).then((data) => {
           if (data && Array.isArray(data.providers)) self.providerList = data.providers
           self.omniCurrent = !!(data && data.omniCurrent)
           self.omniStatus = data && data.omniStatus ? data.omniStatus : 'offline'
+          const cur = (self.providerList || []).find((p) => p.current)
+          self.currentProvider = self.omniCurrent ? 'omniroute' : (cur ? cur.name : '')
           return data || {}
-        }).catch(() => ({}))
+        }).catch(() => {})
       },
       showProviderPicker() {
         const self = this
@@ -939,7 +975,8 @@
         this.fetchFend(fendName, payload, 10000).then((data) => {
           self.providerBusy = false
           if (data && data.ok) {
-            self.showNotify('Provider ' + name + (key ? ' saved' : ' selected'))
+            self.showNotify('Provider ' + name + (key ? ' saved' : ' selected'), 'success')
+            self.currentProvider = name
             self.providerOverlay = false
             self.loadSessions().then(() => {
               const defModel = data && data.model ? data.model : ''
@@ -963,10 +1000,15 @@
         this.fetchFend('provider_save', { name: 'omniroute', apiKey: '' }, 10000).then((data) => {
           self.providerBusy = false
           if (data && data.ok) {
-            self.showNotify('OmniRoute enabled')
+            self.showNotify('OmniRoute enabled', 'success')
             self.omniCurrent = true
+            self.currentProvider = 'omniroute'
             self.providerOverlay = false
-            self.loadSessions().then(() => { self.selectModel('') })
+            self.loadSessions().then(() => {
+              const defModel = data && data.model ? data.model : ''
+              if (defModel) self.switchDefaultModel(defModel)
+              else self.selectModel('')
+            })
           } else {
             self.showNotify('Failed: ' + ((data && data.error) || 'unknown'))
           }
@@ -999,7 +1041,8 @@
         }, 10000).then((data) => {
           self.customBusy = false
           if (data && data.ok) {
-            self.showNotify('Custom provider ' + name + ' saved')
+            self.showNotify('Custom provider ' + name + ' saved', 'success')
+            self.currentProvider = name
             self.customOpen = false
             self.providerOverlay = false
             self.loadSessions().then(() => {
@@ -1012,6 +1055,28 @@
           }
         }).catch((e) => {
           self.customBusy = false
+          self.showNotify('Failed: ' + e.message)
+        })
+      },
+      deleteProvider(name) {
+        const self = this
+        if (!name) return
+        if (this.providerList.find((p) => p.name === name && p.current)) {
+          this.showNotify('Cannot delete the current provider. Switch provider first.')
+          return
+        }
+        if (!confirm('Delete provider "' + name + '"?')) return
+        this.providerBusy = true
+        this.fetchFend('provider_delete', { name: name }, 10000).then((data) => {
+          self.providerBusy = false
+          if (data && data.ok) {
+            self.showNotify('Provider ' + name + ' deleted', 'success')
+            self.loadProviders().catch(() => {})
+          } else {
+            self.showNotify('Failed: ' + ((data && data.error) || 'unknown'))
+          }
+        }).catch((e) => {
+          self.providerBusy = false
           self.showNotify('Failed: ' + e.message)
         })
       },
@@ -1476,8 +1541,9 @@
             }
           }
           self.refreshCtx()
-          self.loadProviders().then(() => {
-            self.showProviderPicker()
+          self.loadProviders().then((pd) => {
+            const hasProvider = !!(pd && pd.providers && pd.providers.some((p) => p.current || p.hasKey))
+            if (!hasProvider && !savedModel) self.showProviderPicker()
           })
         })
       },
@@ -1598,17 +1664,52 @@ const execAsync = (cmd, timeout) => {
   })
 }
 
-const httpGetUrl = (url, timeout) => {
+const httpGetUrl = (url, timeout, hops) => {
   return new Promise((resolve) => {
-    const httpMod = require('http')
-    const u = new (require('url').URL)(url)
-    const req = httpMod.get({ hostname: u.hostname, port: u.port || 80, path: u.pathname + u.search }, (res) => {
+    let httpMod
+    try {
+      httpMod = require(/^https:/.test(String(url)) ? 'https' : 'http')
+    } catch(e) { resolve({ status: 0, body: '' }); return }
+    let u
+    try { u = new (require('url').URL)(url) } catch(e) { resolve({ status: 0, body: '' }); return }
+    const maxHops = hops || 5
+    const req = httpMod.get({ hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80), path: u.pathname + u.search }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && maxHops > 0) {
+        res.resume()
+        let next = res.headers.location
+        try { next = new (require('url').URL)(next, url).href } catch(e) {}
+        httpGetUrl(next, timeout, maxHops - 1).then(resolve)
+        return
+      }
       let buf = ''
       res.on('data', (c) => { buf += c })
       res.on('end', () => { resolve({ status: res.statusCode, body: buf }) })
     })
     req.on('error', () => { resolve({ status: 0, body: '' }) })
     req.setTimeout(timeout || 4000, () => { req.destroy(); resolve({ status: 0, body: '' }) })
+  })
+}
+
+const fetchOmniModels = () => {
+  return new Promise((resolve) => {
+    httpGetUrl(OMNI_HOST + '/v1/models', 6000, 3).then((r) => {
+      let models = []
+      if (r.status === 200 && r.body) {
+        try {
+          const parsed = JSON.parse(r.body)
+          const list = (parsed && parsed.data) || []
+          models = list.filter((m) => m && m.id).map((m) => {
+            return {
+              id: String(m.id),
+              name: m.name || m.id,
+              contextWindow: m.context_length || 128000,
+              maxTokens: m.max_output_tokens || 16384
+            }
+          })
+        } catch(e) {}
+      }
+      resolve(models)
+    }).catch(() => resolve([]))
   })
 }
 
@@ -1711,24 +1812,32 @@ const PROVIDER_PRESETS = [
   ] }
 ]
 
-$fend('providers', () => {
+$fend('providers', (data) => {
   const mj = readModelsJson() || { providers: {} }
   const st = readSettingsJson()
   const def = String(st.defaultProvider || '')
+  const pm = parseModel(String((data && data.model) || '').trim())
+  let eff = def
+  if (pm.provider) {
+    if ((mj.providers || {})[pm.provider]) eff = pm.provider
+    else if (pm.provider === 'oc' && (mj.providers || {}).omniroute) eff = 'omniroute'
+  }
+  const hidden = ((st.hiddenProviders) || []).filter((x) => typeof x === 'string')
   const list = []
   for (const p of PROVIDER_PRESETS) {
+    if (hidden.indexOf(p.name) >= 0) continue
     const existing = (mj.providers || {})[p.name] || {}
     const hasKey = !!(existing.apiKey && String(existing.apiKey) !== '' && !/^\$/.test(String(existing.apiKey)))
-    list.push({ name: p.name, baseUrl: p.baseUrl, api: p.api, hasKey: hasKey, current: def === p.name, custom: false })
+    list.push({ name: p.name, baseUrl: p.baseUrl, api: p.api, hasKey: hasKey, current: eff === p.name, custom: false })
   }
   for (const key in (mj.providers || {})) {
     if (key === 'omniroute') continue
     if (PROVIDER_PRESETS.find((p) => p.name === key)) continue
     const existing = mj.providers[key] || {}
     const hasKey = !!(existing.apiKey && String(existing.apiKey) !== '' && !/^\$/.test(String(existing.apiKey)))
-    list.push({ name: key, baseUrl: existing.baseUrl || '', api: existing.api || 'openai-completions', hasKey: hasKey, current: def === key, custom: true })
+    list.push({ name: key, baseUrl: existing.baseUrl || '', api: existing.api || 'openai-completions', hasKey: hasKey, current: eff === key, custom: true })
   }
-  let omniCurrent = def === 'omniroute'
+  let omniCurrent = eff === 'omniroute'
   let omniStatus = 'disabled'
   if (omniCurrent) omniStatus = (mj.providers || {}).omniroute ? 'enabled · default provider' : 'pending config'
   else if ((mj.providers || {}).omniroute) omniStatus = 'installed · not default'
@@ -1755,13 +1864,29 @@ $fend('provider_save', (data) => {
     if (name === 'omniroute') {
       const old = mj.providers.omniroute || {}
       mj.providers.omniroute = Object.assign({ baseUrl: OMNI_HOST + '/v1', api: 'openai-completions', apiKey: old.apiKey || 'omniroute', authHeader: true }, old, { compat: old.compat || { supportsDeveloperRole: false, supportsReasoningEffort: false, thinkingFormat: 'deepseek' } })
-      if (!mj.providers.omniroute.models || !mj.providers.omniroute.models.length) {
-        mj.providers.omniroute.models = []
-      }
       st.defaultProvider = 'omniroute'
       delete st.defaultModel
-      const omniMods = (mj.providers.omniroute && mj.providers.omniroute.models) || []
-      if (omniMods.length) st.defaultModel = omniMods[0].id
+      return new Promise((resolve) => {
+        fetchOmniModels().then((models) => {
+          if (models.length) {
+            mj.providers.omniroute.models = models
+            st.defaultModel = 'omniroute/' + models[0].id
+          } else if (!(mj.providers.omniroute.models || []).length) {
+            mj.providers.omniroute.models = []
+          }
+          writeFileJson(modelsFile(), mj)
+          writeFileJson(SETTINGS_FILE(), st)
+          try { $store.set('pi_models_cache', 'null') } catch(e) {}
+          try { $store.set('pi_models_time', '0') } catch(e) {}
+          resolve({ ok: true, model: String(st.defaultModel || '') })
+        }).catch(() => {
+          writeFileJson(modelsFile(), mj)
+          writeFileJson(SETTINGS_FILE(), st)
+          try { $store.set('pi_models_cache', 'null') } catch(e) {}
+          try { $store.set('pi_models_time', '0') } catch(e) {}
+          resolve({ ok: true, model: String(st.defaultModel || '') })
+        })
+      })
     } else {
       const preset = PROVIDER_PRESETS.find((p) => p.name === name)
       if (!preset) return { ok: false, error: 'unknown provider: ' + name }
@@ -1822,6 +1947,37 @@ $fend('provider_custom_save', (data) => {
   }
 })
 
+$fend('provider_delete', (data) => {
+  const name = data && data.name ? String(data.name).trim() : ''
+  if (!name) return { ok: false, error: 'provider name required' }
+  if (name === 'omniroute') return { ok: false, error: 'omniroute cannot be deleted' }
+  try {
+    const mj = readModelsJson() || { providers: {} }
+    if (!mj.providers) mj.providers = {}
+    const isPreset = !!PROVIDER_PRESETS.find((p) => p.name === name)
+    const st = readSettingsJson()
+    if (!st.hiddenProviders) st.hiddenProviders = []
+    if (isPreset) {
+      // presets live in PROVIDER_PRESETS, not models.json; hide via settings so they don't reappear
+      if (st.hiddenProviders.indexOf(name) < 0) st.hiddenProviders.push(name)
+    } else {
+      if (!mj.providers[name]) return { ok: false, error: 'provider not found: ' + name }
+      delete mj.providers[name]
+    }
+    if (st.defaultProvider === name) {
+      st.defaultProvider = ''
+      delete st.defaultModel
+    }
+    writeFileJson(modelsFile(), mj)
+    writeFileJson(SETTINGS_FILE(), st)
+    try { $store.set('pi_models_cache', 'null') } catch(e) {}
+    try { $store.set('pi_models_time', '0') } catch(e) {}
+    return { ok: true }
+  } catch(e) {
+    return { ok: false, error: e.message }
+  }
+})
+
 $fend('models', async () => {
   const now = Date.now()
   let cached, cachedTime
@@ -1844,6 +2000,20 @@ $fend('models', async () => {
     $store.set('pi_models_cache', JSON.stringify(list))
     $store.set('pi_models_time', String(now))
     return { models: list }
+  }
+  const mj = readModelsJson() || { providers: {} }
+  if ((mj.providers || {}).omniroute) {
+    const omniModels = await fetchOmniModels()
+    if (omniModels.length) {
+      mj.providers.omniroute.models = omniModels
+      writeFileJson(modelsFile(), mj)
+      const omniList = collectConfiguredModels(readModelsJson())
+      if (omniList.length) {
+        $store.set('pi_models_cache', JSON.stringify(omniList))
+        $store.set('pi_models_time', String(now))
+        return { models: omniList }
+      }
+    }
   }
   try {
     const r = await execAsync(redirCmd(PI_BIN + ' --list-models'), 15000)
