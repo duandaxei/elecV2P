@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>OpenCode.efh By elecV2</title>
+  <title>Pi.efh By elecV2</title>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
   <style>
@@ -175,6 +175,18 @@
       font-size: 18px; padding: 2px 6px; border-radius: 4px;
     }
     .session-panel-header button:hover { background: var(--bk3); color: var(--fc); }
+    .ws-row { display: flex; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--bd); flex-shrink: 0; }
+    .ws-row input {
+      flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--bd);
+      background: var(--bk3); color: var(--fc); font-size: 12px; outline: none; font-family: inherit;
+    }
+    .ws-row input:focus { border-color: var(--ac); }
+    .ws-row button {
+      padding: 4px 12px; border-radius: 6px; border: 1px solid var(--bd);
+      background: var(--bk3); color: var(--fc2); font-size: 12px; cursor: pointer; flex-shrink: 0;
+    }
+    .ws-row button:hover { color: var(--fc); border-color: var(--fc3); }
+    .ws-row button:disabled { opacity: .4; cursor: not-allowed; }
     .session-list { flex: 1; overflow-y: auto; padding: 8px; }
     .session-item {
       padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px;
@@ -246,6 +258,72 @@
     }
     .install-overlay button:hover { background: var(--bk2); }
     @keyframes installSpin { to { transform: rotate(360deg) } }
+    .provider-overlay {
+      position: fixed; inset: 0; z-index: 9997;
+      background: var(--bk); display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px; padding: 20px;
+    }
+    .provider-panel {
+      width: min(560px, 94vw); max-height: 86vh; overflow-y: auto;
+      background: var(--bk2); border: 1px solid var(--bd); border-radius: 12px;
+      padding: 22px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .provider-panel .pp-title { font-size: 17px; color: var(--fc); font-weight: bold; }
+    .provider-panel .pp-sub { font-size: 12px; color: var(--fc2); margin-bottom: 6px; }
+    .provider-card {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      border: 1px solid var(--bd); border-radius: 10px; background: var(--bk3);
+      transition: border-color .15s;
+    }
+    .provider-card:hover { border-color: var(--fc3); }
+    .provider-card.active { border-color: var(--ac); background: rgba(88,166,255,.08); }
+    .provider-card .pc-info { flex: 1; min-width: 0; }
+    .provider-card .pc-name { font-size: 14px; color: var(--fc); font-weight: bold; }
+    .provider-card .pc-desc { font-size: 11px; color: var(--fc2); word-break: break-all; }
+    .provider-card .pc-key {
+      flex: 1; max-width: 190px; padding: 6px 9px; border-radius: 6px;
+      border: 1px solid var(--bd); background: var(--bk); color: var(--fc);
+      font-size: 12px; outline: none;
+    }
+    .provider-card .pc-key:focus { border-color: var(--ac); }
+    .provider-card .pc-btn {
+      padding: 6px 14px; border: 1px solid var(--ac); border-radius: 6px;
+      background: transparent; color: var(--ac); font-size: 12px; cursor: pointer; white-space: nowrap;
+    }
+    .provider-card .pc-btn:hover { background: rgba(88,166,255,.12); }
+    .provider-card .pc-btn.used { border-color: var(--ok); color: var(--ok); }
+    .provider-card .pc-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .provider-card .pc-omni-status { font-size: 11px; color: var(--fc2); white-space: nowrap; }
+    .provider-add {
+      margin-top: 6px; padding: 10px 12px; border: 1px dashed var(--bd); border-radius: 10px;
+      background: transparent; color: var(--ac); font-size: 13px; cursor: pointer;
+    }
+    .provider-add:hover { border-color: var(--ac); background: rgba(88,166,255,.08); }
+    .custom-overlay {
+      position: fixed; inset: 0; z-index: 9997;
+      background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center;
+    }
+    .custom-panel {
+      width: min(520px, 94vw); max-height: 86vh; overflow-y: auto;
+      background: var(--bk2); border: 1px solid var(--bd); border-radius: 12px;
+      padding: 22px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .custom-panel .cp-title { font-size: 16px; color: var(--fc); font-weight: bold; }
+    .custom-panel .cp-sub { font-size: 12px; color: var(--fc2); }
+    .cp-field { display: flex; flex-direction: column; gap: 5px; }
+    .cp-field label { font-size: 12px; color: var(--fc2); }
+    .cp-field input, .cp-field select {
+      padding: 8px 10px; border-radius: 6px; border: 1px solid var(--bd);
+      background: var(--bk3); color: var(--fc); font-size: 13px; outline: none;
+    }
+    .cp-field input:focus, .cp-field select:focus { border-color: var(--ac); }
+    .cp-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+    .cp-actions button {
+      padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 13px;
+    }
+    .cp-save { background: var(--ac); color: #000; font-weight: bold; border: 1px solid var(--ac); }
+    .cp-save:disabled { opacity: .5; cursor: not-allowed; }
+    .cp-cancel { background: var(--bk3); color: var(--fc2); border: 1px solid var(--bd); }
     .notify {
       position: fixed; bottom: 68px; left: 50%; transform: translateX(-50%);
       padding: 6px 14px; border-radius: 6px; font-size: 12px; z-index: 9998;
@@ -310,10 +388,69 @@
 <div id="app">
   <div class="install-overlay" v-if="installOverlay">
     <div class="spin" v-if="!installErr"></div>
-    <div class="title" v-if="!installErr">Installing opencode...</div>
+    <div class="title" v-if="!installErr">Installing pi...</div>
     <div class="sub" v-if="!installErr">{{ installProgress }}</div>
     <div class="err" v-if="installErr">{{ installErr }}</div>
     <button v-if="installErr" @click="location.reload()">Retry</button>
+  </div>
+
+  <div class="provider-overlay" v-if="!installOverlay && providerOverlay">
+    <div class="provider-panel">
+      <div class="pp-title">Choose model provider</div>
+      <div class="pp-sub">Enter an API key for the provider, or start use OmniRoute. Selection is saved for next time.</div>
+      <div class="provider-card" v-for="p in providerList" :key="p.name" :class="{active: p.current}">
+        <div class="pc-info">
+          <div class="pc-name">{{ p.name }}</div>
+          <div class="pc-desc">{{ p.baseUrl }}</div>
+        </div>
+        <input class="pc-key" v-model="providerKeys[p.name]" :placeholder="p.hasKey ? 'key saved · re-enter to change' : 'API key'" type="password">
+        <button class="pc-btn" :class="{used: p.current}" :disabled="providerBusy" @click="useProvider(p.name)">{{ p.current ? 'current' : 'use' }}</button>
+      </div>
+      <div class="provider-card" :class="{active: omniCurrent}">
+        <div class="pc-info">
+          <div class="pc-name">OmniRoute</div>
+          <div class="pc-desc">{{ omniStatus }}</div>
+        </div>
+        <button class="pc-btn" :class="{used: omniCurrent}" :disabled="providerBusy" @click="useOmniRoute">{{ omniCurrent ? 'current' : 'enable' }}</button>
+      </div>
+      <button class="provider-add" @click="openCustomProvider" :disabled="providerBusy">＋ custom provider</button>
+    </div>
+  </div>
+
+  <div class="custom-overlay" v-if="customOpen">
+    <div class="custom-panel">
+      <div class="cp-title">Add custom provider</div>
+      <div class="cp-sub">For OpenAI-compatible endpoints (gateway proxies, etc.). Fields follow pi models.json config.</div>
+      <div class="cp-field">
+        <label>Name (provider id)</label>
+        <input v-model="customForm.name" placeholder="e.g. myprovider" spellcheck="false">
+      </div>
+      <div class="cp-field">
+        <label>Base URL</label>
+        <input v-model="customForm.baseUrl" placeholder="e.g. https://api.openai.com/v1" spellcheck="false">
+      </div>
+      <div class="cp-field">
+        <label>API key</label>
+        <input v-model="customForm.apiKey" placeholder="sk-..." type="password">
+      </div>
+      <div class="cp-field">
+        <label>API type</label>
+        <select v-model="customForm.api">
+          <option value="openai-completions">openai-completions (most compatible)</option>
+          <option value="openai-responses">openai-responses</option>
+          <option value="anthropic-messages">anthropic-messages</option>
+          <option value="google-generative-ai">google-generative-ai</option>
+        </select>
+      </div>
+      <div class="cp-field">
+        <label>Model ids (comma separated)</label>
+        <input v-model="customForm.models" placeholder="e.g. gpt-4o-mini, gpt-4o" spellcheck="false">
+      </div>
+      <div class="cp-actions">
+        <button class="cp-cancel" @click="closeCustomProvider">cancel</button>
+        <button class="cp-save" :disabled="customBusy" @click="saveCustomProvider">save & use</button>
+      </div>
+    </div>
   </div>
 
   <div class="notify" :class="{show: notifyShow}">{{ notifyMsg }}</div>
@@ -324,6 +461,10 @@
     <div class="session-panel-header">
       <span>Session History</span>
       <button @click="sessionPanelOpen=false">x</button>
+    </div>
+    <div class="ws-row">
+      <input v-model="workspace" placeholder="pi workspace (project dir) — agent reads/writes files here" @keydown.enter.prevent="setWorkspace" spellcheck="false">
+      <button @click="setWorkspace" :disabled="wsBusy">set</button>
     </div>
     <div class="session-list">
       <template v-if="pinnedSessions.length">
@@ -337,7 +478,7 @@
         </div>
       </template>
       <template v-if="sessions.length">
-        <div class="section-label">Opencode</div>
+        <div class="section-label">Pi</div>
         <div v-for="s in sessions" :key="'o'+s.id" class="session-item"
              :class="{active: s.id===sessionId}" :style="{opacity: deleting[s.id] ? .4 : 1}" @click="selectSession(s.id)">
           <span class="s-del" @click.stop="deleteOCSession(s.id)" title="Delete">x</span>
@@ -351,10 +492,11 @@
   </div>
 
   <div class="header">
-    <h1 @click="sessionPanelOpen=true" title="Open sessions">OpenCode</h1>
+    <h1 @click="sessionPanelOpen=true" title="Open sessions">Pi</h1>
     <span class="dot" :class="{run: busy}"></span>
     <span class="load" v-if="loading">&#8226; &#8226; &#8226;</span>
-    <span class="ver">{{ ocVersion }}</span>
+    <span class="ver">{{ piVersion }}</span>
+    <button @click="showProviderPicker" title="Switch model provider">provider</button>
     <span class="dropdown-trigger" @click.stop="toggleDropdown('session')" title="Click to select session">
       <b>{{ sessionLabel }}</b> <span class="arr">&#9660;</span>
       <div class="dropdown" :class="{show: dropdown==='session'}" @click.stop>
@@ -384,13 +526,12 @@
       <span class="ctx-bar" :class="{ warn: ctxPct >= 80 && ctxPct < 95, danger: ctxPct >= 95 }"><i :style="ctxStyle"></i></span>
       <span class="ctx-num">{{ ctxLabel }} · {{ ctxPct }}%</span>
     </span>
-    <button @click="compactChat()">compact</button>
   </div>
 
   <div class="messages" ref="messagesEl">
     <div class="msg-loading" v-if="switching"><span class="spin"></span> Loading session...</div>
     <template v-else>
-    <div class="welcome" v-if="!messages.length"><b>OpenCode AI Chat</b><br>Streaming via SSE<br>Click title to view sessions</div>
+    <div class="welcome" v-if="!messages.length"><b>Pi Coding Agent</b><br>Streaming via SSE · OmniRoute<br>Set workspace, then send a message</div>
     <div v-for="(m, mi) in messages" :key="mi" :class="['msg', m.role]">
       <template v-if="m.role === 'user'">{{ m.content }}</template>
       <template v-else>
@@ -471,10 +612,15 @@
         histList: [], histIdx: -1, histDraft: '',
         sessionPanelOpen: false, dropdown: '',
         notifyMsg: '', notifyShow: false, loading: false,
-        ocVersion: '', installOverlay: true, installErr: '', installProgress: 'This may take a minute',
+        piVersion: '', installOverlay: true, installErr: '', installProgress: 'This may take a minute',
         ctxUsed: 0, ctxLimit: 0, ctxPct: 0, ctxModel: '',
         question: null, qSel: [], qCustom: [], qSubmitting: false, qEl: null,
-        sseMain: null, mainReady: false, sseHandlers: {}, switching: false
+        workspace: '', wsBusy: false,
+        sseMain: null, mainReady: false, sseHandlers: {}, switching: false,
+        providerOverlay: false, providerList: [], providerKeys: {}, providerBusy: false,
+        omniCurrent: false, omniStatus: 'checking…',
+        customOpen: false, customBusy: false,
+        customForm: { name: '', baseUrl: '', apiKey: '', api: 'openai-completions', models: '' }
       }
     },
     computed: {
@@ -623,6 +769,28 @@
         clearTimeout(notifyTimer)
         notifyTimer = setTimeout(() => { this.notifyShow = false }, 6000)
       },
+      setWorkspace() {
+        if (this.wsBusy) return
+        const self = this
+        const cwd = (this.workspace || '').trim()
+        if (!cwd) return
+        this.wsBusy = true
+        this.fetchFend('workspace_set', { cwd: cwd }, 10000).then((data) => {
+          self.wsBusy = false
+          if (data && data.ok) {
+            self.workspace = data.cwd
+            self.showNotify('workspace set: ' + data.cwd)
+            self.sessionId = ''
+            self.clearChat()
+            self.loadSessions()
+          } else {
+            self.showNotify('set failed: ' + ((data && data.error) || 'unknown'))
+          }
+        }).catch((e) => {
+          self.wsBusy = false
+          self.showNotify('set workspace error: ' + e.message)
+        })
+      },
       loadSessions() {
         const self = this
         this.loading = true
@@ -632,9 +800,12 @@
         ]).then((results) => {
           self.models = (results[1] && results[1].models) || []
           self.pinnedSessions = (results[0] && results[0].pinned) || []
-          return self.fetchFend('opencode_sessions', {}, 8000).catch((e) => { self.showNotify('opencode sessions: ' + e.message); return { sessions: [] } })
+          return self.fetchFend('pi_sessions', {}, 8000).catch((e) => { self.showNotify('pi sessions: ' + e.message); return { sessions: [] } })
         }).then((oc) => {
           if (oc && oc.sessions) self.sessions = oc.sessions
+          return self.fetchFend('workspace', {}, 8000).catch(() => ({}))
+        }).then((ws) => {
+          if (ws && ws.cwd) self.workspace = ws.cwd
         }).finally(() => { self.loading = false })
       },
       fetchFend(key, data, timeout) {
@@ -646,14 +817,20 @@
       },
       selectModel(m) {
         this.currentModel = (m || '').replace(/\r/g, '')
-        localStorage.setItem('aichat_oc_last_model', this.currentModel)
+        localStorage.setItem('aichat_pi_last_model', this.currentModel)
+        this.dropdown = ''
+        this.refreshCtx()
+      },
+      switchDefaultModel(m) {
+        this.currentModel = (m || '').replace(/\r/g, '')
+        localStorage.setItem('aichat_pi_last_model', this.currentModel)
         this.dropdown = ''
         this.refreshCtx()
       },
       selectSession(id) {
         const prev = this.sessionId
         this.sessionId = id
-        localStorage.setItem('aichat_oc_last_session', id)
+        localStorage.setItem('aichat_pi_last_session', id)
         this.dropdown = ''
         this.loadSessions()
         this.syncCtx(id)
@@ -687,7 +864,7 @@
         if (this.deleting[id]) return
         const self = this
         this.deleting[id] = true
-        this.fetchFend('opencode_delete_session', { id: id }, 10000).then((data) => {
+        this.fetchFend('pi_delete_session', { id: id }, 10000).then((data) => {
           if (data.ok) {
             if (self.sessionId === id) self.sessionId = ''
             self.loadSessions()
@@ -729,9 +906,118 @@
           if (data && data.ok && Array.isArray(data.commands)) self.commands = data.commands
         }).catch(() => {})
       },
+      loadProviders() {
+        const self = this
+        return this.fetchFend('providers', {}, 10000).then((data) => {
+          if (data && Array.isArray(data.providers)) self.providerList = data.providers
+          self.omniCurrent = !!(data && data.omniCurrent)
+          self.omniStatus = data && data.omniStatus ? data.omniStatus : 'offline'
+          return data || {}
+        }).catch(() => ({}))
+      },
+      showProviderPicker() {
+        const self = this
+        const keysCopy = {}
+        for (const p of this.providerList) keysCopy[p.name] = ''
+        this.providerKeys = keysCopy
+        this.providerOverlay = true
+        this.loadProviders().catch(() => {})
+      },
+      useProvider(name) {
+        const self = this
+        const p = this.providerList.find((x) => x.name === name) || {}
+        const key = (this.providerKeys[name] || '').trim()
+        if (!key && !p.hasKey) { this.showNotify('Please enter an API key for ' + name); return }
+        this.providerBusy = true
+        const fendName = p.custom ? 'provider_custom_save' : 'provider_save'
+        const payload = { name: name }
+        if (key) payload.apiKey = key
+        if (p.custom) {
+          payload.baseUrl = p.baseUrl
+          payload.api = p.api
+        }
+        this.fetchFend(fendName, payload, 10000).then((data) => {
+          self.providerBusy = false
+          if (data && data.ok) {
+            self.showNotify('Provider ' + name + (key ? ' saved' : ' selected'))
+            self.providerOverlay = false
+            self.loadSessions().then(() => {
+              const defModel = data && data.model ? data.model : ''
+              if (defModel) {
+                self.switchDefaultModel(defModel)
+              } else {
+                self.selectModel('')
+              }
+            })
+          } else {
+            self.showNotify('Failed: ' + ((data && data.error) || 'unknown'))
+          }
+        }).catch((e) => {
+          self.providerBusy = false
+          self.showNotify('Failed: ' + e.message)
+        })
+      },
+      useOmniRoute() {
+        const self = this
+        this.providerBusy = true
+        this.fetchFend('provider_save', { name: 'omniroute', apiKey: '' }, 10000).then((data) => {
+          self.providerBusy = false
+          if (data && data.ok) {
+            self.showNotify('OmniRoute enabled')
+            self.omniCurrent = true
+            self.providerOverlay = false
+            self.loadSessions().then(() => { self.selectModel('') })
+          } else {
+            self.showNotify('Failed: ' + ((data && data.error) || 'unknown'))
+          }
+        }).catch((e) => {
+          self.providerBusy = false
+          self.showNotify('Failed: ' + e.message)
+        })
+      },
+      openCustomProvider() {
+        this.customForm = { name: '', baseUrl: '', apiKey: '', api: 'openai-completions', models: '' }
+        this.customOpen = true
+      },
+      closeCustomProvider() {
+        if (this.customBusy) return
+        this.customOpen = false
+      },
+      saveCustomProvider() {
+        const self = this
+        const name = (this.customForm.name || '').trim().replace(/\s+/g, '-').toLowerCase()
+        const baseUrl = (this.customForm.baseUrl || '').trim()
+        const apiKey = (this.customForm.apiKey || '').trim()
+        if (!name) { this.showNotify('Please enter a provider name'); return }
+        if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) { this.showNotify('Name must be letters/numbers/hyphens only'); return }
+        if (!baseUrl) { this.showNotify('Please enter a base URL'); return }
+        if (!apiKey) { this.showNotify('Please enter an API key'); return }
+        this.customBusy = true
+        this.fetchFend('provider_custom_save', {
+          name: name, baseUrl: baseUrl, apiKey: apiKey, api: this.customForm.api,
+          models: (this.customForm.models || '').split(',').map((s) => s.trim()).filter(Boolean)
+        }, 10000).then((data) => {
+          self.customBusy = false
+          if (data && data.ok) {
+            self.showNotify('Custom provider ' + name + ' saved')
+            self.customOpen = false
+            self.providerOverlay = false
+            self.loadSessions().then(() => {
+              const defModel = data.model ? data.model : ''
+              if (defModel) self.switchDefaultModel(defModel)
+              else self.selectModel('')
+            })
+          } else {
+            self.showNotify('Failed: ' + ((data && data.error) || 'unknown'))
+          }
+        }).catch((e) => {
+          self.customBusy = false
+          self.showNotify('Failed: ' + e.message)
+        })
+      },
       loadHistory() {
         try {
-          let arr = JSON.parse(localStorage.getItem('aichat_oc_history') || '[]')
+          let arr = JSON.parse(localStorage.getItem('aichat_pi_history') || '[]')
           if (Array.isArray(arr)) this.histList = arr
         } catch(e) {}
         this.histIdx = -1
@@ -746,7 +1032,7 @@
         this.histList = arr
         this.histIdx = -1
         this.histDraft = ''
-        try { localStorage.setItem('aichat_oc_history', JSON.stringify(arr)) } catch(e) {}
+        try { localStorage.setItem('aichat_pi_history', JSON.stringify(arr)) } catch(e) {}
       },
       histNav(dir) {
         const self = this
@@ -919,14 +1205,14 @@
               else if (self.ctxLimit) self.ctxPct = Math.round((self.ctxUsed || 0) / self.ctxLimit * 1000) / 10
               if (data.model) self.ctxModel = data.model
               try {
-                if (self.ctxLimit) localStorage.setItem('aichat_oc_ctx_limit', String(self.ctxLimit))
-                if (self.ctxModel) localStorage.setItem('aichat_oc_ctx_model', self.ctxModel)
+                if (self.ctxLimit) localStorage.setItem('aichat_pi_ctx_limit', String(self.ctxLimit))
+                if (self.ctxModel) localStorage.setItem('aichat_pi_ctx_model', self.ctxModel)
               } catch(e) {}
             }
             if (data.type === 'session') {
               self.sessionId = data.id || ''
               try {
-                if (self.sessionId) localStorage.setItem('aichat_oc_last_session', self.sessionId)
+                if (self.sessionId) localStorage.setItem('aichat_pi_last_session', self.sessionId)
               } catch(e) {}
             }
             if (data.type === 'question') {
@@ -985,7 +1271,7 @@
                 el.meta = meta
                 if (data.model) self.ctxModel = data.model
                 try {
-                  if (data.model) localStorage.setItem('aichat_oc_ctx_model', data.model)
+                  if (data.model) localStorage.setItem('aichat_pi_ctx_model', data.model)
                 } catch(e) {}
               }
               self.busy = false
@@ -1048,7 +1334,7 @@
           } else if (data.sessionId) {
             self.sessionId = data.sessionId
             try {
-              if (self.sessionId) localStorage.setItem('aichat_oc_last_session', self.sessionId)
+              if (self.sessionId) localStorage.setItem('aichat_pi_last_session', self.sessionId)
             } catch(e) {}
           }
         }).catch((e) => {
@@ -1162,16 +1448,10 @@
         this.qCustom = []
         this.ctxUsed = 0
         this.ctxPct = 0
-        try { localStorage.removeItem('aichat_oc_last_session') } catch(e) {}
+        try { localStorage.removeItem('aichat_pi_last_session') } catch(e) {}
       },
       compactChat() {
-        const self = this
-        this.messages = []
-        this.todos = []
-        this.inputText = '/compact'
-        this.$nextTick(() => {
-          self.send()
-        })
+        this.clearChat()
       },
       initApp() {
         if (_inited) return
@@ -1183,15 +1463,22 @@
         this.loadHistory()
         this.loadSessions().then(() => {
           self.loading = false
-          const savedModel = localStorage.getItem('aichat_oc_last_model')
-          if (savedModel) self.currentModel = savedModel.replace(/\r/g, '')
-          const savedSession = localStorage.getItem('aichat_oc_last_session')
+          const savedModel = localStorage.getItem('aichat_pi_last_model')
+          if (savedModel && savedModel.replace(/\r/g, '') !== '') {
+            self.currentModel = savedModel.replace(/\r/g, '')
+          } else if (self.models && self.models.length) {
+            self.currentModel = self.models[0].replace(/\r/g, '')
+          }
+          const savedSession = localStorage.getItem('aichat_pi_last_session')
           if (savedSession && savedSession !== self.sessionId && savedSession !== '') {
             for (let i = 0; i < self.sessions.length; i++) {
               if (self.sessions[i].id === savedSession) { self.selectSession(savedSession); break }
             }
           }
           self.refreshCtx()
+          self.loadProviders().then(() => {
+            self.showProviderPicker()
+          })
         })
       },
       refreshCtx() {
@@ -1201,9 +1488,9 @@
             self.ctxLimit = data.limit
             if (data.model) self.ctxModel = data.model
           } else {
-            const saved = localStorage.getItem('aichat_oc_ctx_limit')
+            const saved = localStorage.getItem('aichat_pi_ctx_limit')
             if (saved) self.ctxLimit = Number(saved)
-            const savedModel = localStorage.getItem('aichat_oc_ctx_model')
+            const savedModel = localStorage.getItem('aichat_pi_ctx_model')
             if (savedModel && !self.ctxModel) self.ctxModel = savedModel
           }
           if (self.sessionId) self.syncCtx(self.sessionId)
@@ -1218,7 +1505,7 @@
           if (!self.ctxLimit) return
           self.ctxUsed = data.used || 0
           self.ctxPct = Math.round((self.ctxUsed || 0) / self.ctxLimit * 1000) / 10
-          try { localStorage.setItem('aichat_oc_ctx_limit', String(self.ctxLimit)) } catch(e) {}
+          try { localStorage.setItem('aichat_pi_ctx_limit', String(self.ctxLimit)) } catch(e) {}
         }).catch(() => {})
       },
     },
@@ -1226,7 +1513,7 @@
       const self = this
       document.addEventListener('click', () => { self.dropdown = '' })
 
-      const mainEs = new EventSource('/sse/elecV2P/opencode-main')
+      const mainEs = new EventSource('/sse/elecV2P/pi-main')
       self.sseMain = mainEs
       mainEs.onmessage = (e) => {
         try {
@@ -1250,7 +1537,7 @@
           if (d.type === 'progress') self.installProgress = d.content
           if (d.type === 'done') {
             installEs.close()
-            if (d.version) self.ocVersion = d.version
+            if (d.version) self.piVersion = d.version
             self.initApp()
           }
           if (d.type === 'error') {
@@ -1259,10 +1546,10 @@
           }
         } catch(e) {}
       }
-      this.fetchFend('ensure_opencode', { installId: installId }, 120000).then((data) => {
+      this.fetchFend('ensure_pi', { installId: installId }, 180000).then((data) => {
         if (data && data.ok && !data.installing) {
           installEs.close()
-          if (data.version) self.ocVersion = data.version
+          if (data.version) self.piVersion = data.version
           self.initApp()
         } else if (data && !data.ok && data.error) {
           installEs.close()
@@ -1277,29 +1564,78 @@
 
 <script favend>
 const { spawn, exec } = require('child_process')
+const fs = require('fs')
+const path = require('path')
+const os = require('os')
 
-const OC_HOST = 'http://localhost:14096'
-const OC_BIN = 'opencode'
+const PI_BIN = 'pi'
+const OMNI_HOST = process.env.OMNIROUTE_URL || 'http://127.0.0.1:20128'
+const WS_KEY = 'pi_workspace'
+const APP_CH = 'pi-main'
 
 const stripAnsi = (s) => { return String(s).replace(/\u001b\[[0-9;]*[a-zA-Z]/g, '').replace(/\r/g, '') }
-const isAlive = (pid) => { try { process.kill(Number(pid), 0); return true } catch(e) { return false } }
+const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms) }) }
 
 const SECRET_MASK = '***'
-const SECRET_RE = /((?:api[_-]?key|access_token|auth[_-]?token|api_token|client_secret|session_id|sessionid|secret|password|passwd|token))(["']?)(\s*)([:=])(\s*)(?:"([^"]*)"|'([^']*)'|([^\s,;{}]+))/gi
 const maskSecrets = (s) => {
   if (!s) return s
   return String(s)
-    .replace(SECRET_RE, (m, key, qk, ws1, sep, ws2, dq, sq, plain) => {
-      return key + qk + ws1 + sep + ws2 + (dq !== undefined ? '"' + SECRET_MASK + '"' : sq !== undefined ? "'" + SECRET_MASK + "'" : SECRET_MASK)
-    })
+    .replace(/(api[_-]?key|api_token|access_token|auth[_-]?token|secret|password|passwd)\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,;]+)/gi, '$1=' + SECRET_MASK)
     .replace(/(Bearer\s+)[A-Za-z0-9._~+\/=:-]+/gi, '$1' + SECRET_MASK)
     .replace(/\b(?:sk-[A-Za-z0-9_-]{6,}|sign[a-z0-9_.-]{8,}|eyJ[A-Za-z0-9_-]{10,})\b/gi, SECRET_MASK)
-    .replace(/([a-z][a-z0-9+.-]*:\/\/)[^\/\s:@]*:([^@\s]+)@/gi, '$1' + SECRET_MASK + ':' + SECRET_MASK + '@')
+}
+
+const IS_WIN = process.platform === 'win32'
+const DEVNULL = IS_WIN ? 'nul' : '/dev/null'
+const redirCmd = (cmd) => { return cmd + ' 2>' + DEVNULL }
+
+const execAsync = (cmd, timeout) => {
+  return new Promise((resolve, reject) => {
+    exec(cmd, { timeout: timeout || 15000, windowsHide: true, encoding: 'utf-8', maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) reject(error)
+      else resolve({ stdout: stdout || '', stderr: stderr || '' })
+    })
+  })
+}
+
+const httpGetUrl = (url, timeout) => {
+  return new Promise((resolve) => {
+    const httpMod = require('http')
+    const u = new (require('url').URL)(url)
+    const req = httpMod.get({ hostname: u.hostname, port: u.port || 80, path: u.pathname + u.search }, (res) => {
+      let buf = ''
+      res.on('data', (c) => { buf += c })
+      res.on('end', () => { resolve({ status: res.statusCode, body: buf }) })
+    })
+    req.on('error', () => { resolve({ status: 0, body: '' }) })
+    req.setTimeout(timeout || 4000, () => { req.destroy(); resolve({ status: 0, body: '' }) })
+  })
+}
+
+const getWorkDir = () => {
+  try {
+    const w = $store.get(WS_KEY)
+    if (w) return String(w)
+  } catch(e) {}
+  try { return process.cwd() } catch(e) { return '.' }
+}
+const setWorkDir = (d) => { try { $store.set(WS_KEY, String(d)) } catch(e) {} }
+
+const agentDir = () => {
+  return process.env.PI_CODING_AGENT_DIR || path.join(os.homedir(), '.pi', 'agent')
+}
+const modelsFile = () => { return path.join(agentDir(), 'models.json') }
+const sessionDirFor = (cwd) => {
+  const safe = '--' + String(cwd).replace(/^[\/\\]/, '').replace(/[\/\\:]/g, '-') + '--'
+  return path.join(agentDir(), 'sessions', safe)
+}
+const readModelsJson = () => {
+  try { return JSON.parse(fs.readFileSync(modelsFile(), 'utf8')) } catch(e) { return null }
 }
 
 const toolArg = (inp) => {
   const i = inp || {}
-  let arg = i.command || i.filePath || i.path || i.url || i.pattern || i.query || ''
+  let arg = i.command || i.filePath || i.path || i.url || i.pattern || i.query || i.message || ''
   if (i.filePath) {
     const off = Number(i.offset)
     const lim = Number(i.limit)
@@ -1315,209 +1651,291 @@ const toolArg = (inp) => {
   return arg
 }
 
-const IS_WIN = process.platform === 'win32'
-const IS_PAAS = !!process.env.PAAS
-const DEVNULL = IS_WIN ? 'nul' : '/dev/null'
-let serverProc = null
-const redirCmd = (cmd) => { return cmd + ' 2>' + DEVNULL }
-const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms) }) }
-
-const execAsync = (cmd, timeout) => {
-  return new Promise((resolve, reject) => {
-    exec(cmd, { timeout: timeout || 15000, windowsHide: true, encoding: 'utf-8', maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
-      if (error) reject(error)
-      else resolve({ stdout: stdout || '', stderr: stderr || '' })
-    })
-  })
+const parseModel = (s) => {
+  s = String(s || '').replace(/\r/g, '')
+  const i = s.indexOf('/')
+  if (i > 0) return { provider: s.slice(0, i), model: s.slice(i + 1) }
+  return { provider: '', model: s }
 }
 
-const httpGet = (path, port, timeout) => {
-  return new Promise((resolve) => {
-    const httpMod = require('http')
-    const req = httpMod.get({ host: '127.0.0.1', port: port || 14096, path: path }, (res) => {
-      let buf = ''
-      res.on('data', (c) => { buf += c })
-      res.on('end', () => { resolve({ status: res.statusCode, body: buf }) })
-    })
-    req.on('error', () => { resolve({ status: 0, body: '' }) })
-    req.setTimeout(timeout || 8000, () => { req.destroy(); resolve({ status: 0, body: '' }) })
-  })
-}
-
-let serverReadyAt = 0
-let serverReadyOk = false
-const serverReady = (force) => {
-  const now = Date.now()
-  if (!force && now - serverReadyAt < 5000) return Promise.resolve(serverReadyOk)
-  return httpGet('/', 14096, 3000).then((r) => {
-    serverReadyOk = r.status === 200
-    serverReadyAt = Date.now()
-    return serverReadyOk
-  }).catch(() => {
-    serverReadyOk = false
-    serverReadyAt = Date.now()
-    return false
-  })
-}
-
-const emitOut = (lastStore, callId, out, sendFn) => {
-  if (!out) return
-  const prev = lastStore[callId]
-  if (prev && prev.raw === out) return
-  const masked = maskSecrets(out)
-  let delta = ''
-  if (prev && prev.masked && masked.indexOf(prev.masked) === 0) {
-    delta = masked.slice(prev.masked.length)
-  } else if (prev) {
-    delta = '\n' + masked
-  } else {
-    delta = masked
-  }
-  if (delta) sendFn(delta)
-  lastStore[callId] = { raw: out, masked: masked }
-}
-
-const ensureServer = async () => {
-  let pid = ''
-  try {
-    pid = $store.get('opencode_server_pid')
-    if (pid && isAlive(pid) && (await serverReady())) return true
-  } catch(e) {}
-  if (await serverReady()) {
-    try {
-      const r = await execAsync(IS_WIN ? 'netstat -ano | findstr :14096' : 'lsof -t -iTCP:14096', 5000)
-      const found = r.stdout
-      const fpid = String(found).trim().split(/\s+/).pop()
-      if (fpid && fpid !== pid) $store.set('opencode_server_pid', fpid)
-    } catch(e) {}
-    return true
-  }
-  try {
-    const shell = process.env.COMSPEC || process.env.SHELL || (IS_WIN ? 'cmd.exe' : '/bin/sh')
-    const shellArgs = IS_WIN ? ['/d', '/s', '/c', OC_BIN + ' serve --port 14096'] : ['-c', OC_BIN + ' serve --port 14096']
-    const env = Object.assign({}, process.env, { NODE_OPTIONS: '--no-warnings' })
-    const proc = spawn(shell, shellArgs, { detached: !IS_PAAS, stdio: 'ignore', windowsHide: true, env: env })
-    serverProc = proc
-    proc.on('exit', (code, signal) => {
-      console.log('[opencode] server exited', code, signal)
-      if (serverProc === proc) serverProc = null
-      try { $store.set('opencode_server_pid', '') } catch(e) {}
-    })
-    if (IS_PAAS) proc.unref()
-    $store.set('opencode_server_pid', String(proc.pid))
-    const deadline = Date.now() + 15000
-    while (Date.now() < deadline) {
-      if (await serverReady(true)) return true
-      await sleep(1000)
+const collectConfiguredModels = (mj) => {
+  const out = []
+  if (mj && mj.providers) {
+    for (const p of Object.keys(mj.providers)) {
+      const conf = mj.providers[p] || {}
+      const models = conf.models || []
+      for (const m of models) {
+        if (m && m.id) out.push(p + '/' + m.id)
+      }
     }
-    return false
+  }
+  return out
+}
+
+const SETTINGS_FILE = () => { return path.join(agentDir(), 'settings.json') }
+
+const readSettingsJson = () => {
+  try { return JSON.parse(fs.readFileSync(SETTINGS_FILE(), 'utf8')) } catch(e) { return {} }
+}
+
+const writeFileJson = (full, obj) => {
+  try { fs.chmodSync(full, 0o600) } catch(e) {}
+  fs.mkdirSync(path.dirname(full), { recursive: true })
+  fs.writeFileSync(full, JSON.stringify(obj, null, 2))
+  try { fs.chmodSync(full, 0o600) } catch(e) {}
+}
+
+const PROVIDER_PRESETS = [
+  { name: 'openai', api: 'openai-completions', baseUrl: 'https://api.openai.com/v1', models: [
+    { id: 'gpt-5.6-sol', name: 'GPT-5.6 Sol', reasoning: true, contextWindow: 1050000, maxTokens: 181888 },
+    { id: 'gpt-4.1', name: 'GPT-4.1', contextWindow: 1048576, maxTokens: 32768 },
+    { id: 'gpt-4o-mini', name: 'GPT-4o mini', contextWindow: 128000, maxTokens: 16384 }
+  ] },
+  { name: 'anthropic', api: 'anthropic-messages', baseUrl: 'https://api.anthropic.com', models: [
+    { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', reasoning: true, contextWindow: 1000000, maxTokens: 128000 },
+    { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5', reasoning: true, contextWindow: 1000000, maxTokens: 65536 },
+    { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5', contextWindow: 1000000, maxTokens: 65536 }
+  ] },
+  { name: 'deepseek', api: 'openai-completions', baseUrl: 'https://api.deepseek.com/v1', models: [
+    { id: 'deepseek-chat', name: 'DeepSeek Chat', contextWindow: 128000, maxTokens: 8192 },
+    { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner', reasoning: true, contextWindow: 128000, maxTokens: 8192 }
+  ] },
+  { name: 'google', api: 'google-generative-ai', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', models: [
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', reasoning: true, contextWindow: 2000000, maxTokens: 65536 },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', reasoning: true, contextWindow: 1048576, maxTokens: 65536 }
+  ] },
+  { name: 'openrouter', api: 'openai-completions', baseUrl: 'https://openrouter.ai/api/v1', models: [
+    { id: 'openai/gpt-5.6-sol', name: 'GPT-5.6 Sol (OR)', reasoning: true, contextWindow: 1050000, maxTokens: 181888 },
+    { id: 'anthropic/claude-sonnet-4-5', name: 'Claude Sonnet 4.5 (OR)', reasoning: true, contextWindow: 1000000, maxTokens: 65536 },
+    { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat (OR)', contextWindow: 128000, maxTokens: 8192 }
+  ] }
+]
+
+$fend('providers', () => {
+  const mj = readModelsJson() || { providers: {} }
+  const st = readSettingsJson()
+  const def = String(st.defaultProvider || '')
+  const list = []
+  for (const p of PROVIDER_PRESETS) {
+    const existing = (mj.providers || {})[p.name] || {}
+    const hasKey = !!(existing.apiKey && String(existing.apiKey) !== '' && !/^\$/.test(String(existing.apiKey)))
+    list.push({ name: p.name, baseUrl: p.baseUrl, api: p.api, hasKey: hasKey, current: def === p.name, custom: false })
+  }
+  for (const key in (mj.providers || {})) {
+    if (key === 'omniroute') continue
+    if (PROVIDER_PRESETS.find((p) => p.name === key)) continue
+    const existing = mj.providers[key] || {}
+    const hasKey = !!(existing.apiKey && String(existing.apiKey) !== '' && !/^\$/.test(String(existing.apiKey)))
+    list.push({ name: key, baseUrl: existing.baseUrl || '', api: existing.api || 'openai-completions', hasKey: hasKey, current: def === key, custom: true })
+  }
+  let omniCurrent = def === 'omniroute'
+  let omniStatus = 'disabled'
+  if (omniCurrent) omniStatus = (mj.providers || {}).omniroute ? 'enabled · default provider' : 'pending config'
+  else if ((mj.providers || {}).omniroute) omniStatus = 'installed · not default'
+  return new Promise((resolve) => {
+    httpGetUrl(OMNI_HOST + '/', 3000).then((r) => {
+      if (r.status === 200) {
+        if (omniStatus.indexOf('enabled') < 0 && omniStatus.indexOf('pending') < 0) omniStatus = 'running'
+        else if (omniStatus.indexOf('pending') === 0) omniStatus = 'running · pending config'
+      } else {
+        if (omniStatus.indexOf('enabled') >= 0) omniStatus = 'default but not running'
+      }
+      resolve({ ok: true, providers: list, omniCurrent: omniCurrent, omniStatus: omniStatus, hasOmniConfig: !!(mj.providers || {}).omniroute })
+    }).catch(() => { resolve({ ok: true, providers: list, omniCurrent: omniCurrent, omniStatus: omniStatus, hasOmniConfig: !!(mj.providers || {}).omniroute }) })
+  })
+})
+
+$fend('provider_save', (data) => {
+  const name = data && data.name ? String(data.name).trim() : ''
+  if (!name) return { ok: false, error: 'provider name required' }
+  try {
+    const mj = readModelsJson() || { providers: {} }
+    if (!mj.providers) mj.providers = {}
+    const st = readSettingsJson()
+    if (name === 'omniroute') {
+      const old = mj.providers.omniroute || {}
+      mj.providers.omniroute = Object.assign({ baseUrl: OMNI_HOST + '/v1', api: 'openai-completions', apiKey: old.apiKey || 'omniroute', authHeader: true }, old, { compat: old.compat || { supportsDeveloperRole: false, supportsReasoningEffort: false, thinkingFormat: 'deepseek' } })
+      if (!mj.providers.omniroute.models || !mj.providers.omniroute.models.length) {
+        mj.providers.omniroute.models = []
+      }
+      st.defaultProvider = 'omniroute'
+      delete st.defaultModel
+      const omniMods = (mj.providers.omniroute && mj.providers.omniroute.models) || []
+      if (omniMods.length) st.defaultModel = omniMods[0].id
+    } else {
+      const preset = PROVIDER_PRESETS.find((p) => p.name === name)
+      if (!preset) return { ok: false, error: 'unknown provider: ' + name }
+      const apiKey = data && data.apiKey ? String(data.apiKey).trim() : ''
+      if (!apiKey) {
+        const old = (mj.providers[name] || {}).apiKey
+        if (!old) return { ok: false, error: 'API key required for ' + name }
+      }
+      const prev = mj.providers[name] || {}
+      mj.providers[name] = { baseUrl: preset.baseUrl, api: preset.api, apiKey: apiKey || prev.apiKey || null, authHeader: true, models: preset.models }
+      if (!mj.providers[name].apiKey) delete mj.providers[name].apiKey
+      st.defaultProvider = name
+      st.defaultModel = preset.models[0] ? name + '/' + preset.models[0].id : undefined
+    }
+    writeFileJson(modelsFile(), mj)
+    writeFileJson(SETTINGS_FILE(), st)
+    try { $store.set('pi_models_cache', 'null') } catch(e) {}
+    try { $store.set('pi_models_time', '0') } catch(e) {}
+    return { ok: true, model: String(st.defaultModel || '') }
   } catch(e) {
-    return false
+    return { ok: false, error: e.message }
   }
-}
+})
 
-const shutdownServer = () => {
-  if (serverProc && !serverProc.killed) {
-    try { serverProc.kill('SIGTERM') } catch(e) {}
+$fend('provider_custom_save', (data) => {
+  const name = data && data.name ? String(data.name).trim().replace(/\s+/g, '-').toLowerCase() : ''
+  const baseUrl = data && data.baseUrl ? String(data.baseUrl).trim() : ''
+  const apiKey = data && data.apiKey ? String(data.apiKey).trim() : ''
+  const api = data && data.api ? String(data.api).trim() : 'openai-completions'
+  if (!name) return { ok: false, error: 'provider name required' }
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) return { ok: false, error: 'name must be letters/numbers/hyphens only' }
+  if (!baseUrl) return { ok: false, error: 'base URL required' }
+  if (name === 'omniroute') return { ok: false, error: 'name "omniroute" is reserved' }
+  try {
+    const mj = readModelsJson() || { providers: {} }
+    if (!mj.providers) mj.providers = {}
+    const st = readSettingsJson()
+    const prev = mj.providers[name] || {}
+    const finalKey = apiKey || prev.apiKey || null
+    const modelIds = Array.isArray(data.models) ? data.models.map((m) => String(m).trim()).filter(Boolean) : []
+    const models = modelIds.map((id) => ({ id: id, name: id, contextWindow: 128000, maxTokens: 16384 }))
+    if (!models.length) {
+      const pm = (prev.models || []).map((m) => (m && m.id) ? m.id : '')
+      for (const mid of pm) { if (mid) models.push({ id: mid, name: mid, contextWindow: 128000, maxTokens: 16384 }) }
+    }
+    if (!models.length) return { ok: false, error: 'at least one model id is required' }
+    mj.providers[name] = { baseUrl: baseUrl, api: api, apiKey: finalKey, authHeader: true, models: models }
+    if (!mj.providers[name].apiKey) delete mj.providers[name].apiKey
+    st.defaultProvider = name
+    st.defaultModel = models.length ? name + '/' + models[0].id : undefined
+    writeFileJson(modelsFile(), mj)
+    writeFileJson(SETTINGS_FILE(), st)
+    try { $store.set('pi_models_cache', 'null') } catch(e) {}
+    try { $store.set('pi_models_time', '0') } catch(e) {}
+    return { ok: true, model: String(st.defaultModel || '') }
+  } catch(e) {
+    return { ok: false, error: e.message }
   }
-}
-try {
-  if (!process.__oc_shutdown_added) {
-    process.__oc_shutdown_added = true
-    process.on('SIGTERM', shutdownServer)
-    process.on('SIGINT', shutdownServer)
-    process.on('exit', shutdownServer)
-  }
-} catch(e) {}
+})
 
-const runProcs = {}
-
-const parseModel = (modelStr) => {
-  let pid = 'opencode', mid = ''
-  if (modelStr) {
-    const sl = modelStr.indexOf('/')
-    if (sl > 0) { pid = modelStr.slice(0, sl); mid = modelStr.slice(sl + 1) }
-    else mid = modelStr
+$fend('models', async () => {
+  const now = Date.now()
+  let cached, cachedTime
+  try { cached = JSON.parse($store.get('pi_models_cache') || 'null') } catch(e) {}
+  try { cachedTime = Number($store.get('pi_models_time') || 0) } catch(e) {}
+  if (cached && now - cachedTime < 60000) return { models: cached, cached: true }
+  if (cached) {
+    try {
+      const list = collectConfiguredModels(readModelsJson())
+      if (list.length) {
+        $store.set('pi_models_cache', JSON.stringify(list))
+        $store.set('pi_models_time', String(now))
+        return { models: list }
+      }
+    } catch(e) {}
+    return { models: cached }
   }
-  return { pid: pid, mid: mid }
-}
+  const list = collectConfiguredModels(readModelsJson())
+  if (list.length) {
+    $store.set('pi_models_cache', JSON.stringify(list))
+    $store.set('pi_models_time', String(now))
+    return { models: list }
+  }
+  try {
+    const r = await execAsync(redirCmd(PI_BIN + ' --list-models'), 15000)
+    const lines = (r.stdout || '').split('\n').filter(Boolean)
+    const models = []
+    for (const ln of lines) {
+      const m = ln.trim().split(/\s{2,}/)
+      if (m.length >= 2 && m[0] && m[1] && m[0] !== 'provider') models.push(m[0] + '/' + m[1])
+    }
+    if (models.length) {
+      $store.set('pi_models_cache', JSON.stringify(models))
+      $store.set('pi_models_time', String(now))
+      return { models: models }
+    }
+    return { models: cached || [] }
+  } catch(e) {
+    return { models: cached || [] }
+  }
+})
 
 const ctxLimitMem = {}
 const getCtxLimit = (modelStr) => {
   return new Promise((resolve) => {
     const pm = parseModel(modelStr)
-    if (!pm.mid) return resolve(0)
-    const memKey = pm.pid + '/' + pm.mid
+    if (!pm.model || !pm.provider) return resolve(0)
+    const memKey = pm.provider + '/' + pm.model
     if (ctxLimitMem[memKey] > 0) return resolve(ctxLimitMem[memKey])
-    const cacheKey = 'aichat_ctx_limit_' + pm.pid + '_' + pm.mid
+    const cacheKey = 'pi_ctxlimit_' + pm.provider + '_' + pm.model
     try {
       const cached = Number($store.get(cacheKey))
       if (cached > 0) { ctxLimitMem[memKey] = cached; return resolve(cached) }
     } catch(e) {}
-    const httpMod = require('http')
-    const req = httpMod.get({ host: '127.0.0.1', port: 14096, path: '/provider' }, (res) => {
-      let buf = ''
-      res.on('data', (c) => { buf += c })
-      res.on('end', () => {
-        try {
-          const all = JSON.parse(buf).all || []
-          for (let i = 0; i < all.length; i++) {
-            const prov = all[i]
-            if (prov.id === pm.pid && prov.models && prov.models[pm.mid] && prov.models[pm.mid].limit && prov.models[pm.mid].limit.context) {
-              const limit = prov.models[pm.mid].limit.context
-              ctxLimitMem[memKey] = limit
-              try { $store.set(cacheKey, String(limit)) } catch(e2) {}
-              return resolve(limit)
-            }
-          }
-        } catch(e) {}
-        resolve(0)
-      })
-    })
-    req.on('error', () => { resolve(0) })
-    req.setTimeout(8000, () => { req.destroy(); resolve(0) })
+    let limit = 0
+    try {
+      const mj = readModelsJson()
+      const conf = mj && mj.providers && mj.providers[pm.provider]
+      const mods = (conf && conf.models) || []
+      for (const m of mods) {
+        if (m && m.id === pm.model && m.contextWindow) { limit = m.contextWindow; break }
+      }
+    } catch(e) {}
+    if (limit) {
+      ctxLimitMem[memKey] = limit
+      try { $store.set(cacheKey, String(limit)) } catch(e2) {}
+    }
+    resolve(limit)
   })
 }
 
 $fend('ctxinfo', (data) => {
   const modelStr = data && data.model ? data.model : ''
-  const pm = parseModel(modelStr)
   return getCtxLimit(modelStr).then((limit) => {
-    return { model: pm.mid || '', limit: limit }
+    return { model: parseModel(modelStr).model || '', limit: limit }
   })
 })
 
-const getSessionUsage = (sessionId) => {
+const findSessionFile = (id) => {
+  if (!id) return ''
+  const dir = sessionDirFor(getWorkDir())
+  let files = []
+  try { files = fs.readdirSync(dir) } catch(e) { return '' }
+  for (const f of files) {
+    if (!f.endsWith('.jsonl')) continue
+    try {
+      const first = fs.readFileSync(path.join(dir, f), 'utf8').split('\n')[0]
+      if (!first) continue
+      const h = JSON.parse(first)
+      if (h.type === 'session' && h.id === id) return path.join(dir, f)
+    } catch(e) {}
+  }
+  return ''
+}
+
+const getSessionUsage = (id) => {
   return new Promise((resolve) => {
-    if (!sessionId) return resolve(0)
-    const httpMod = require('http')
-    let used = 0
-    let usedTime = -1
-    let offset = 0
-    const LIMIT = 100
-    const MAXPAGE = 20
-    const fetchPage = () => {
-      const req = httpMod.get({ host: '127.0.0.1', port: 14096, path: '/session/' + encodeURIComponent(sessionId) + '/message?limit=' + LIMIT + '&offset=' + offset }, (res) => {
-        let buf = ''
-        res.on('data', (c) => { buf += c })
-        res.on('end', () => {
-          let msgs
-          try { msgs = JSON.parse(buf) } catch(e) { return resolve(used) }
-          if (!Array.isArray(msgs) || !msgs.length) return resolve(used)
-          for (let i = 0; i < msgs.length; i++) {
-            const t = msgs[i].info && msgs[i].info.tokens ? msgs[i].info.tokens.total : 0
-            const tm = msgs[i].time || msgs[i].created_at || 0
-            if (tm >= usedTime && t > 0) { usedTime = tm; used = t }
-          }
-          if (msgs.length < LIMIT || offset >= MAXPAGE * LIMIT) return resolve(used)
-          offset += msgs.length
-          fetchPage()
-        })
-      })
-      req.on('error', () => resolve(used))
-      req.setTimeout(10000, () => { req.destroy(); resolve(used) })
-    }
-    fetchPage()
+    const full = findSessionFile(id)
+    if (!full) return resolve(0)
+    try {
+      const lines = fs.readFileSync(full, 'utf8').split('\n')
+      let used = 0
+      for (const ln of lines) {
+        if (!ln.trim()) continue
+        let e
+        try { e = JSON.parse(ln) } catch(err) { continue }
+        if (e.type !== 'message') continue
+        const msg = e.message || {}
+        if (msg.role === 'assistant' && msg.usage && msg.usage.totalTokens) {
+          if (msg.usage.totalTokens > used) used = msg.usage.totalTokens
+        }
+      }
+      resolve(used)
+    } catch(e) { resolve(0) }
   })
 }
 
@@ -1531,99 +1949,142 @@ $fend('session_ctx', (data) => {
   })
 })
 
-const fetchSessionMessages = (sessionId) => {
-  return new Promise((resolve) => {
-    if (!sessionId) return resolve([])
-    const httpMod = require('http')
-    const req = httpMod.get({ host: '127.0.0.1', port: 14096, path: '/session/' + encodeURIComponent(sessionId) + '/message?limit=500' }, (res) => {
-      let buf = ''
-      res.on('data', (c) => { buf += c })
-      res.on('end', () => {
-        let msgs
-        try { msgs = JSON.parse(buf) } catch(e) { return resolve([]) }
-        if (!Array.isArray(msgs)) return resolve([])
-        resolve(msgs)
-      })
-    })
-    req.on('error', () => resolve([]))
-    req.setTimeout(10000, () => { req.destroy(); resolve([]) })
-  })
-}
-
-const msgTime = (m) => {
-  const info = m && m.info || {}
-  const t = info.time || {}
-  return Number(t.created) || Number(m && (m.created_at || m.time)) || 0
-}
-
-const convSessionMessages = (msgs) => {
+const listPiSessions = () => {
+  const wd = getWorkDir()
+  const dir = sessionDirFor(wd)
   const out = []
-  let cur = null
+  let files = []
+  try { files = fs.readdirSync(dir).filter((f) => f.endsWith('.jsonl')) } catch(e) { return [] }
+  for (const f of files) {
+    try {
+      const st = fs.statSync(path.join(dir, f))
+      const raw = fs.readFileSync(path.join(dir, f), 'utf8')
+      const lines = raw.split('\n')
+      let header = null
+      let name = ''
+      for (const ln of lines) {
+        if (!ln.trim()) continue
+        let e
+        try { e = JSON.parse(ln) } catch(err) { continue }
+        if (!header && e.type === 'session') { header = e; continue }
+        if (e.type === 'session_info' && typeof e.name === 'string' && e.name) name = e.name
+      }
+      if (!header) continue
+      if (header.cwd && header.cwd !== wd) continue
+      out.push({
+        id: header.id,
+        title: name || header.id,
+        created: Date.parse(header.timestamp) || st.birthtimeMs || st.mtimeMs,
+        updated: (st.mtimeMs || Date.now())
+      })
+    } catch(e) {}
+  }
+  out.sort((a, b) => (b.updated || 0) - (a.updated || 0))
+  return out.slice(0, 50)
+}
+
+$fend('pi_sessions', () => { return { sessions: listPiSessions() } })
+
+$fend('pi_delete_session', (data) => {
+  if (!data || !data.id) return { ok: false }
+  const full = findSessionFile(data.id)
+  if (!full) return { ok: false, error: 'session not found' }
+  try {
+    fs.unlinkSync(full)
+    return { ok: true }
+  } catch(e) {
+    return { ok: false, error: e.message }
+  }
+})
+
+const convFromFile = (full) => {
+  const lines = fs.readFileSync(full, 'utf8').split('\n')
+  const entries = []
+  let leaf = null
+  for (const ln of lines) {
+    if (!ln.trim()) continue
+    let e
+    try { e = JSON.parse(ln) } catch(err) { continue }
+    if (e.type === 'session') continue
+    if (e.type === 'message' && e.message) { entries.push(e); leaf = e }
+    else if (e.type === 'compaction') entries.push(e)
+  }
+  if (!entries.length) return []
+  const byId = {}
+  for (const e of entries) byId[e.id] = e
+  const chain = []
+  let cur = leaf
+  let guard = 0
+  while (cur && guard++ < 10000) {
+    chain.push(cur)
+    if (!cur.parentId) break
+    cur = byId[cur.parentId] || null
+  }
+  chain.reverse()
+  const out = []
+  let curAsst = null
   let curTokens = 0
   let curModel = ''
   let curErrored = false
   const finalize = () => {
-    if (!cur) return
+    if (!curAsst) return
     let meta = curErrored ? '⚠ ' : '✓ '
     const bits = []
     if (curModel) bits.push(curModel)
     if (curTokens) bits.push('⚙ ' + curTokens + ' tokens')
     meta += bits.join(' | ')
-    cur.meta = meta.trim() || '✓'
-    cur.errored = curErrored
-    cur.streaming = false
-    cur = null
+    curAsst.meta = meta.trim() || '✓'
+    curAsst.errored = curErrored
+    curAsst.streaming = false
+    curAsst = null
     curTokens = 0
     curModel = ''
     curErrored = false
   }
-  for (let i = 0; i < msgs.length; i++) {
-    const info = msgs[i].info || {}
-    const role = info.role || 'assistant'
-    const srcParts = msgs[i].parts || []
+  for (const e of chain) {
+    if (e.type === 'compaction') continue
+    const msg = e.message || {}
+    const role = msg.role || 'assistant'
+    const parts = msg.content || []
     if (role === 'user') {
       finalize()
       let text = ''
-      for (let j = 0; j < srcParts.length; j++) {
-        if (srcParts[j].type === 'text') text += (srcParts[j].text || '')
-      }
+      for (const p of parts) if (p && p.type === 'text') text += (p.text || '')
       if (text.trim()) out.push({ role: 'user', content: text })
       continue
     }
-    const parts = []
-    for (let j = 0; j < srcParts.length; j++) {
-      const p = srcParts[j]
-      if (p.type === 'text' && p.text) {
-        parts.push({ t: 'text', c: p.text })
-      } else if (p.type === 'file') {
-        parts.push({ t: 'ref', c: '▸ file ' + ((p.file && p.file.path) || ''), cls: 'info' })
-      } else if (p.type === 'tool') {
-        const st = p.state || {}
-        const inp = st.input || {}
-        const arg = toolArg(inp)
-        const out2 = st.output || (st.metadata && st.metadata.output) || ''
-        const toolName = p.tool || 'tool'
-        const status = st.status || ''
-        if (status === 'error') {
-          parts.push({ t: 'ref', c: '✗ ' + toolName + (arg ? ' · ' + maskSecrets(arg) : ''), cls: 'tool' })
-        } else if (status === 'completed') {
-          parts.push({ t: 'ref', c: '◈ ' + toolName + (arg ? ' · ' + maskSecrets(arg) : ''), cls: 'tool' })
-        }
-        if (out2) parts.push({ t: 'out', c: maskSecrets(out2) })
+    if (role === 'toolResult') {
+      if (curAsst) {
+        let text = ''
+        for (const p of parts) if (p && p.type === 'text') text += (p.text || '')
+        if (text) curAsst.parts.push({ t: 'out', c: maskSecrets(text) })
+      }
+      continue
+    }
+    if (role === 'bashExecution') {
+      if (curAsst) {
+        curAsst.parts.push({ t: 'ref', c: '$ ' + maskSecrets(msg.command), cls: 'cmd' })
+        if (msg.output) curAsst.parts.push({ t: 'out', c: maskSecrets(msg.output) })
+      }
+      continue
+    }
+    const plist = []
+    for (const p of parts) {
+      if (!p) continue
+      if (p.type === 'text' && p.text) plist.push({ t: 'text', c: p.text })
+      else if (p.type === 'thinking' && p.thinking) plist.push({ t: 'ref', c: '✱ reasoning', cls: 'reasoning' })
+      else if (p.type === 'toolCall') {
+        const arg = toolArg(p.arguments || {})
+        plist.push({ t: 'ref', c: '◈ ' + (p.name || 'tool') + (arg ? ' · ' + maskSecrets(arg) : ''), cls: 'tool' })
       }
     }
-    if (info.error) {
-      parts.push({ t: 'text', c: 'Error: ' + ((info.error.message || info.error.name) || 'opencode error'), cls: 'err-text' })
-    }
-    if (!parts.length) continue
-    if (!cur) {
-      cur = { role: 'assistant', parts: [] }
-      out.push(cur)
-    }
-    for (let k = 0; k < parts.length; k++) cur.parts.push(parts[k])
-    if (info.error) curErrored = true
-    if (info.tokens && info.tokens.total) curTokens = info.tokens.total
-    if (info.modelID) curModel = (info.providerID || 'opencode') + '/' + info.modelID
+    if (msg.errorMessage) plist.push({ t: 'text', c: 'Error: ' + msg.errorMessage, cls: 'err-text' })
+    if (!plist.length) continue
+    if (!curAsst) { curAsst = { role: 'assistant', parts: [] }; out.push(curAsst) }
+    for (const k of plist) curAsst.parts.push(k)
+    if (msg.errorMessage) curErrored = true
+    if (msg.usage && msg.usage.totalTokens) curTokens = msg.usage.totalTokens
+    if (msg.model) curModel = (msg.provider || '') + '/' + msg.model
   }
   finalize()
   return out
@@ -1631,77 +2092,108 @@ const convSessionMessages = (msgs) => {
 
 $fend('session_messages', (data) => {
   const id = data && data.id
-  return ensureServer().then((ready) => {
-    if (!ready) return { messages: [] }
-    return fetchSessionMessages(id).then((msgs) => {
-      msgs.sort((a, b) => msgTime(a) - msgTime(b))
-      return { messages: convSessionMessages(msgs) }
-    })
-  }).catch(() => {
+  if (!id) return { messages: [] }
+  const full = findSessionFile(id)
+  if (!full) return { messages: [] }
+  try {
+    return { messages: convFromFile(full) }
+  } catch(e) {
     return { messages: [] }
-  })
+  }
 })
 
-const runWatchdogs = {}
-const sseChat = (runId, obj) => {
-  if (obj && obj.type !== 'done' && obj.type !== 'error') {
-    const rw = runWatchdogs[runId]
-    if (rw && typeof rw.kick === 'function') rw.kick()
-  }
-  $ws.sse('opencode-main', JSON.stringify(Object.assign({ runId: runId }, obj)))
-}
+$fend('workspace', () => { return { ok: true, cwd: getWorkDir() } })
 
-const runCliMode = (data, runId) => {
-  const prompt = data.prompt
+$fend('workspace_set', (data) => {
+  const d = data && data.cwd ? String(data.cwd).trim() : ''
+  if (!d) return { ok: false, error: 'cwd required' }
+  try {
+    if (!fs.existsSync(d) || !fs.statSync(d).isDirectory()) return { ok: false, error: 'not a directory: ' + d }
+  } catch(e) {
+    return { ok: false, error: e.message }
+  }
+  setWorkDir(d)
+  return { ok: true, cwd: d }
+})
+
+$fend('commands', () => {
+  return { ok: true, commands: [
+    { name: 'new', description: 'start a new session' }
+  ] }
+})
+
+const runProcs = {}
+
+$fend('start', (data) => {
+  if (!data || !data.prompt) return { error: 'prompt is required' }
+  const runId = data.runId || Date.now() + '-' + Math.random().toString(36).slice(2, 8)
+  const cwd = getWorkDir()
+  const prompt = String(data.prompt).slice(0, 1200)
   const sessionId = data.session || ''
   const modelStr = (data.model || '').replace(/\r/g, '')
 
-  const args = ['run', '--format', 'json']
-  if (sessionId) args.push('--session', sessionId)
-  if (modelStr) args.push('--model', modelStr)
-  args.push(prompt)
+  let curSession = sessionId || ''
+  const MAX_RETRY = 3
+  let retryLeft = MAX_RETRY
+  let retrying = false
+
+  const defModel = (() => {
+    const st = readSettingsJson()
+    let dm = String(st.defaultModel || '').trim()
+    if (!dm && st.defaultProvider) {
+      const mj = readModelsJson() || { providers: {} }
+      const conf = mj.providers && mj.providers[st.defaultProvider]
+      const mods = (conf && conf.models) || []
+      if (mods.length) dm = st.defaultProvider + '/' + mods[0].id
+    }
+    return dm
+  })()
+
+  let proc = null
 
   let streamEnded = false
+  let sessionSent = false
   let stepCount = 0
   let tokens = null
-  let model = modelStr || null
-  let knownSession = !!sessionId
-  let seenSessionSent = false
+  let model = null
+  let initShown = false
+  const runningTools = {}
   const seenTools = {}
   const lastToolOut = {}
-  const runningTools = {}
   const reasoningSeen = {}
-  const reasoningKey = (id) => { return id || '_' }
-  const reasonStart = (id) => {
-    const k = reasoningKey(id)
-    if (reasoningSeen[k] !== 'start' && reasoningSeen[k] !== 'done') {
-      reasoningSeen[k] = 'start'
-      sendRef('✱ reasoning', 'reasoning')
-    }
-  }
-  const reasonDone = (id) => {
-    const k = reasoningKey(id)
-    if (reasoningSeen[k] !== 'done') {
-      reasoningSeen[k] = 'done'
-      sendRef('✓ reasoning done', 'reasoning')
-    }
-  }
   let watchdog = null
   let aliveTimer = null
   let toolHeartbeat = null
+
   const kickWatchdog = () => {
     if (watchdog) clearTimeout(watchdog)
-    watchdog = setTimeout(() => {
-      finish({ content: '', model: model, tokens: tokens, timeout: true })
-    }, 600000)
+    watchdog = setTimeout(() => { finish({ timeout: true }) }, 600000)
   }
 
   const send = (type, payload) => {
     if (type !== 'done' && type !== 'error') kickWatchdog()
-    sseChat(runId, Object.assign({ type: type }, payload || {}))
+    $ws.sse(APP_CH, JSON.stringify(Object.assign({ runId: runId }, payload || {}, { type: type })))
   }
-  const sendRef = (line, cls) => {
-    send('ref', { content: line, cls: cls || '' })
+  const sendRef = (line, cls) => { send('ref', { content: line, cls: cls || '' }) }
+  const extractToolText = (pr) => {
+    if (typeof pr === 'string') return pr
+    if (!pr || typeof pr !== 'object') return ''
+    if (pr.output || pr.result) return String(pr.output || pr.result)
+    if (pr.content && Array.isArray(pr.content)) {
+      const text = pr.content.map((c) => (c && typeof c === 'object' && c.type === 'text') ? c.text : '').join('\n')
+      return text
+    }
+    if (typeof pr.text === 'string') return pr.text
+    return ''
+  }
+  const emitOut = (callId, out, fn) => {
+    if (!out) return
+    const last = lastToolOut[callId] || ''
+    let delta
+    if (String(out).indexOf(last) === 0) delta = String(out).slice(last.length)
+    else delta = last ? '\n' + out : out
+    if (delta) fn(delta)
+    lastToolOut[callId] = String(out)
   }
   const pushCtx = (used, limit) => {
     send('ctx', {
@@ -1714,14 +2206,20 @@ const runCliMode = (data, runId) => {
     if (!used) return
     getCtxLimit(model).then((limit) => { pushCtx(used, limit) }).catch(() => { pushCtx(used, 0) })
   }
+  const normTokens = (usage) => {
+    if (!usage) return null
+    const total = usage.total || usage.totalTokens
+    if (!total) return null
+    return { total: total }
+  }
   const finish = (payload) => {
     if (streamEnded) return
     streamEnded = true
     if (watchdog) clearTimeout(watchdog)
     if (aliveTimer) clearInterval(aliveTimer)
     if (toolHeartbeat) clearInterval(toolHeartbeat)
-    try { proc.kill() } catch(e) {}
-    send('done', Object.assign({ steps: stepCount }, payload || {}))
+    try { delete runProcs[runId] } catch(e) {}
+    send('done', Object.assign({ steps: stepCount }, payload || {}, payload.tokens ? { tokens: normTokens(payload.tokens) } : {}))
   }
   const fail = (msg) => {
     if (streamEnded) return
@@ -1729,587 +2227,233 @@ const runCliMode = (data, runId) => {
     if (watchdog) clearTimeout(watchdog)
     if (aliveTimer) clearInterval(aliveTimer)
     if (toolHeartbeat) clearInterval(toolHeartbeat)
-    try { proc.kill() } catch(e) {}
+    try { delete runProcs[runId] } catch(e) {}
     send('error', { content: msg })
   }
 
-  const handleEvent = (ev) => {
-    const sid = ev.sessionID
-    if (sid && !seenSessionSent) {
-      seenSessionSent = true
-      if (!knownSession) send('session', { id: sid })
-    }
+  const onEvent = (ev) => {
     const t = ev.type
-    const part = ev.part || {}
-    if (t === 'step_start') { stepCount++; return }
-    if (t === 'step_finish') {
-      if (part.tokens && part.tokens.total) {
-        tokens = part.tokens
-        emitCtx(part.tokens.total)
+    if (t === 'session') {
+      if (ev.id && !sessionSent) {
+        sessionSent = true
+        curSession = ev.id
+        send('session', { id: ev.id })
       }
       return
     }
-    if (t === 'text') {
-      if (part.text) send('text', { content: part.text })
+    if (t === 'agent_start') {
+      if (!initShown) {
+        initShown = true
+        send('init', { content: '> build · ...' })
+      }
       return
     }
-    if (t === 'reasoning') { if (part.time && part.time.end) reasonDone(part.id); else reasonStart(part.id); return }
-    if (t === 'file') { sendRef('▸ file ' + ((part.file && part.file.path) || ''), 'info'); return }
-    if (t === 'tool_use') {
-      const st = part.state || {}
-      const inp = st.input || {}
-      const arg = toolArg(inp)
-      const callId = part.callID || part.id || (part.tool || 'tool')
-      const out = st.output || (st.metadata && st.metadata.output) || ''
-      if (part.tool === 'question') {
-        if (!seenTools[callId] && (st.status === 'pending' || st.status === 'running')) {
-          seenTools[callId] = true
-          sendRef('◈ question asked', 'tool')
-        }
+    if (t === 'turn_start') { stepCount++; return }
+    if (t === 'turn_end') { return }
+    if (t === 'message_update') {
+      if (ev.usage && ev.usage.totalTokens) {
+        tokens = ev.usage
+        emitCtx(ev.usage.totalTokens)
+      }
+      const ame = ev.assistantMessageEvent || {}
+      const at = ame.type
+      const ci = ame.contentIndex || 0
+      if (at === 'text_delta' && ame.delta) { send('text', { content: ame.delta }); return }
+      if (at === 'thinking_start' || at === 'thinking_delta') {
+        if (!reasoningSeen[ci]) { reasoningSeen[ci] = true; sendRef('✱ reasoning', 'reasoning') }
         return
       }
-      if (st.status === 'pending' || st.status === 'running') {
-        if (!seenTools[callId] && arg) {
-          seenTools[callId] = true
-          sendRef('◈ ' + (part.tool || 'tool') + ' · ' + maskSecrets(arg), 'tool')
-        } else if (!seenTools[callId] && st.status === 'running') {
-          seenTools[callId] = true
-          sendRef('◈ ' + (part.tool || 'tool'), 'tool')
-        }
-        if (!runningTools[callId]) runningTools[callId] = { tool: part.tool || 'tool', arg: arg, started: Date.now() }
-        if (out) runningTools[callId].lastOutput = out
-        runningTools[callId].lastUpdate = Date.now()
-        if (out) emitOut(lastToolOut, callId, out, (d) => { send('out', { content: d }) })
-      } else if (st.status === 'completed') {
-        delete runningTools[callId]
+      if (at === 'thinking_end') {
+        if (reasoningSeen[ci]) { reasoningSeen[ci] = false; sendRef('✓ reasoning done', 'reasoning') }
+        return
+      }
+      if (at === 'toolcall_end') {
+        const tc = ame.toolCall || {}
+        const arg = toolArg(tc.arguments || {})
+        const callId = tc.toolCallId || tc.id || tc.name || 'tool'
         if (!seenTools[callId]) {
           seenTools[callId] = true
-          sendRef('◈ ' + (part.tool || 'tool') + (arg ? ' · ' + maskSecrets(arg) : ''), 'tool')
+          sendRef('◈ ' + (tc.name || 'tool') + (arg ? ' · ' + maskSecrets(arg) : ''), 'tool')
         }
-        sendRef('✓ ' + (part.tool || 'tool') + ' done', 'tool')
-        if (out) emitOut(lastToolOut, callId, out, (d) => { send('out', { content: d }) })
-      } else if (st.status === 'error') {
-        delete runningTools[callId]
-        sendRef('✗ ' + (part.tool || 'tool') + ' failed', 'tool')
-        if (out) emitOut(lastToolOut, callId, out, (d) => { send('out', { content: d }) })
+        return
       }
       return
     }
-    if (t === 'todo') {
-      send('todo', { data: part.todos || ev.todos || [] })
+    if (t === 'message_end') {
+      const msg = ev.message || {}
+      if (msg.provider && msg.model) {
+        model = msg.provider + '/' + msg.model
+        send('init', { content: '> build · ' + model })
+      }
+      if (msg.usage && msg.usage.totalTokens) {
+        tokens = msg.usage
+        emitCtx(msg.usage.totalTokens)
+      }
+      if (msg.errorMessage) {
+        const etxt = String(msg.errorMessage)
+        if (isRateLimited(etxt) && retryLeft > 0 && !retrying) {
+          retryLeft--
+          const delay = retryDelayMs(retryLeft)
+          sendRef('↻ 429 rate limited, retrying in ' + Math.round(delay / 1000) + 's… (attempt ' + (MAX_RETRY - retryLeft) + '/' + MAX_RETRY + ')', 'info')
+          retrying = true
+          kickWatchdog()
+          setTimeout(() => { relaunch() }, delay)
+        } else {
+          fail(etxt.split('\n')[0])
+        }
+      }
       return
     }
-    if (t === 'error' || t === 'session_error') {
-      const errObj = ev.error || part || {}
-      const errMsg = (typeof errObj === 'string' ? errObj : (errObj.message || errObj.name || 'opencode error'))
-      fail(String(errMsg).split('\n')[0])
+    if (t === 'tool_execution_start') {
+      const callId = ev.toolCallId || ev.toolName
+      const arg = toolArg(ev.args || {})
+      if (!seenTools[callId]) {
+        seenTools[callId] = true
+        sendRef('◈ ' + (ev.toolName || 'tool') + (arg ? ' · ' + maskSecrets(arg) : ''), 'tool')
+      }
+      runningTools[callId] = { tool: ev.toolName || 'tool', arg: arg, started: Date.now(), lastUpdate: Date.now(), lastOutput: '' }
+      return
+    }
+    if (t === 'tool_execution_update') {
+      const callId = ev.toolCallId || ev.toolName
+      const rt = runningTools[callId] || { lastUpdate: Date.now() }
+      rt.lastUpdate = Date.now()
+      const pr = extractToolText(ev.partialResult)
+      if (pr) {
+        rt.lastOutput = pr
+        emitOut(callId, maskSecrets(pr), (d) => { send('out', { content: d }) })
+      }
+      return
+    }
+    if (t === 'tool_execution_end') {
+      const callId = ev.toolCallId || ev.toolName
+      delete runningTools[callId]
+      sendRef((ev.isError ? '✗ ' : '✓ ') + (ev.toolName || 'tool') + (ev.isError ? ' failed' : ' done'), 'tool')
+      const out = extractToolText(ev.result)
+      if (out) emitOut(callId, maskSecrets(out), (d) => { send('out', { content: d }) })
+      return
+    }
+    if (t === 'bash_execution_update') {
+      if (ev.delta) send('out', { content: maskSecrets(ev.delta) })
+      return
+    }
+    if (t === 'compaction_start') { sendRef('↻ compacting…', 'info'); return }
+    if (t === 'compaction_end') { sendRef('✓ context compacted', 'info'); return }
+    if (t === 'auto_retry_start') { sendRef('↻ retrying…', 'info'); return }
+    if (t === 'agent_end' || t === 'agent_settled') {
+      finish({ content: '', model: model, tokens: tokens })
       return
     }
   }
 
-  const proc = spawn(OC_BIN, args, { env: Object.assign({}, process.env, { NODE_OPTIONS: '--no-warnings' }), windowsHide: true, shell: IS_WIN, stdio: ['ignore', 'pipe', 'pipe'] })
-  runProcs[runId] = proc
+  const isRateLimited = (etxt) => {
+    if (!etxt) return false
+    return /429|limit_burst_rate|rate.?limit/i.test(etxt)
+  }
+  const retryDelayMs = (attemptLeft) => {
+    const tried = MAX_RETRY - attemptLeft
+    return [2000, 5000, 10000][tried - 1] || 10000
+  }
 
-  let buf = ''
-  proc.stdout.setEncoding('utf8')
-  proc.stdout.on('data', (chunk) => {
-    buf += chunk
-    let nl
-    while ((nl = buf.indexOf('\n')) >= 0) {
-      const line = buf.slice(0, nl)
-      buf = buf.slice(nl + 1)
-      if (!line.trim()) continue
-      let ev
-      try { ev = JSON.parse(line.trim()) } catch(e) { continue }
-      try { handleEvent(ev) } catch(e) {}
+  const spawnProcess = () => {
+    const args = ['--mode', 'json', '--approve']
+    if (curSession) args.push('--session-id', curSession)
+    else args.push('--name', prompt.replace(/\s+/g, ' ').trim().slice(0, 40))
+    if (modelStr) args.push('--model', modelStr)
+    else if (defModel) args.push('--model', defModel)
+    else {
+      const fallback = collectConfiguredModels(readModelsJson())
+      if (fallback.length) args.push('--model', fallback[0])
     }
-  })
-  proc.stderr.on('data', (chunk) => {
-    const t = stripAnsi(chunk.toString()).trim()
-    if (t) console.log('[opencode run]', t)
-  })
+    args.push(prompt)
 
-  toolHeartbeat = setInterval(() => {
-    if (streamEnded) { clearInterval(toolHeartbeat); return }
-    const now = Date.now()
-    for (const id in runningTools) {
-      const tool = runningTools[id]
-      if (now - tool.lastUpdate > 10000) {
-        sendRef('◈ ' + tool.tool + ' running (' + Math.floor((now - tool.started) / 1000) + 's)', 'tool')
-        tool.lastUpdate = now
-      }
-      if (tool.lastOutput) emitOut(lastToolOut, id, tool.lastOutput, (d) => { send('out', { content: d }) })
-    }
-  }, 15000)
-
-  proc.on('error', (e) => { fail(e.message || String(e)) })
-  proc.on('close', (code) => {
-    try { delete runProcs[runId] } catch(e) {}
-    if (streamEnded) return
-    if (code !== 0) fail('opencode exited with code ' + code)
-    else finish({ content: '', model: model, tokens: tokens })
-  })
-
-  kickWatchdog()
-  aliveTimer = setInterval(() => {
-    try {
-      if (typeof $ws.sseExists !== 'function' || $ws.sseExists('opencode-main')) return
-      clearInterval(aliveTimer)
-      aliveTimer = null
-      try { proc.kill() } catch(e) {}
-      fail('client disconnected')
-    } catch(e) {}
-  }, 15000)
-
-  return { ok: true, runId: runId }
-}
-
-$fend('start', async (data) => {
-  if (!data || !data.prompt) return { error: 'prompt is required' }
-  const runId = data.runId || Date.now() + '-' + Math.random().toString(36).slice(2, 8)
-  if (!(await ensureServer())) return runCliMode(data, runId)
-  const prompt = data.prompt
-  const httpMod = require('http')
-
-  const api = (method, path, body) => {
-    return new Promise((resolve, reject) => {
-      const payload = body ? JSON.stringify(body) : ''
-      const opts = {
-        host: '127.0.0.1', port: 14096, path: path, method: method,
-        headers: body ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } : {}
-      }
-      const req = httpMod.request(opts, (res) => {
-        let buf = ''
-        res.on('data', (c) => { buf += c })
-        res.on('end', () => { resolve({ status: res.statusCode, body: buf }) })
-      })
-      req.on('error', reject)
-      if (body) req.write(payload)
-      req.end()
+    const env = Object.assign({}, process.env, {
+      NODE_OPTIONS: '--no-warnings',
+      PI_SKIP_VERSION_CHECK: '1',
+      NO_COLOR: '1'
     })
+    try { if (proc) proc.kill() } catch(e) {}
+    proc = spawn(PI_BIN, args, { cwd: cwd, env: env, windowsHide: true, shell: IS_WIN, stdio: ['ignore', 'pipe', 'pipe'] })
+    runProcs[runId] = proc
+    retrying = false
+
+    let buf = ''
+    proc.stdout.setEncoding('utf8')
+    proc.stdout.on('data', (chunk) => {
+      buf += chunk
+      let nl
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, nl)
+        buf = buf.slice(nl + 1)
+        if (!line.trim()) continue
+        let ev
+        try { ev = JSON.parse(line.trim()) } catch(e) { continue }
+        try { onEvent(ev) } catch(e) {}
+      }
+    })
+    proc.stderr.on('data', (chunk) => {
+      const t2 = stripAnsi(chunk.toString()).trim()
+      if (t2 && t2.indexOf('Warning:') < 0) console.log('[pi run]', t2)
+    })
+
+    proc.on('error', (e) => { fail(e.message || String(e)) })
+    proc.on('close', (code) => {
+      try { delete runProcs[runId] } catch(e) {}
+      if (streamEnded) return
+      if (pronBreaking) return
+      if (code !== 0) fail('pi exited with code ' + code)
+      else finish({ content: '', model: model, tokens: tokens })
+    })
+
+    kickWatchdog()
+    aliveTimer = setInterval(() => {
+      try {
+        if (typeof $ws.sseExists !== 'function' || $ws.sseExists(APP_CH)) return
+        clearInterval(aliveTimer)
+        aliveTimer = null
+        try { proc.kill() } catch(e) {}
+        fail('client disconnected')
+      } catch(e) {}
+    }, 15000)
+    toolHeartbeat = setInterval(() => {
+      if (streamEnded) { clearInterval(toolHeartbeat); return }
+      const now = Date.now()
+      for (const id in runningTools) {
+        const rt = runningTools[id]
+        if (now - rt.lastUpdate > 10000) {
+          sendRef('◈ ' + rt.tool + ' running (' + Math.floor((now - rt.started) / 1000) + 's)', 'tool')
+          rt.lastUpdate = now
+        }
+        if (rt.lastOutput) emitOut(id, maskSecrets(rt.lastOutput), (d) => { send('out', { content: d }) })
+      }
+    }, 15000)
+    return proc
   }
 
-  const streamRun = (sessionId) => {
-    ;(async () => {
-    try {
-      let ctxLimit = 0
-      getCtxLimit(data.model).then((l) => { if (l) ctxLimit = l }).catch(() => {})
-
-      let streamEnded = false
-      let model = null
-      let modelShown = false
-      let stepCount = 0
-      const seenTools = {}
-      const lastToolOut = {}
-      const runningTools = {}
-      const reasoningSeen = {}
-      const reasoningKey = (id) => { return id || '_' }
-      const reasonStart = (id) => {
-        const k = reasoningKey(id)
-        if (reasoningSeen[k] !== 'start' && reasoningSeen[k] !== 'done') {
-          reasoningSeen[k] = 'start'
-          sendRef('✱ reasoning', 'reasoning')
-        }
-      }
-      const reasonDone = (id) => {
-        const k = reasoningKey(id)
-        if (reasoningSeen[k] !== 'done') {
-          reasoningSeen[k] = 'done'
-          sendRef('✓ reasoning done', 'reasoning')
-        }
-      }
-      let tokens = null
-      let watchdog = null
-      runWatchdogs[runId] = {
-        kick: () => {
-          if (watchdog) clearTimeout(watchdog)
-          watchdog = setTimeout(() => {
-            finish({ content: '', model: model, tokens: tokens, timeout: true })
-          }, 600000)
-        }
-      }
-      let aliveTimer = null
-      let toolHeartbeat = null
-
-      const pushCtx = (used, limit) => {
-        sseChat(runId, {
-          type: 'ctx', used: used || 0, limit: limit || 0,
-          pct: limit ? Math.round((used || 0) / limit * 1000) / 10 : null,
-          model: model
-        })
-      }
-
-      const emitCtx = (used) => {
-        if (!used) return
-        if (ctxLimit) return pushCtx(used, ctxLimit)
-        if (model) {
-          getCtxLimit(model).then((limit) => {
-            if (limit) ctxLimit = limit
-            pushCtx(used, ctxLimit)
-          })
-          return
-        }
-        pushCtx(used, 0)
-      }
-
-      const es = httpMod.get({
-        host: '127.0.0.1', port: 14096, path: '/event',
-        headers: { 'Accept': 'text/event-stream' }
-      }, (res) => {
-        let buf = ''
-        res.setEncoding('utf8')
-        res.on('data', (chunk) => {
-          buf += chunk
-          let idx
-          while ((idx = buf.indexOf('\n\n')) >= 0) {
-            const frame = buf.slice(0, idx)
-            buf = buf.slice(idx + 2)
-            const match = frame.match(/^data:\s*(.+)$/m)
-            if (!match) continue
-            let ev
-            try { ev = JSON.parse(match[1].trim()) } catch(e) { continue }
-            try { handleEvent(ev) } catch(e) {}
-          }
-        })
-        const streamClosed = () => {
-          if (streamEnded) return
-          finish({ content: '', model: model, tokens: tokens })
-        }
-        res.on('end', streamClosed)
-        res.on('close', streamClosed)
-      })
-      toolHeartbeat = setInterval(() => {
-        if (streamEnded) {
-          clearInterval(toolHeartbeat)
-          return
-        }
-        const now = Date.now()
-        for (const id in runningTools) {
-          const tool = runningTools[id]
-          if (now - tool.lastUpdate > 10000) {
-            const elapsed = Math.floor((now - tool.started) / 1000)
-            sendRef('◈ ' + tool.tool + ' running (' + elapsed + 's)', 'tool')
-            tool.lastUpdate = now
-          }
-if (tool.lastOutput) emitOut(lastToolOut, id, tool.lastOutput, (d) => { sseChat(runId, { type: 'out', content: d }) })
-    }
-  }, 15000)
-      const sendRef = (line, cls) => {
-        sseChat(runId, { type: 'ref', content: line, cls: cls || '' })
-      }
-
-      const finish = (payload) => {
-        if (streamEnded) return
-        streamEnded = true
-        delete runWatchdogs[runId]
-        if (watchdog) clearTimeout(watchdog)
-        if (aliveTimer) clearInterval(aliveTimer)
-        if (toolHeartbeat) clearInterval(toolHeartbeat)
-        try { es.destroy() } catch(e) {}
-        sseChat(runId, Object.assign({ type: 'done', steps: stepCount }, payload || {}))
-      }
-
-      const fail = (msg) => {
-        if (streamEnded) return
-        streamEnded = true
-        delete runWatchdogs[runId]
-        if (watchdog) clearTimeout(watchdog)
-        if (aliveTimer) clearInterval(aliveTimer)
-        if (toolHeartbeat) clearInterval(toolHeartbeat)
-        try { es.destroy() } catch(e) {}
-        sseChat(runId, { type: 'error', content: msg })
-      }
-
-      es.on('error', (e) => {
-        fail('SSE error: ' + e.message)
-      })
-
-      const handleEvent = (ev) => {
-        const p = ev.properties || {}
-        if (ev.type === 'question.asked') {
-          const qsid = p.sessionID
-          if (qsid && sessionId && qsid !== sessionId) return
-          sseChat(runId, { type: 'question', data: { requestID: p.id, sessionID: p.sessionID, questions: p.questions || [], tool: p.tool || null } })
-          return
-        }
-        if (ev.type === 'question.replied' || ev.type === 'question.rejected') {
-          if (p.sessionID && sessionId && p.sessionID !== sessionId) return
-          sseChat(runId, { type: 'question_done', data: { requestID: p.requestID } })
-          return
-        }
-        if (ev.type === 'message.part.delta') {
-          if (p.field === 'text' && p.delta) {
-            sseChat(runId, { type: 'text', content: p.delta })
-          } else if (p.field === 'reasoning' && p.delta) {
-            reasonStart(p.partID)
-          }
-          return
-        }
-        if (ev.type === 'message.part.updated') {
-          const part = p.part || {}
-          const sid2 = part.sessionID || p.sessionID || ev.sessionID
-          if (sid2 && sid2 !== sessionId) return
-          if (part.type === 'step-start') {
-            stepCount++
-            return
-          }
-          if (part.type === 'step-finish') {
-            if (part.tokens && part.tokens.total) emitCtx(part.tokens.total)
-            return
-          }
-          if (part.type === 'reasoning') {
-            if (part.time && part.time.end) reasonDone(part.id)
-            else reasonStart(part.id)
-            return
-          }
-          if (part.type === 'file') {
-            sendRef('▸ file ' + ((part.file && part.file.path) || ''), 'info')
-            return
-          }
-          if (part.type === 'tool') {
-            const st = part.state || {}
-            const inp = st.input || {}
-            const arg = toolArg(inp)
-            const callId = part.callID || part.id || (part.tool || 'tool')
-            const out = st.output || (st.metadata && st.metadata.output) || ''
-            if (part.tool === 'question') {
-              if (!seenTools[callId] && (st.status === 'pending' || st.status === 'running')) {
-                seenTools[callId] = true
-                sendRef('◈ question asked', 'tool')
-              }
-              return
-            }
-            if (st.status === 'pending' || st.status === 'running') {
-              if (!seenTools[callId] && arg) {
-                seenTools[callId] = true
-                sendRef('◈ ' + (part.tool || 'tool') + ' · ' + maskSecrets(arg), 'tool')
-              } else if (!seenTools[callId] && st.status === 'running') {
-                seenTools[callId] = true
-                sendRef('◈ ' + (part.tool || 'tool'), 'tool')
-              }
-              if (!runningTools[callId]) runningTools[callId] = { tool: part.tool || 'tool', arg: arg, status: st.status, started: Date.now() }
-              if (out) runningTools[callId].lastOutput = out
-              runningTools[callId].lastUpdate = Date.now()
-              if (out) emitOut(lastToolOut, callId, out, (d) => { sseChat(runId, { type: 'out', content: d }) })
-            } else if (st.status === 'completed') {
-              delete runningTools[callId]
-              if (!seenTools[callId]) {
-                seenTools[callId] = true
-                sendRef('◈ ' + (part.tool || 'tool') + (arg ? ' · ' + maskSecrets(arg) : ''), 'tool')
-              }
-              sendRef('✓ ' + (part.tool || 'tool') + ' done', 'tool')
-              if (out) emitOut(lastToolOut, callId, out, (d) => { sseChat(runId, { type: 'out', content: d }) })
-            } else if (st.status === 'error') {
-              delete runningTools[callId]
-              sendRef('✗ ' + (part.tool || 'tool') + ' failed', 'tool')
-              if (out) emitOut(lastToolOut, callId, out, (d) => { sseChat(runId, { type: 'out', content: d }) })
-            }
-            return
-          }
-        }
-        if (ev.type === 'message.updated') {
-          const info = p.info || {}
-          if (info.role === 'assistant' && info.error) {
-            fail((info.error.name ? info.error.name + ': ' : '') + (info.error.message || 'opencode error'))
-          }
-          if (info.model && info.model.modelID) {
-            model = info.model.providerID + '/' + info.model.modelID
-            if (!modelShown) {
-              modelShown = true
-              sendRef('> build · ' + model, 'info')
-              if (!ctxLimit) {
-                getCtxLimit(model).then((limit) => {
-                  if (limit) ctxLimit = limit
-                  pushCtx(0, ctxLimit)
-                })
-              }
-            }
-          }
-          return
-        }
-        if (ev.type === 'session.status') {
-          let status = p.status
-          if (typeof status === 'object' && status) status = status.type
-          if (status === 'idle') {
-            finish({ content: '', model: model, tokens: tokens })
-          } else if (status === 'retry') {
-            sendRef('↻ retrying…', 'info')
-          }
-          return
-        }
-        if (ev.type === 'session.idle') {
-          finish({ content: '', model: model, tokens: tokens })
-          return
-        }
-        if (ev.type === 'session.error') {
-          const errObj = p.error || {}
-          const errMsg = errObj.message || (errObj.name ? errObj.name : '') || 'session error'
-          const errCode = errObj.code ? ' (' + errObj.code + ')' : ''
-          let errDetail = errObj.detail || errObj.stack || ''
-          if (errDetail) errDetail = String(errDetail).split('\n')[0]
-          fail((errMsg + errCode + (errDetail ? ': ' + errDetail : '')).trim())
-          return
-        }
-        if (ev.type === 'session.compacted') {
-          sendRef('↻ context compacted', 'info')
-          return
-        }
-        if (ev.type === 'todo.updated') {
-          sseChat(runId, { type: 'todo', data: p.todos || [] })
-          return
-        }
-        if (ev.type === 'session.next.tool.success') {
-          const op = p.outputPaths
-          if (op && op.length) sendRef('↧ wrote ' + op.join(', '), 'tool')
-          return
-        }
-        if (ev.type === 'session.next.step.ended') {
-          if (p.tokens) {
-            tokens = p.tokens
-            if (p.tokens.total) emitCtx(p.tokens.total)
-          }
-          return
-        }
-      }
-
-      if (/^\//.test(prompt)) {
-        runWatchdogs[runId].kick()
-        const cmdLine = prompt.trim().slice(1)
-        const cmdSpace = cmdLine.indexOf(' ')
-        const cmdName = (cmdSpace >= 0 ? cmdLine.slice(0, cmdSpace) : cmdLine).toLowerCase()
-        const cmdArgs = cmdSpace >= 0 ? cmdLine.slice(cmdSpace + 1).trim() : ''
-        try {
-          if (cmdName === 'compact' || cmdName === 'summarize') {
-            let sumBody = { providerID: 'opencode', modelID: 'deepseek-v4-flash-free' }
-            if (data.model) {
-              const mm = data.model.replace(/\r/g, '')
-              const ms = mm.indexOf('/')
-              if (ms > 0) sumBody = { providerID: mm.slice(0, ms), modelID: mm.slice(ms + 1) }
-            }
-            const sum = await api('POST', '/session/' + sessionId + '/summarize', sumBody)
-            if (sum.status !== 200) {
-              fail('compact failed: ' + sum.body.slice(0, 120))
-            } else {
-              sendRef('✂ context compacted', 'info')
-              finish({ content: '', model: model, tokens: tokens })
-            }
-          } else if (cmdName === 'undo' || cmdName === 'redo') {
-            const msgs = await api('GET', '/session/' + sessionId + '/message?limit=2')
-            let arr = []
-            try { arr = JSON.parse(msgs.body) } catch(e) {}
-            let target = null
-            for (let mi = arr.length - 1; mi >= 0; mi--) {
-              const minf = arr[mi].info || {}
-              if (minf.role === 'user') { target = minf.id; break }
-            }
-            if (!target) {
-              fail('no message to ' + cmdName)
-            } else {
-              const rev = await api('POST', '/session/' + sessionId + '/' + (cmdName === 'undo' ? 'revert' : 'unrevert'), { messageID: target })
-              if (rev.status !== 200) {
-                fail(cmdName + ' failed: ' + rev.body.slice(0, 120))
-              } else {
-                sendRef(cmdName + ' ' + target.slice(0, 8), 'info')
-                finish({ content: '', model: model, tokens: tokens })
-              }
-            }
-          } else {
-            api('POST', '/session/' + sessionId + '/command', { command: cmdName, arguments: cmdArgs, agent: 'build' }).then((r) => {
-              if (streamEnded) return
-              if (r.status >= 400) fail('/' + cmdName + ' failed: ' + r.body.slice(0, 120))
-            }).catch((e) => {
-              if (!streamEnded) fail('/' + cmdName + ' error: ' + e.message)
-            })
-          }
-        } catch(e) {
-          fail(e.message || String(e))
-        }
-        return
-      }
-
-      const body = { parts: [{ type: 'text', text: prompt }] }
-      if (data.model) {
-        const m = data.model.replace(/\r/g, '')
-        const slash = m.indexOf('/')
-        if (slash > 0) body.model = { providerID: m.slice(0, slash), modelID: m.slice(slash + 1) }
-      }
-      const sent = await api('POST', '/session/' + sessionId + '/prompt_async', body)
-      if (sent.status === 404) {
-        fail('session not found: ' + sessionId)
-        return
-      }
-      runWatchdogs[runId].kick()
-      aliveTimer = setInterval(() => {
-        try {
-          if (typeof $ws.sseExists !== 'function' || $ws.sseExists('opencode-main')) return
-          clearInterval(aliveTimer)
-          aliveTimer = null
-          const ab = httpMod.request({
-            host: '127.0.0.1', port: 14096,
-            path: '/session/' + encodeURIComponent(sessionId) + '/abort',
-            method: 'POST'
-          }, (r) => {
-            r.resume()
-            r.on('end', () => { fail('client disconnected') })
-          })
-          ab.on('error', () => { fail('client disconnected') })
-          ab.end()
-        } catch(e) {}
-      }, 15000)
-    } catch(e) {
-      fail(e.message || String(e))
-    }
-    })()
+  let pronBreaking = false
+  const relaunch = () => {
+    if (streamEnded || retryLeft <= 0) return
+    pronBreaking = true
+    try { if (proc) proc.kill() } catch(e) {}
+    try { delete runProcs[runId] } catch(e) {}
+    if (aliveTimer) { clearInterval(aliveTimer); aliveTimer = null }
+    if (toolHeartbeat) { clearInterval(toolHeartbeat); toolHeartbeat = null }
+    setTimeout(() => {
+      pronBreaking = false
+      if (streamEnded) return
+      retrying = false
+      spawnProcess()
+    }, 500)
   }
 
-  return (async () => {
-    let sessionId = data.session || ''
-    try {
-      const title = String(prompt || '').replace(/\s+/g, ' ').trim().slice(0, 60)
-      if (!sessionId) {
-        const created = await api('POST', '/session', { title: title })
-        if (created.status !== 200) throw new Error('create session failed: ' + created.body.slice(0, 120))
-        sessionId = JSON.parse(created.body).id
-      } else if (title) {
-        api('GET', '/session/' + sessionId).then((got) => {
-          let cur = ''
-          try { cur = (JSON.parse(got.body) || {}).title || '' } catch(e) {}
-          if (!cur) api('PATCH', '/session/' + sessionId, { title: title })
-        }).catch(() => {})
-      }
-      streamRun(sessionId)
-      return { ok: true, runId: runId, sessionId: sessionId }
-    } catch(e) {
-      return { ok: false, error: e.message || String(e) }
-    }
-  })()
-})
+  spawnProcess()
 
-$fend('commands', async (data) => {
-  const out = [
-    { name: 'compact', description: 'compact the current conversation (via summarize)' },
-    { name: 'new', description: 'start a new session' },
-    { name: 'undo', description: 'undo last message' },
-    { name: 'redo', description: 'redo last undone message' }
-  ]
-  try {
-    const r = await httpGet('/command')
-    let list = []
-    try { list = JSON.parse(r.body) } catch(e) {}
-    if (Array.isArray(list)) {
-      for (let i = list.length - 1; i >= 0; i--) {
-        out.unshift({ name: list[i].name || '', description: list[i].description || '' })
-      }
-    }
-  } catch(e) {}
-  return { ok: true, commands: out }
+  return { ok: true, runId: runId, cwd: cwd }
 })
 
 $fend('stop', async (data) => {
   if (!data) return { ok: false }
-  const runId = data.runId
-  const sessionId = data.session || ''
-  const rp = runProcs[runId]
+  const rp = runProcs[data.runId]
   if (rp) {
     try {
       if (IS_WIN) await execAsync('taskkill /PID ' + rp.pid + ' /T /F', 5000)
@@ -2317,58 +2461,40 @@ $fend('stop', async (data) => {
     } catch(e) {
       try { rp.kill() } catch(e2) {}
     }
-    try { delete runProcs[runId] } catch(e) {}
+    try { delete runProcs[data.runId] } catch(e) {}
     return { ok: true, mode: 'run' }
   }
-  try {
-    if (!sessionId) return { ok: false, error: 'no active session' }
-    const httpMod = require('http')
-    return new Promise((resolve, reject) => {
-      const req = httpMod.request({
-        host: '127.0.0.1', port: 14096,
-        path: '/session/' + encodeURIComponent(sessionId) + '/abort',
-        method: 'POST'
-      }, (res) => {
-        res.resume()
-        res.on('end', () => { resolve({ ok: res.statusCode === 200, code: res.statusCode }) })
-      })
-      req.on('error', (e) => { reject(e) })
-      req.end()
-    })
-  } catch(e) {
-    return { ok: false, error: e.message }
-  }
+  return { ok: false, error: 'no active run' }
 })
 
-$fend('ensure_opencode', async (data) => {
+$fend('ensure_pi', async (data) => {
   const runId = data && data.installId
   try {
-    const v = await execAsync(redirCmd(OC_BIN + ' --version'), 10000)
+    const v = await execAsync(redirCmd(PI_BIN + ' --version'), 10000)
     const version = v.stdout.trim()
-    console.log('[ensure_opencode] version:', version)
-    if (version) {
-      if (runId) $ws.sse(runId, JSON.stringify({ type: 'done', version: version }))
-      return { ok: true, installing: false, version: version }
-    }
+    console.log('[ensure_pi] version:', version)
+    const omni = await httpGetUrl(OMNI_HOST + '/', 4000)
+    if (runId) $ws.sse(runId, JSON.stringify({ type: 'done', version: version, omni: omni.status === 200 }))
+    return { ok: true, installing: false, version: version, omni: omni.status === 200 }
   } catch(e) {}
   if (!runId) return { error: 'no installId' }
   try {
     const freeMem = require('os').freemem()
     const freeMB = Math.round(freeMem / 1024 / 1024)
     if (freeMem < 1024 * 1024 * 1024) {
-      const msg = '当前可用内存 ' + freeMB + 'M，内存过小，opencode 无法使用'
-      console.log('[ensure_opencode] memory too low:', freeMB + 'M')
+      const msg = '当前可用内存 ' + freeMB + 'M，内存过小，pi 可能无法使用'
+      console.log('[ensure_pi] memory too low:', freeMB + 'M')
       $ws.sse(runId, JSON.stringify({ type: 'error', content: msg }))
       return { ok: false, error: msg }
     }
-    const proc = spawn(process.platform === 'win32' ? process.env.COMSPEC : 'sh',
-      process.platform === 'win32' ? ['/d', '/s', '/c', 'npm install -g opencode-ai@latest 2>&1'] : ['-c', 'npm install -g opencode-ai@latest 2>&1'],
-      { timeout: 120000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+    const proc = spawn(IS_WIN ? process.env.COMSPEC : 'sh',
+      IS_WIN ? ['/d', '/s', '/c', 'npm install -g @earendil-works/pi-coding-agent@latest 2>&1'] : ['-c', 'npm install -g @earendil-works/pi-coding-agent@latest 2>&1'],
+      { timeout: 180000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
     const sendProgress = (text) => {
       const lines = stripAnsi(text.toString()).split('\n').filter(Boolean)
-      for (let i = 0; i < lines.length; i++) {
-        console.log('[npm install]', lines[i].trim())
-        $ws.sse(runId, JSON.stringify({ type: 'progress', content: lines[i].trim() }))
+      for (const l of lines) {
+        console.log('[npm install]', l.trim())
+        $ws.sse(runId, JSON.stringify({ type: 'progress', content: l.trim() }))
       }
     }
     proc.stdout.on('data', sendProgress)
@@ -2376,10 +2502,11 @@ $fend('ensure_opencode', async (data) => {
     proc.on('close', async (code) => {
       try {
         if (code === 0) {
-          const ver = await execAsync(redirCmd(OC_BIN + ' --version'), 10000)
+          const ver = await execAsync(redirCmd(PI_BIN + ' --version'), 10000)
           const version = ver.stdout.trim() || 'unknown'
-          console.log('[npm install] done, version:', version)
-          $ws.sse(runId, JSON.stringify({ type: 'done', version: version }))
+          const omni = await httpGetUrl(OMNI_HOST + '/', 4000)
+          console.log('[npm install] done, version:', version, 'omni:', omni.status)
+          $ws.sse(runId, JSON.stringify({ type: 'done', version: version, omni: omni.status === 200 }))
         } else {
           $ws.sse(runId, JSON.stringify({ type: 'error', content: 'npm install failed (code ' + code + ')' }))
         }
@@ -2394,40 +2521,6 @@ $fend('ensure_opencode', async (data) => {
   } catch(e) {
     $ws.sse(runId, JSON.stringify({ type: 'error', content: e.message }))
     return { ok: true, installing: true }
-  }
-})
-
-$fend('models', async () => {
-  const now = Date.now()
-  let cached, cachedTime
-  try { cached = JSON.parse($store.get('aichat_models_cache') || 'null') } catch(e) {}
-  try { cachedTime = Number($store.get('aichat_models_time') || 0) } catch(e) {}
-  if (cached && now - cachedTime < 60000) return { models: cached, cached: true }
-  if (cached) {
-    try {
-      const r = await execAsync(redirCmd(OC_BIN + ' models'), 10000)
-      const raw = r.stdout
-      console.log('[models cached-refresh] raw:', raw.trim())
-      if (raw && raw.trim()) {
-        const list = raw.trim().split('\n').filter(Boolean).map((s) => { return s.trim() })
-        $store.set('aichat_models_cache', JSON.stringify(list))
-        $store.set('aichat_models_time', String(Date.now()))
-        return { models: list }
-      }
-    } catch(e) {}
-    return { models: cached }
-  }
-  try {
-    const r = await execAsync(redirCmd(OC_BIN + ' models'), 10000)
-    const raw = r.stdout
-    console.log('[models] raw:', raw.trim())
-    if (!raw || !raw.trim()) return { models: [] }
-    const list = raw.trim().split('\n').filter(Boolean).map((s) => { return s.trim() })
-    $store.set('aichat_models_cache', JSON.stringify(list))
-    $store.set('aichat_models_time', String(now))
-    return { models: list }
-  } catch(e) {
-    return { models: cached || [] }
   }
 })
 
@@ -2455,94 +2548,6 @@ $fend('delete_session', (data) => {
     return { ok: false, error: e.message }
   }
 })
-
-$fend('opencode_sessions', async () => {
-  const now = Date.now()
-  let cached, cachedTime
-  try { cached = JSON.parse($store.get('aichat_oc_sessions_cache') || 'null') } catch(e) {}
-  try { cachedTime = Number($store.get('aichat_oc_sessions_time') || 0) } catch(e) {}
-
-  if (cached && now - cachedTime < 15000) return { sessions: cached, cached: true }
-  if (cached) {
-    try {
-      const r = await execAsync(redirCmd(OC_BIN + ' session list --format json -n 30'), 8000)
-      const raw = r.stdout
-      console.log('[opencode_sessions cached-refresh] raw:', raw.trim())
-      if (raw && raw.trim()) {
-        const list = JSON.parse(raw.trim())
-        $store.set('aichat_oc_sessions_cache', raw.trim())
-        $store.set('aichat_oc_sessions_time', String(Date.now()))
-        return { sessions: list }
-      }
-    } catch(e) {}
-    return { sessions: cached }
-  }
-  try {
-    const r = await execAsync(redirCmd(OC_BIN + ' session list --format json -n 30'), 8000)
-    const raw = r.stdout
-    console.log('[opencode_sessions] raw:', raw.trim())
-    if (!raw || !raw.trim()) return { sessions: [] }
-    const sessions = JSON.parse(raw.trim())
-    $store.set('aichat_oc_sessions_cache', raw.trim())
-    $store.set('aichat_oc_sessions_time', String(now))
-    return { sessions: sessions }
-  } catch(e) {
-    return { sessions: cached || [] }
-  }
-})
-
-$fend('opencode_delete_session', async (data) => {
-  if (!data || !data.id) return { ok: false }
-  try {
-    await execAsync(redirCmd(OC_BIN + ' session delete ' + data.id), 10000)
-    return { ok: true }
-  } catch(e) {
-    return { ok: false, error: e.message }
-  }
-})
-
-const ocPost = (path, body) => {
-  return new Promise((resolve, reject) => {
-    const httpMod = require('http')
-    const payload = body ? JSON.stringify(body) : ''
-    const req = httpMod.request({
-      host: '127.0.0.1', port: 14096, path: path, method: 'POST',
-      headers: body ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } : {}
-    }, (res) => {
-      let buf = ''
-      res.on('data', (c) => { buf += c })
-      res.on('end', () => { resolve({ status: res.statusCode, body: buf }) })
-    })
-    req.on('error', reject)
-    req.setTimeout(8000, () => { req.destroy(); reject(new Error('timeout')) })
-    if (body) req.write(payload)
-    req.end()
-  })
-}
-
-$fend('question_reply', async (data) => {
-  if (!data || !data.requestID || !Array.isArray(data.answers)) return { ok: false, error: 'invalid params' }
-  try {
-    const r = await ocPost('/question/' + encodeURIComponent(data.requestID) + '/reply', { answers: data.answers })
-    if (r.status !== 200) return { ok: false, error: r.body.slice(0, 200) }
-    return { ok: true }
-  } catch(e) {
-    return { ok: false, error: e.message }
-  }
-})
-
-$fend('question_reject', async (data) => {
-  if (!data || !data.requestID) return { ok: false, error: 'invalid params' }
-  try {
-    const r = await ocPost('/question/' + encodeURIComponent(data.requestID) + '/reject')
-    if (r.status !== 200) return { ok: false, error: r.body.slice(0, 200) }
-    return { ok: true }
-  } catch(e) {
-    return { ok: false, error: e.message }
-  }
-})
 </script>
-
 </body>
 </html>
-
