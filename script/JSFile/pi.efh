@@ -437,7 +437,19 @@
     <button v-if="installErr" @click="retryInstall" :disabled="installBusy">{{ installBusy ? 'Retrying...' : 'Retry' }}</button>
   </div>
 
-  <div class="provider-overlay" v-if="!installOverlay && providerOverlay">
+  <div class="install-overlay" v-if="omniOverlay">
+    <div class="spin" v-if="!omniErr"></div>
+    <div class="title">{{ omniErr ? 'OmniRoute failed' : 'Starting OmniRoute...' }}</div>
+    <div class="cmd" v-if="omniCmd">$ {{ omniCmd }}</div>
+    <div class="log" ref="omniLog">
+      <div v-for="(l, li) in omniLog" :key="li">{{ l }}</div>
+      <span v-if="!omniLog.length" style="color:var(--fc3)">{{ omniProgress }}</span>
+    </div>
+    <div class="err" v-if="omniErr">{{ omniErr }}</div>
+    <button v-if="omniErr" @click="retryOmni" :disabled="omniBusy">{{ omniBusy ? 'Retrying...' : 'Retry' }}</button>
+  </div>
+
+  <div class="provider-overlay" v-if="!installOverlay && !omniOverlay && providerOverlay">
     <div class="provider-panel">
       <button class="pp-close" @click="providerOverlay=false" title="Close">×</button>
       <div class="pp-title">Choose model provider</div>
@@ -563,7 +575,10 @@
         <div class="d-item" :class="{active: !currentModel}" @click="selectModel('')">
           <div class="d-title">auto</div><div class="d-sub">default model</div>
         </div>
-        <div v-for="m in cleanModels" :key="m" class="d-item" :class="{active: m===currentModel}" @click="selectModel(m)">
+        <div class="d-filter">
+          <input type="text" v-model="modelFilter" placeholder="Filter models..." @click.stop @input="modelFilter = $event.target.value" spellcheck="false" style="width:100%;padding:6px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--bk);color:var(--fc);font-size:12px;outline:none;box-sizing:border-box;">
+        </div>
+        <div v-for="m in filteredModels" :key="m" class="d-item" :class="{active: m===currentModel}" @click="selectModel(m)">
           <div class="d-title">{{ m }}</div>
         </div>
       </div>
@@ -583,7 +598,8 @@
       <template v-if="m.role === 'user'">{{ m.content }}</template>
       <template v-else>
         <div v-for="(p, pi) in m.parts" :key="pi">
-          <div v-if="p.t === 'ref'" :class="['ref', p.cls || refClass(p.c)]">{{ p.c }}</div>
+          <div v-if="p.t === 'ref'" :class="['ref', p.cls || refClass(p.c)]" :style="p.cls === 'reasoning' && p.body ? 'cursor: pointer;' : ''" @click="p.cls === 'reasoning' && p.body ? (p.open = p.open === undefined ? false : !p.open) : null">{{ p.c }}</div>
+          <div v-if="p.t === 'ref' && p.cls === 'reasoning' && p.body && p.open !== false" class="reasoning-body">{{ p.body }}</div>
           <pre v-else-if="p.t === 'out'" class="tool-out">{{ p.c }}</pre>
           <template v-else-if="p.t === 'text'">
             <div v-for="(v, vi) in mdViews(p, m.streaming)" :key="vi" class="stream-par" :class="p.cls || ''">
@@ -665,10 +681,12 @@
         workspace: '', wsBusy: false,
         sseMain: null, mainReady: false, sseHandlers: {}, switching: false,
         providerOverlay: false, providerList: [], providerKeys: {}, providerBusy: false,
-        currentProvider: '',
+        currentProvider: '', provSeq: 0,
         omniCurrent: false, omniStatus: 'checking…',
+        omniOverlay: false, omniErr: '', omniProgress: 'Starting OmniRoute...', omniLog: [], omniCmd: '', omniBusy: false, omniEs: null,
         customOpen: false, customBusy: false, customEditing: false,
-        customForm: { name: '', baseUrl: '', apiKey: '', api: 'openai-completions', models: '' }
+        customForm: { name: '', baseUrl: '', apiKey: '', api: 'openai-completions', models: '' },
+        modelFilter: ''
       }
     },
     computed: {
@@ -688,6 +706,12 @@
         const out = []
         this.models.forEach((m) => { const c = m.replace(/\r/g, ''); if (out.indexOf(c) < 0) out.push(c) })
         return out
+      },
+      filteredModels() {
+        const list = this.cleanModels
+        if (!this.modelFilter) return list
+        const q = this.modelFilter.toLowerCase()
+        return list.filter((m) => m.toLowerCase().indexOf(q) >= 0)
       },
       cmdFiltered() {
         if (!this.cmdOpen) return []
@@ -959,7 +983,9 @@
       },
       loadProviders() {
         const self = this
+        const seq = ++this.provSeq
         return this.fetchFend('providers', { model: this.currentModel }, 10000).then((data) => {
+          if (seq !== this.provSeq) return data || {}
           if (data && Array.isArray(data.providers)) self.providerList = data.providers
           self.omniCurrent = !!(data && data.omniCurrent)
           self.omniStatus = data && data.omniStatus ? data.omniStatus : 'offline'
@@ -1014,25 +1040,106 @@
       },
       useOmniRoute() {
         const self = this
-        this.providerBusy = true
-        this.fetchFend('provider_save', { name: 'omniroute', apiKey: '' }, 10000).then((data) => {
-          self.providerBusy = false
-          if (data && data.ok) {
-            self.showNotify('OmniRoute enabled', 'success')
-            self.omniCurrent = true
-            self.currentProvider = 'omniroute'
-            self.providerOverlay = false
-            self.loadSessions().then(() => {
-              const defModel = data && data.model ? data.model : ''
-              if (defModel) self.switchDefaultModel(defModel)
-              else self.selectModel('')
+        this.omniOverlay = true
+        this.omniBusy = true
+        this.omniErr = ''
+        this.omniLog = []
+        this.omniCmd = ''
+        this.omniProgress = 'Checking OmniRoute...'
+        if (this.omniEs) { try { this.omniEs.close() } catch(e) {} }
+        const omniId = Date.now() + '-' + Math.random().toString(36).slice(2, 8)
+        const es = new EventSource('/sse/elecV2P/' + omniId)
+        this.omniEs = es
+        es.onmessage = (e) => {
+          try {
+            const d = JSON.parse(e.data)
+            if (d.type === 'cmd') {
+              self.omniCmd = d.content
+              return
+            }
+            if (d.type === 'progress') {
+              self.omniLog.push(String(d.content).replace(/\s+/g, ' ').trim())
+              if (self.omniLog.length > 200) self.omniLog.shift()
+              self.$nextTick(() => {
+                const el = self.$refs.omniLog
+                if (el) el.scrollTop = el.scrollHeight
+              })
+              return
+            }
+            if (d.type === 'full_log') {
+              self.omniLog = String(d.content).split('\n').filter(Boolean)
+              self.$nextTick(() => {
+                const el = self.$refs.omniLog
+                if (el) el.scrollTop = el.scrollHeight
+              })
+              return
+            }
+            if (d.type === 'done') {
+              es.close()
+              self.omniEs = null
+              self.omniBusy = false
+              self.omniOverlay = false
+              self.fetchFend('provider_save', { name: 'omniroute', apiKey: '' }, 10000).then((data) => {
+                if (data && data.ok) {
+                  self.showNotify('OmniRoute enabled', 'success')
+                  self.omniCurrent = true
+                  self.currentProvider = 'omniroute'
+                  self.providerOverlay = false
+                  self.loadSessions().then(() => {
+                    const defModel = data && data.model ? data.model : ''
+                    if (defModel) self.switchDefaultModel(defModel)
+                    else self.selectModel('')
+                  })
+                } else {
+                  self.showNotify('Failed to save config: ' + ((data && data.error) || 'unknown'))
+                }
+              }).catch((err) => {
+                self.showNotify('Failed: ' + err.message)
+              })
+              return
+            }
+            if (d.type === 'error') {
+              es.close()
+              self.omniEs = null
+              self.omniBusy = false
+              self.omniErr = d.content
+              return
+            }
+          } catch(e) {}
+        }
+        es.onerror = () => {}
+        this.fetchFend('ensure_omniroute', { installId: omniId }, 180000).then((data) => {
+          if (data && data.ok && data.running) {
+            es.close()
+            self.omniEs = null
+            self.omniBusy = false
+            self.omniOverlay = false
+            self.fetchFend('provider_save', { name: 'omniroute', apiKey: '' }, 10000).then((sav) => {
+              if (sav && sav.ok) {
+                self.showNotify('OmniRoute enabled', 'success')
+                self.omniCurrent = true
+                self.currentProvider = 'omniroute'
+                self.providerOverlay = false
+                self.loadSessions().then(() => {
+                  const defModel = sav && sav.model ? sav.model : ''
+                  if (defModel) self.switchDefaultModel(defModel)
+                  else self.selectModel('')
+                })
+              } else {
+                self.showNotify('Failed to save config: ' + ((sav && sav.error) || 'unknown'))
+              }
+            }).catch((err) => {
+              self.showNotify('Failed: ' + err.message)
             })
-          } else {
-            self.showNotify('Failed: ' + ((data && data.error) || 'unknown'))
+          } else if (data && !data.ok && data.error) {
+            es.close()
+            self.omniEs = null
+            self.omniBusy = false
+            self.omniErr = data.error
           }
         }).catch((e) => {
-          self.providerBusy = false
-          self.showNotify('Failed: ' + e.message)
+          self.omniBusy = false
+          self.omniErr = e.message
         })
       },
       openCustomProvider() {
@@ -1286,6 +1393,12 @@
               flushText()
               el.parts.push({ t: 'ref', c: data.content, cls: data.cls || '' })
             }
+            if (data.type === 'reasoning') {
+              flushText()
+              const lastP = el.parts[el.parts.length - 1]
+              if (lastP && lastP.t === 'ref' && lastP.cls === 'reasoning') lastP.body = (lastP.body || '') + (data.content || '')
+              else el.parts.push({ t: 'ref', c: '✱ reasoning', cls: 'reasoning', body: data.content || '' })
+            }
             if (data.type === 'out') {
               flushText()
               const lastOut = el.parts[el.parts.length - 1]
@@ -1466,8 +1579,8 @@
           last.meta = (last.meta ? last.meta + ' | ' : '') + '⏹ stopped'
         }
         this.fetchFend('stop', { runId: runId, session: sessionId }, 15000).then((data) => {
-          if (!data.ok && !data.error) {
-            self.showNotify('stop failed' + (data.code ? ' (' + data.code + ')' : ''))
+          if (!data.ok) {
+            self.showNotify('stop failed: ' + (data.error || (data.code ? 'code ' + data.code : 'unknown')))
           }
           self.busy = false
         }).catch((e) => {
@@ -1630,6 +1743,9 @@
         const self = this
         self.startInstall()
       },
+      retryOmni() {
+        this.useOmniRoute()
+      },
       initApp() {
         if (_inited) return
         _inited = true
@@ -1655,6 +1771,9 @@
           self.refreshCtx()
           self.loadProviders().then(() => {
             if (!self.currentProvider) self.showProviderPicker()
+            else if (self.omniCurrent && self.omniStatus && self.omniStatus.indexOf('not running') >= 0) {
+              self.useOmniRoute()
+            }
           })
         })
       },
@@ -1742,6 +1861,17 @@ const maskSecrets = (s) => {
 const IS_WIN = process.platform === 'win32'
 const DEVNULL = IS_WIN ? 'nul' : '/dev/null'
 const redirCmd = (cmd) => { return cmd + ' 2>' + DEVNULL }
+
+const killTree = (child) => {
+  if (!child || !child.pid) return
+  try {
+    if (IS_WIN) execAsync('taskkill /PID ' + child.pid + ' /T /F', 5000).catch(() => {})
+    else {
+      try { process.kill(-child.pid, 'SIGTERM') } catch(e) {}
+      setTimeout(() => { try { process.kill(-child.pid, 'SIGKILL') } catch(e) {} }, 1500)
+    }
+  } catch(e) {}
+}
 
 const execAsync = (cmd, timeout) => {
   return new Promise((resolve, reject) => {
@@ -2343,7 +2473,7 @@ const convFromFile = (full) => {
     for (const p of parts) {
       if (!p) continue
       if (p.type === 'text' && p.text) plist.push({ t: 'text', c: p.text })
-      else if (p.type === 'thinking' && p.thinking) plist.push({ t: 'ref', c: '✱ reasoning', cls: 'reasoning' })
+      else if (p.type === 'thinking' && p.thinking) plist.push({ t: 'ref', c: '✱ reasoning', cls: 'reasoning', body: p.thinking })
       else if (p.type === 'toolCall') {
         const arg = toolArg(p.arguments || {})
         plist.push({ t: 'ref', c: '◈ ' + (p.name || 'tool') + (arg ? ' · ' + maskSecrets(arg) : ''), cls: 'tool' })
@@ -2489,7 +2619,9 @@ $fend('start', (data) => {
     if (watchdog) clearTimeout(watchdog)
     if (aliveTimer) clearInterval(aliveTimer)
     if (toolHeartbeat) clearInterval(toolHeartbeat)
-    try { delete runProcs[runId] } catch(e) {}
+    try { delete runProcs[runId] } catch(e) {} try { $cache.delete('pi_run_' + runId) } catch(e) {}
+    // watchdog 超时结束时 pi 可能仍在运行，需要杀掉，否则会继续写 session
+    if (payload && payload.timeout) killTree(proc)
     send('done', Object.assign({ steps: stepCount }, payload || {}, payload.tokens ? { tokens: normTokens(payload.tokens) } : {}))
   }
   const fail = (msg) => {
@@ -2498,8 +2630,8 @@ $fend('start', (data) => {
     if (watchdog) clearTimeout(watchdog)
     if (aliveTimer) clearInterval(aliveTimer)
     if (toolHeartbeat) clearInterval(toolHeartbeat)
-    try { delete runProcs[runId] } catch(e) {}
-    try { if (proc) { proc.kill() } } catch(e) {}
+    try { delete runProcs[runId] } catch(e) {} try { $cache.delete('pi_run_' + runId) } catch(e) {}
+    killTree(proc)
     send('error', { content: msg })
   }
 
@@ -2531,9 +2663,15 @@ $fend('start', (data) => {
       const ame = ev.assistantMessageEvent || {}
       const at = ame.type
       const ci = ame.contentIndex || 0
-      if (at === 'text_delta' && ame.delta) { send('text', { content: ame.delta }); return }
+      if (at === 'text_delta') {
+        const pending = Object.keys(reasoningSeen).filter(k => reasoningSeen[k])
+        for (const k of pending) { reasoningSeen[k] = false; sendRef('✓ reasoning done', 'reasoning') }
+        if (ame.delta) send('text', { content: ame.delta })
+        return
+      }
       if (at === 'thinking_start' || at === 'thinking_delta') {
         if (!reasoningSeen[ci]) { reasoningSeen[ci] = true; sendRef('✱ reasoning', 'reasoning') }
+        if (at === 'thinking_delta' && ame.delta) send('reasoning', { content: ame.delta })
         return
       }
       if (at === 'thinking_end') {
@@ -2566,8 +2704,9 @@ $fend('start', (data) => {
         const etxt = String(msg.errorMessage)
         if (isRetryable(etxt) && retryLeft > 0 && !retrying) {
           retryLeft--
+          const attempt = MAX_RETRY - retryLeft
           const delay = retryDelayMs(retryLeft)
-          sendRef('↻ transient error, retrying in ' + Math.round(delay / 1000) + 's… (attempt ' + (MAX_RETRY - retryLeft) + '/' + MAX_RETRY + ')', 'info')
+          sendRef('↻ transient error, retrying in ' + Math.round(delay / 1000) + 's… (attempt ' + attempt + '/' + MAX_RETRY + ')' + (etxt && etxt !== 'transient error' ? ' · ' + etxt.split('\n')[0] : ''), 'info')
           retrying = true
           kickWatchdog()
           setTimeout(() => { relaunch() }, delay)
@@ -2646,9 +2785,12 @@ $fend('start', (data) => {
       PI_SKIP_VERSION_CHECK: '1',
       NO_COLOR: '1'
     })
-    try { if (proc) proc.kill() } catch(e) {}
-    proc = spawn(PI_BIN, args, { cwd: cwd, env: env, windowsHide: true, shell: IS_WIN, stdio: ['ignore', 'pipe', 'pipe'] })
+    killTree(proc)
+    proc = spawn(PI_BIN, args, { cwd: cwd, env: env, windowsHide: true, shell: IS_WIN, detached: !IS_WIN, stdio: ['ignore', 'pipe', 'pipe'] })
     runProcs[runId] = proc
+    // favend 每次请求都会重新执行整个脚本，runProcs 会变成空对象。
+    // 把 proc 存进跨请求共享的 $cache，stop 时才能找到并杀掉进程。
+    try { $cache.set('pi_run_' + runId, proc) } catch(e) {}
     retrying = false
 
     let buf = ''
@@ -2672,7 +2814,7 @@ $fend('start', (data) => {
 
     proc.on('error', (e) => { fail(e.message || String(e)) })
     proc.on('close', (code) => {
-      try { delete runProcs[runId] } catch(e) {}
+      try { delete runProcs[runId] } catch(e) {} try { $cache.delete('pi_run_' + runId) } catch(e) {}
       if (streamEnded) return
       if (retrying) return
       if (pronBreaking) return
@@ -2686,7 +2828,7 @@ $fend('start', (data) => {
         if (typeof $ws.sseExists !== 'function' || $ws.sseExists(APP_CH)) return
         clearInterval(aliveTimer)
         aliveTimer = null
-        try { proc.kill() } catch(e) {}
+        killTree(proc)
         fail('client disconnected')
       } catch(e) {}
     }, 15000)
@@ -2707,10 +2849,10 @@ $fend('start', (data) => {
 
   let pronBreaking = false
   const relaunch = () => {
-    if (streamEnded || retryLeft <= 0) return
+    if (streamEnded) return
     pronBreaking = true
-    try { if (proc) proc.kill() } catch(e) {}
-    try { delete runProcs[runId] } catch(e) {}
+    killTree(proc)
+    try { delete runProcs[runId] } catch(e) {} try { $cache.delete('pi_run_' + runId) } catch(e) {}
     if (aliveTimer) { clearInterval(aliveTimer); aliveTimer = null }
     if (toolHeartbeat) { clearInterval(toolHeartbeat); toolHeartbeat = null }
     setTimeout(() => {
@@ -2728,19 +2870,56 @@ $fend('start', (data) => {
 
 $fend('stop', async (data) => {
   if (!data) return { ok: false }
-  const rp = runProcs[data.runId]
+  const rp = runProcs[data.runId] || $cache.get('pi_run_' + data.runId)
   if (rp) {
-    try {
-      if (IS_WIN) await execAsync('taskkill /PID ' + rp.pid + ' /T /F', 5000)
-      else rp.kill('SIGTERM')
-    } catch(e) {
-      try { rp.kill() } catch(e2) {}
-    }
+    killTree(rp)
     try { delete runProcs[data.runId] } catch(e) {}
+    try { $cache.delete('pi_run_' + data.runId) } catch(e) {}
     return { ok: true, mode: 'run' }
   }
   return { ok: false, error: 'no active run' }
 })
+
+const resolveOmniVersion = (tries) => {
+  return new Promise((resolve) => {
+    const attempt = (n) => {
+      execAsync(redirCmd('omniroute --version'), 5000).then((v) => {
+        resolve({ ok: true, version: v.stdout.trim() || 'unknown' })
+      }).catch((e) => {
+        if (n > 1) setTimeout(() => { attempt(n - 1) }, 1000)
+        else resolve({ ok: false })
+      })
+    }
+    attempt(tries || 2)
+  })
+}
+
+const waitForOmniReady = (timeout) => {
+  return new Promise((resolve) => {
+    const start = Date.now()
+    const check = () => {
+      httpGetUrl(OMNI_HOST + '/', 2000).then((r) => {
+        if (r.status === 200) resolve(true)
+        else if (Date.now() - start > timeout) resolve(false)
+        else setTimeout(check, 2000)
+      }).catch(() => {
+        if (Date.now() - start > timeout) resolve(false)
+        else setTimeout(check, 2000)
+      })
+    }
+    check()
+  })
+}
+
+const startOmniProcess = () => {
+  const proc = spawn('omniroute', [], {
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true
+  })
+  proc.unref()
+  return proc
+}
 
 const resolvePiVersion = (tries) => {
   return new Promise((resolve) => {
@@ -2823,6 +3002,85 @@ $fend('ensure_pi', async (data) => {
   } catch(e) {
     $ws.sse(runId, JSON.stringify({ type: 'error', content: e.message }))
     return { ok: true, installing: true }
+  }
+})
+
+$fend('ensure_omniroute', async (data) => {
+  const runId = data && data.installId
+  const omniCheck = await httpGetUrl(OMNI_HOST + '/', 4000)
+  if (omniCheck.status === 200) {
+    console.log('[ensure_omniroute] already running')
+    if (runId) $ws.sse(runId, JSON.stringify({ type: 'done', status: 'running' }))
+    return { ok: true, running: true }
+  }
+  const installed = await resolveOmniVersion(2)
+  if (!installed.ok) {
+    if (!runId) return { ok: false, error: 'omniroute not installed and no installId' }
+    try {
+      const INSTALL_CMD = 'npm install -g omniroute --loglevel=verbose'
+      $ws.sse(runId, JSON.stringify({ type: 'cmd', content: INSTALL_CMD }))
+      const proc = spawn(IS_WIN ? process.env.COMSPEC : 'sh',
+        IS_WIN ? ['/d', '/s', '/c', INSTALL_CMD + ' 2>&1'] : ['-c', INSTALL_CMD + ' 2>&1'],
+        { timeout: 180000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+      const fullLog = []
+      const sendProgress = (text) => {
+        const lines = stripAnsi(text.toString()).split('\n').filter(Boolean)
+        for (const l of lines) {
+          const line = l.trim()
+          console.log('[omniroute install]', line)
+          if (line) {
+            fullLog.push(line)
+            if (fullLog.length > 2000) fullLog.splice(0, fullLog.length - 2000)
+            $ws.sse(runId, JSON.stringify({ type: 'progress', content: line }))
+          }
+        }
+      }
+      proc.stdout.on('data', sendProgress)
+      proc.stderr.on('data', sendProgress)
+      proc.on('close', async (code) => {
+        try {
+          if (code === 0) {
+            $ws.sse(runId, JSON.stringify({ type: 'progress', content: 'OmniRoute installed, starting...' }))
+            startOmniProcess()
+            const ready = await waitForOmniReady(30000)
+            $ws.sse(runId, JSON.stringify({ type: 'full_log', content: fullLog.join('\n') }))
+            if (ready) {
+              console.log('[ensure_omniroute] installed and started')
+              $ws.sse(runId, JSON.stringify({ type: 'done', status: 'started' }))
+            } else {
+              $ws.sse(runId, JSON.stringify({ type: 'error', content: 'OmniRoute started but not responding on ' + OMNI_HOST }))
+            }
+          } else {
+            $ws.sse(runId, JSON.stringify({ type: 'full_log', content: fullLog.join('\n') }))
+            $ws.sse(runId, JSON.stringify({ type: 'error', content: 'npm install failed (code ' + code + ')' }))
+          }
+        } catch(e) {
+          $ws.sse(runId, JSON.stringify({ type: 'full_log', content: fullLog.join('\n') }))
+          $ws.sse(runId, JSON.stringify({ type: 'error', content: e.message }))
+        }
+      })
+      proc.on('error', (e) => {
+        $ws.sse(runId, JSON.stringify({ type: 'full_log', content: fullLog.join('\n') }))
+        $ws.sse(runId, JSON.stringify({ type: 'error', content: e.message }))
+      })
+      return { ok: true, installing: true }
+    } catch(e) {
+      $ws.sse(runId, JSON.stringify({ type: 'error', content: e.message }))
+      return { ok: false, error: e.message }
+    }
+  }
+  if (!runId) return { ok: false, error: 'omniroute not running and no installId' }
+  $ws.sse(runId, JSON.stringify({ type: 'cmd', content: 'omniroute' }))
+  $ws.sse(runId, JSON.stringify({ type: 'progress', content: 'Starting OmniRoute...' }))
+  startOmniProcess()
+  const ready = await waitForOmniReady(30000)
+  if (ready) {
+    console.log('[ensure_omniroute] started')
+    $ws.sse(runId, JSON.stringify({ type: 'done', status: 'started' }))
+    return { ok: true, running: true }
+  } else {
+    $ws.sse(runId, JSON.stringify({ type: 'error', content: 'OmniRoute started but not responding on ' + OMNI_HOST }))
+    return { ok: false, error: 'OmniRoute not responding' }
   }
 })
 
