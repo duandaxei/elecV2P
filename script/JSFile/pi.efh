@@ -446,7 +446,10 @@
       <span v-if="!omniLog.length" style="color:var(--fc3)">{{ omniProgress }}</span>
     </div>
     <div class="err" v-if="omniErr">{{ omniErr }}</div>
-    <button v-if="omniErr" @click="retryOmni" :disabled="omniBusy">{{ omniBusy ? 'Retrying...' : 'Retry' }}</button>
+    <div v-if="omniErr" style="display:flex;gap:10px;">
+      <button @click="retryOmni" :disabled="omniBusy">{{ omniBusy ? 'Retrying...' : 'Retry' }}</button>
+      <button @click="omniToProviders" :disabled="omniBusy">Choose another provider</button>
+    </div>
   </div>
 
   <div class="provider-overlay" v-if="!installOverlay && !omniOverlay && providerOverlay">
@@ -1746,6 +1749,13 @@
       retryOmni() {
         this.useOmniRoute()
       },
+      omniToProviders() {
+        if (this.omniEs) { try { this.omniEs.close() } catch(e) {} this.omniEs = null }
+        this.omniOverlay = false
+        this.omniErr = ''
+        this.omniBusy = false
+        this.showProviderPicker()
+      },
       initApp() {
         if (_inited) return
         _inited = true
@@ -2768,8 +2778,15 @@ $fend('start', (data) => {
     return [2000, 5000, 10000][tried - 1] || 10000
   }
 
+  const qArg = (val) => {
+    let s = String(val)
+    if (!IS_WIN || /^[\w@%+=:,./\-]+$/.test(s)) return s
+    return '"' + s.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1') + '"'
+  }
+
   const spawnProcess = () => {
-    const args = ['--mode', 'json', '--approve']
+    // prompt 不放命令行（shell 会按空格/换行拆参），改走 stdin
+    const args = ['--mode', 'json', '--approve', '--print']
     if (curSession) args.push('--session-id', curSession)
     else args.push('--name', prompt.replace(/\s+/g, ' ').trim().slice(0, 40))
     if (modelStr) args.push('--model', modelStr)
@@ -2778,7 +2795,6 @@ $fend('start', (data) => {
       const fallback = collectConfiguredModels(readModelsJson())
       if (fallback.length) args.push('--model', fallback[0])
     }
-    args.push(prompt)
 
     const env = Object.assign({}, process.env, {
       NODE_OPTIONS: '--no-warnings',
@@ -2786,7 +2802,12 @@ $fend('start', (data) => {
       NO_COLOR: '1'
     })
     killTree(proc)
-    proc = spawn(PI_BIN, args, { cwd: cwd, env: env, windowsHide: true, shell: IS_WIN, detached: !IS_WIN, stdio: ['ignore', 'pipe', 'pipe'] })
+    proc = spawn(PI_BIN, args.map(qArg), { cwd: cwd, env: env, windowsHide: true, shell: IS_WIN, detached: !IS_WIN, stdio: ['pipe', 'pipe', 'pipe'] })
+    try {
+      proc.stdin.on('error', () => {})
+      proc.stdin.write(prompt)
+      proc.stdin.end()
+    } catch(e) {}
     runProcs[runId] = proc
     // favend 每次请求都会重新执行整个脚本，runProcs 会变成空对象。
     // 把 proc 存进跨请求共享的 $cache，stop 时才能找到并杀掉进程。
@@ -2912,11 +2933,16 @@ const waitForOmniReady = (timeout) => {
 }
 
 const startOmniProcess = () => {
+  const omniEnv = Object.assign({}, process.env)
+  delete omniEnv.PORT
   const proc = spawn('omniroute', [], {
     detached: true,
     stdio: 'ignore',
-    windowsHide: true
+    windowsHide: true,
+    shell: IS_WIN,
+    env: omniEnv
   })
+  proc.on('error', (e) => { console.log('[ensure_omniroute] spawn error:', e.message) })
   proc.unref()
   return proc
 }

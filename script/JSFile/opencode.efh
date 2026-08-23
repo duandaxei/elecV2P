@@ -1845,10 +1845,15 @@ const runCliMode = (data, runId) => {
   const sessionId = data.session || ''
   const modelStr = (data.model || '').replace(/\r/g, '')
 
+  const qArg = (val) => {
+    let s = String(val)
+    if (!IS_WIN || /^[\w@%+=:,./\-]+$/.test(s)) return s
+    return '"' + s.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1') + '"'
+  }
+  // prompt 不放命令行（shell 会按空格/换行拆参），改走 stdin
   const args = ['run', '--format', 'json']
   if (sessionId) args.push('--session', sessionId)
   if (modelStr) args.push('--model', modelStr)
-  args.push(prompt)
 
   let streamEnded = false
   let stepCount = 0
@@ -1997,7 +2002,12 @@ const runCliMode = (data, runId) => {
     }
   }
 
-  const proc = spawn(OC_BIN, args, { env: Object.assign({}, process.env, { NODE_OPTIONS: '--no-warnings' }), windowsHide: true, shell: IS_WIN, stdio: ['ignore', 'pipe', 'pipe'] })
+  const proc = spawn(OC_BIN, args.map(qArg), { env: Object.assign({}, process.env, { NODE_OPTIONS: '--no-warnings' }), windowsHide: true, shell: IS_WIN, stdio: ['pipe', 'pipe', 'pipe'] })
+  try {
+    proc.stdin.on('error', () => {})
+    proc.stdin.write(prompt)
+    proc.stdin.end()
+  } catch(e) {}
   runProcs[runId] = proc
   // favend 每次请求都会重新执行整个脚本，runProcs 会变成空对象。
   // 把 proc 存进跨请求共享的 $cache，stop 时才能找到并杀掉进程。
