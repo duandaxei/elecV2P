@@ -154,6 +154,7 @@ index.js          → app.js → webmodule.js (Express app, serves web/dist, aut
 - No formatter/linter config; match surrounding style (tabs/4-space per file).
 - `web/dist` is generated — never hand-edit; rebuild via `npm run build`.
 - All list files (`default.list`, `rewrite.list`, `task.list`, `mitmhost.list`) are strict JSON — do not add comments when editing.
+- **Do not traverse `node_modules/`** (huge file count) unless explicitly necessary. Never `grep -r` / `find` / glob the repo root without excluding it; target specific source dirs (`webser/`, `func/`, `utils/`, `script/`, `web/src/`) instead.
 
 ## Docker
 

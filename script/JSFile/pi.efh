@@ -83,8 +83,23 @@
     .dropdown .d-more { padding: 8px 12px; text-align: center; font-size: 12px; color: var(--ac); cursor: pointer; border-top: 1px solid var(--bd); }
     .dropdown .d-more:hover { background: var(--bk3); }
     .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
-    .welcome { color: var(--fc2); text-align: center; margin: auto; font-size: 15px; line-height: 2; }
+    .welcome { color: var(--fc2); text-align: center; margin: auto; font-size: 15px; line-height: 1.9; max-width: 560px; width: 100%; padding: 16px; }
     .welcome b { color: var(--ac); }
+    .welcome .w-sub { font-size: 12px; color: var(--fc3); }
+    .welcome .w-head {
+      font-size: 11px; color: var(--fc3); text-transform: uppercase; letter-spacing: 1.5px;
+      margin: 18px 0 10px;
+    }
+    .w-tips { display: flex; flex-direction: column; gap: 7px; text-align: left; }
+    .w-tip {
+      display: flex; align-items: baseline; gap: 9px;
+      border: 1px solid var(--bd); border-radius: 9px; padding: 8px 12px;
+      background: var(--bk2); cursor: pointer; transition: all .15s; line-height: 1.55;
+    }
+    .w-tip:hover { border-color: var(--ac); background: rgba(88,166,255,.07); }
+    .w-tip .t-icon { color: var(--ac); font-size: 13px; flex-shrink: 0; }
+    .w-tip .t-text { font-size: 13px; color: var(--fc2); word-break: break-word; }
+    .w-tip .t-text b { color: var(--fc); font-weight: 600; margin-right: 2px; }
     .msg-loading {
       color: var(--fc2); text-align: center; margin: auto; font-size: 14px;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
@@ -596,13 +611,23 @@
   <div class="messages" ref="messagesEl">
     <div class="msg-loading" v-if="switching"><span class="spin"></span> Loading session...</div>
     <template v-else>
-    <div class="welcome" v-if="!messages.length"><b>Pi Coding Agent</b><br>Streaming via SSE · OmniRoute<br>Set workspace, then send a message</div>
+    <div class="welcome" v-if="!messages.length">
+      <b>Pi Coding Agent</b>
+      <div class="w-sub">Pick a model · Set workspace from the sessions panel · Then just type to chat</div>
+      <div class="w-head">典型工作流 · 点击自动填入输入框</div>
+      <div class="w-tips">
+        <div class="w-tip" v-for="tip in wfTips" :key="tip.name" @click="pickTip(tip.text)">
+          <span class="t-icon">{{ tip.icon }}</span>
+          <span class="t-text"><b>{{ tip.name }}</b>{{ tip.desc }}</span>
+        </div>
+      </div>
+    </div>
     <div v-for="(m, mi) in messages" :key="mi" :class="['msg', m.role]">
       <template v-if="m.role === 'user'">{{ m.content }}</template>
       <template v-else>
         <div v-for="(p, pi) in m.parts" :key="pi">
           <div v-if="p.t === 'ref'" :class="['ref', p.cls || refClass(p.c)]" :style="p.cls === 'reasoning' && p.body ? 'cursor: pointer;' : ''" @click="p.cls === 'reasoning' && p.body ? (p.open = p.open === undefined ? false : !p.open) : null">{{ p.c }}</div>
-          <div v-if="p.t === 'ref' && p.cls === 'reasoning' && p.body && p.open !== false" class="reasoning-body">{{ p.body }}</div>
+          <div v-if="p.t === 'ref' && p.cls === 'reasoning' && p.body && p.open !== false" class="reasoning-body" @scroll="reasoningScroll($event)">{{ p.body }}</div>
           <pre v-else-if="p.t === 'out'" class="tool-out">{{ p.c }}</pre>
           <template v-else-if="p.t === 'text'">
             <div v-for="(v, vi) in mdViews(p, m.streaming)" :key="vi" class="stream-par" :class="p.cls || ''">
@@ -689,7 +714,15 @@
         omniOverlay: false, omniErr: '', omniProgress: 'Starting OmniRoute...', omniLog: [], omniCmd: '', omniBusy: false, omniEs: null,
         customOpen: false, customBusy: false, customEditing: false,
         customForm: { name: '', baseUrl: '', apiKey: '', api: 'openai-completions', models: '' },
-        modelFilter: ''
+        modelFilter: '',
+        wfTips: [
+          { icon: '◈', name: '了解项目', desc: ' — 结构梳理 · 各模块职责速览', text: '阅读本项目（elecV2P）的目录结构，总结 webser / func / utils / script 各模块的职责和相互关系' },
+          { icon: '⏱', name: '定时任务', desc: ' — 写脚本 · 注册 cron 任务', text: '写一个 JS 脚本保存到 script/JSFile/，用 $feed 发送通知，并说明如何在 TASK 里把它配置成每天早上 8 点运行的定时任务' },
+          { icon: '❖', name: '.efh 应用', desc: ' — Vue 前端 + favend 后端', text: '创建一个新的 .efh 应用：Vue 3 前端页面 + script favend 后端接口，实现一个简单备忘录，数据用 $store 保存' },
+          { icon: '⚑', name: '排查问题', desc: ' — 贴上报错 · 定位并修复', text: '帮我分析下面这段报错的原因，定位到具体代码并给出修复方案：' },
+          { icon: '⛨', name: 'MITM 解密', desc: ' — 根证书安装 · HTTPS 主机解密', text: '讲解 elecV2P 的 MITM 机制和完整配置步骤：如何生成并安装根 CA 证书（rootCA），如何在 script/Lists/mitmhost.list 里添加需要解密的 HTTPS 主机，以及开启后哪些请求能被拦截修改' },
+          { icon: '⚙', name: '规则配置', desc: ' — RULES/REWRITE · 重写、阻断、跳转', text: '帮我写网络请求修改规则：屏蔽某广告域名的请求，并把另一个 URL 的响应重写为本地 JS 脚本处理，保存到对应列表文件，同时说明 RULES（default.list）和 REWRITE（rewrite.list）的格式区别' }
+        ]
       }
     },
     computed: {
@@ -837,6 +870,18 @@
         this.dropdown = ''
         this.sessionPanelOpen = true
         this.loadSessions()
+      },
+      pickTip(text) {
+        if (this.busy) return
+        this.inputText = text
+        this.$nextTick(() => {
+          this.autosize()
+          const el = this.$refs.inputEl
+          if (el) {
+            el.focus()
+            try { el.setSelectionRange(el.value.length, el.value.length) } catch (e) {}
+          }
+        })
       },
       showNotify(msg, type) {
         this.notifyMsg = msg
@@ -1401,6 +1446,7 @@
               const lastP = el.parts[el.parts.length - 1]
               if (lastP && lastP.t === 'ref' && lastP.cls === 'reasoning') lastP.body = (lastP.body || '') + (data.content || '')
               else el.parts.push({ t: 'ref', c: '✱ reasoning', cls: 'reasoning', body: data.content || '' })
+              self.scrollReasoningBottom()
             }
             if (data.type === 'out') {
               flushText()
@@ -1748,6 +1794,20 @@
       },
       retryOmni() {
         this.useOmniRoute()
+      },
+      reasoningScroll(ev) {
+        // 用户手动上滚离开底部时暂停跟随，滚回底部(24px内)恢复
+        const el = ev.target
+        el.__stick = el.scrollTop + el.clientHeight >= el.scrollHeight - 24
+      },
+      scrollReasoningBottom() {
+        this.$nextTick(() => {
+          const els = document.querySelectorAll('.reasoning-body')
+          if (!els.length) return
+          const el = els[els.length - 1]
+          if (el.__stick === undefined) el.__stick = true
+          if (el.__stick) el.scrollTop = el.scrollHeight
+        })
       },
       omniToProviders() {
         if (this.omniEs) { try { this.omniEs.close() } catch(e) {} this.omniEs = null }
@@ -2213,7 +2273,7 @@ $fend('models', async () => {
   let cached, cachedTime
   try { cached = JSON.parse($store.get('pi_models_cache') || 'null') } catch(e) {}
   try { cachedTime = Number($store.get('pi_models_time') || 0) } catch(e) {}
-  if (cached && now - cachedTime < 60000) return { models: cached, cached: true }
+  if (cached && now - cachedTime < 600000) return { models: cached, cached: true }
   if (cached) {
     try {
       const list = collectConfiguredModels(readModelsJson())
@@ -2963,7 +3023,22 @@ const resolvePiVersion = (tries) => {
 
 $fend('ensure_pi', async (data) => {
   const runId = data && data.installId
-  const r = await resolvePiVersion(2)
+  // pi CLI 冷启动 ~2.7s（4600+ 松散文件模块图加载），缓存版本号避免每次打开页面都跑
+  let r = null
+  try {
+    const vcached = $store.get('pi_version_cache')
+    const vtime = Number($store.get('pi_version_time') || 0)
+    if (vcached && vtime && Date.now() - vtime < 6 * 3600 * 1000) r = { ok: true, version: vcached }
+  } catch(e) {}
+  if (!r) {
+    r = await resolvePiVersion(1)
+    if (r.ok) {
+      try {
+        $store.set('pi_version_cache', r.version)
+        $store.set('pi_version_time', String(Date.now()))
+      } catch(e) {}
+    }
+  }
   if (r.ok) {
     const version = r.version
     console.log('[ensure_pi] version:', version)
@@ -3006,6 +3081,12 @@ $fend('ensure_pi', async (data) => {
         if (code === 0) {
           const vr = await resolvePiVersion(3)
           const version = vr.ok ? vr.version : 'unknown'
+          if (vr.ok) {
+            try {
+              $store.set('pi_version_cache', version)
+              $store.set('pi_version_time', String(Date.now()))
+            } catch(e) {}
+          }
           const omni = await httpGetUrl(OMNI_HOST + '/', 4000)
           console.log('[npm install] done, version:', version, 'omni:', omni.status)
           if (!vr.ok) console.log('[npm install] version check failed:', vr.error && vr.error.message)
