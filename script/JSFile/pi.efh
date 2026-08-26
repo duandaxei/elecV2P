@@ -82,6 +82,7 @@
     .dropdown .d-empty { padding: 20px; text-align: center; color: var(--fc3); font-size: 12px; }
     .dropdown .d-more { padding: 8px 12px; text-align: center; font-size: 12px; color: var(--ac); cursor: pointer; border-top: 1px solid var(--bd); }
     .dropdown .d-more:hover { background: var(--bk3); }
+    .dropdown .d-foot { position: sticky; bottom: 0; padding: 7px 12px; text-align: center; font-size: 11px; color: var(--fc3); border-top: 1px solid var(--bd); background: var(--bk2); }
     .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
     .welcome { color: var(--fc2); text-align: center; margin: auto; font-size: 15px; line-height: 1.9; max-width: 560px; width: 100%; padding: 16px; }
     .welcome b { color: var(--ac); }
@@ -377,6 +378,13 @@
     .cp-save { background: var(--ac); color: #000; font-weight: bold; border: 1px solid var(--ac); }
     .cp-save:disabled { opacity: .5; cursor: not-allowed; }
     .cp-cancel { background: var(--bk3); color: var(--fc2); border: 1px solid var(--bd); }
+    .cp-fetch {
+      padding: 3px 10px; border-radius: 6px; cursor: pointer; font-size: 11px;
+      background: var(--bk3); color: var(--ac); border: 1px solid var(--bd);
+      white-space: nowrap;
+    }
+    .cp-fetch:hover:not(:disabled) { border-color: var(--ac); background: rgba(88,166,255,.08); }
+    .cp-fetch:disabled { opacity: .5; cursor: not-allowed; }
     .notify {
       position: fixed; bottom: 68px; left: 50%; transform: translateX(-50%);
       padding: 6px 14px; border-radius: 6px; font-size: 12px; z-index: 9998;
@@ -518,8 +526,11 @@
         </select>
       </div>
       <div class="cp-field">
-        <label>Model ids (comma separated)</label>
-        <input v-model="customForm.models" placeholder="e.g. gpt-4o-mini, gpt-4o" spellcheck="false">
+        <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span>Model ids (comma separated)</span>
+          <button type="button" class="cp-fetch" :disabled="customFetchBusy || !(customForm.baseUrl || '').trim()" title="Fetch model list from the provider API" @click="fetchCustomModels">{{ customFetchBusy ? 'fetching…' : '↻ fetch from API' }}</button>
+        </label>
+        <input v-model="customForm.models" placeholder="click fetch to auto-discover, or type e.g. gpt-4o-mini, gpt-4o" spellcheck="false">
       </div>
       <div class="cp-actions">
         <button class="cp-cancel" @click="closeCustomProvider">cancel</button>
@@ -599,6 +610,7 @@
         <div v-for="m in filteredModels" :key="m" class="d-item" :class="{active: m===currentModel}" @click="selectModel(m)">
           <div class="d-title">{{ m }}</div>
         </div>
+        <div class="d-foot" v-if="models.length">{{ models.length }} 个可用模型</div>
       </div>
     </span>
     <div class="spacer"></div>
@@ -712,7 +724,7 @@
         currentProvider: '', provSeq: 0,
         omniCurrent: false, omniStatus: 'checking…',
         omniOverlay: false, omniErr: '', omniProgress: 'Starting OmniRoute...', omniLog: [], omniCmd: '', omniBusy: false, omniEs: null,
-        customOpen: false, customBusy: false, customEditing: false,
+        customOpen: false, customBusy: false, customEditing: false, customFetchBusy: false,
         customForm: { name: '', baseUrl: '', apiKey: '', api: 'openai-completions', models: '' },
         modelFilter: '',
         wfTips: [
@@ -1064,7 +1076,7 @@
           payload.api = p.api
           if (p.models && p.models.length) payload.models = p.models
         }
-        this.fetchFend(fendName, payload, 10000).then((data) => {
+        this.fetchFend(fendName, payload, 60000).then((data) => {
           self.providerBusy = false
           if (data && data.ok) {
             self.showNotify('Provider ' + name + (key ? ' saved' : ' selected'), 'success')
@@ -1211,6 +1223,35 @@
         if (this.customBusy) return
         this.customOpen = false
       },
+      fetchCustomModels() {
+        const self = this
+        const baseUrl = (this.customForm.baseUrl || '').trim()
+        if (!baseUrl) { this.showNotify('Please enter a base URL first'); return }
+        if (this.customFetchBusy) return
+        this.customFetchBusy = true
+        this.fetchFend('provider_fetch_models', {
+          name: (this.customForm.name || '').trim(),
+          baseUrl: baseUrl,
+          api: this.customForm.api,
+          apiKey: (this.customForm.apiKey || '').trim()
+        }, 60000).then((data) => {
+          self.customFetchBusy = false
+          if (data && data.ok && Array.isArray(data.models)) {
+            if (data.models.length) {
+              self.customForm.models = data.models.join(', ')
+              const removed = data.removed ? (' · ' + data.removed + ' unavailable removed') : ''
+              self.showNotify('Fetched ' + data.models.length + ' models' + removed, 'success')
+            } else {
+              self.showNotify('Provider returned an empty model list')
+            }
+          } else {
+            self.showNotify('Fetch failed: ' + ((data && data.error) || 'unknown'))
+          }
+        }).catch((e) => {
+          self.customFetchBusy = false
+          self.showNotify('Fetch failed: ' + e.message)
+        })
+      },
       saveCustomProvider() {
         const self = this
         const name = (this.customForm.name || '').trim().replace(/\s+/g, '-').toLowerCase()
@@ -1224,7 +1265,7 @@
         this.fetchFend('provider_custom_save', {
           name: name, baseUrl: baseUrl, apiKey: apiKey, api: this.customForm.api,
           models: (this.customForm.models || '').split(',').map((s) => s.trim()).filter(Boolean)
-        }, 10000).then((data) => {
+        }, 60000).then((data) => {
           self.customBusy = false
           if (data && data.ok) {
             self.showNotify('Custom provider ' + name + ' saved', 'success')
@@ -1434,6 +1475,20 @@
                 el.parts.push({ t: 'ref', c: data.content, cls: 'info' })
                 el.initShown = data.content
                 self.scrollBottom()
+              }
+              return
+            }
+            if (data.type === 'model') {
+              if (data.removed && self.models.indexOf(self.currentModel) >= 0) {
+                self.models = self.models.filter((m) => m !== self.currentModel)
+              }
+              self.currentModel = (data.model || '').replace(/\r/g, '')
+              try { localStorage.setItem('aichat_pi_last_model', self.currentModel) } catch(e) {}
+              return
+            }
+            if (data.type === 'model_removed') {
+              if (data.model && self.models.indexOf(data.model) >= 0) {
+                self.models = self.models.filter((m) => m !== data.model)
               }
               return
             }
@@ -1978,6 +2033,180 @@ const httpGetUrl = (url, timeout, hops) => {
   })
 }
 
+const fetchProviderModelsRaw = (url, headers, timeout, hops) => {
+  return new Promise((resolve, reject) => {
+    let httpMod
+    try {
+      httpMod = require(/^https:/.test(String(url)) ? 'https' : 'http')
+    } catch(e) { reject(new Error('invalid url protocol')); return }
+    let u
+    try { u = new (require('url').URL)(url) } catch(e) { reject(new Error('invalid url: ' + url)); return }
+    const maxHops = hops === undefined ? 3 : hops
+    const req = httpMod.get({
+      hostname: u.hostname,
+      port: u.port || (u.protocol === 'https:' ? 443 : 80),
+      path: u.pathname + u.search,
+      headers: Object.assign({ accept: 'application/json' }, headers || {})
+    }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && maxHops > 0) {
+        res.resume()
+        let next = res.headers.location
+        try { next = new (require('url').URL)(next, url).href } catch(e) { reject(new Error('bad redirect')); return }
+        fetchProviderModelsRaw(next, headers, timeout, maxHops - 1).then(resolve, reject)
+        return
+      }
+      let buf = ''
+      res.on('data', (c) => { buf += c })
+      res.on('end', () => {
+        if (res.statusCode !== 200) { reject(new Error('HTTP ' + res.statusCode + (buf ? ': ' + buf.slice(0, 160) : ''))); return }
+        try { resolve(JSON.parse(buf)) } catch(e) { reject(new Error('response is not valid JSON')) }
+      })
+    })
+    req.on('error', (e) => { reject(new Error(e.message || 'request failed')) })
+    req.setTimeout(timeout || 10000, () => { req.destroy(); reject(new Error('request timeout')) })
+  })
+}
+
+const BAD_MODELS_KEY = 'pi_bad_models'
+const readBadModels = () => {
+  try {
+    const v = JSON.parse($store.get(BAD_MODELS_KEY) || '{}')
+    return v && typeof v === 'object' ? v : {}
+  } catch(e) { return {} }
+}
+const markBadModels = (keys) => {
+  const list = Array.isArray(keys) ? keys : [keys]
+  if (!list.length) return false
+  const bad = readBadModels()
+  let changed = false
+  for (const k of list) { if (k && !bad[k]) { bad[k] = Date.now(); changed = true } }
+  if (changed) { try { $store.set(BAD_MODELS_KEY, JSON.stringify(bad)) } catch(e) {} }
+  return changed
+}
+const reviveBadModels = (keys) => {
+  const list = Array.isArray(keys) ? keys : [keys]
+  if (!list.length) return
+  const bad = readBadModels()
+  let changed = false
+  for (const k of list) { if (bad[k]) { delete bad[k]; changed = true } }
+  if (changed) { try { $store.set(BAD_MODELS_KEY, JSON.stringify(bad)) } catch(e) {} }
+}
+
+// resolves {status, body} for any response; status 0 = network error/timeout
+const fetchProviderStatus = (url, headers, timeout, hops) => {
+  return new Promise((resolve) => {
+    let httpMod
+    try {
+      httpMod = require(/^https:/.test(String(url)) ? 'https' : 'http')
+    } catch(e) { resolve({ status: 0, body: '' }); return }
+    let u
+    try { u = new (require('url').URL)(url) } catch(e) { resolve({ status: 0, body: '' }); return }
+    const maxHops = hops === undefined ? 3 : hops
+    const req = httpMod.get({
+      hostname: u.hostname,
+      port: u.port || (u.protocol === 'https:' ? 443 : 80),
+      path: u.pathname + u.search,
+      headers: Object.assign({ accept: 'application/json' }, headers || {})
+    }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && maxHops > 0) {
+        res.resume()
+        let next = res.headers.location
+        try { next = new (require('url').URL)(next, url).href } catch(e) { resolve({ status: 0, body: '' }); return }
+        fetchProviderStatus(next, headers, timeout, maxHops - 1).then(resolve)
+        return
+      }
+      res.resume()
+      resolve({ status: res.statusCode, body: '' })
+    })
+    req.on('error', () => { resolve({ status: 0, body: '' }) })
+    req.setTimeout(timeout || 6000, () => { req.destroy(); resolve({ status: 0, body: '' }) })
+  })
+}
+
+const isDeadModelStatus = (s) => { return s === 404 || s === 410 }
+
+// probe each listed model via GET /models/{id}; drop ones the endpoint reports as gone (404/410).
+// unknown results (auth errors, rate limits, network issues) keep the model.
+const filterDeadModels = (api, baseUrl, apiKey, providerName, ids) => {
+  if ((api !== 'openai-completions' && api !== 'openai-responses') || !ids.length || ids.length > 150) {
+    return Promise.resolve({ ids: ids, removed: [] })
+  }
+  const root = String(baseUrl || '').replace(/\/+$/, '')
+  const headers = apiKey ? { authorization: 'Bearer ' + apiKey } : {}
+  const deadline = Date.now() + 45000
+  const CONC = 8
+  const alive = []
+  const removed = []
+  const runBatch = (batch) => {
+    return Promise.all(batch.map((id) => {
+      const enc = String(id).split('/').map(encodeURIComponent).join('/')
+      return fetchProviderStatus(root + '/models/' + enc, headers, 6000).then((r) => {
+        return { id: id, state: isDeadModelStatus(r.status) ? 'dead' : (r.status === 200 ? 'alive' : 'unknown') }
+      }).catch(() => { return { id: id, state: 'unknown' } })
+    }))
+  }
+  let chain = Promise.resolve()
+  for (let i = 0; i < ids.length; i += CONC) {
+    const batch = ids.slice(i, i + CONC)
+    chain = chain.then(() => {
+      if (removed.length && Date.now() > deadline) { alive.push(...batch); return [] }
+      return runBatch(batch)
+    }).then((results) => {
+      for (const r of results) {
+        if (r.state === 'dead') removed.push(r.id)
+        else alive.push(r.id)
+      }
+    })
+  }
+  return chain.then(() => {
+    if (providerName) {
+      const fullKeys = removed.map((id) => providerName + '/' + id)
+      if (fullKeys.length) markBadModels(fullKeys)
+      reviveBadModels(alive.filter((id) => !removed.includes(id)).map((id) => providerName + '/' + id))
+    }
+    return { ids: alive, removed: removed }
+  })
+}
+
+const fetchIdsForApi = (api, baseUrl, key) => {
+  api = String(api || 'openai-completions')
+  baseUrl = String(baseUrl || '').trim().replace(/\/+$/, '')
+  if (!baseUrl) return Promise.reject(new Error('base URL required'))
+  if (api === 'anthropic-messages') {
+    const root = baseUrl.replace(/\/v1$/, '')
+    return fetchProviderModelsRaw(root + '/v1/models?limit=1000', {
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01'
+    }, 12000).then((j) => {
+      const list = (j && j.data) || []
+      return list.map((m) => m && m.id).filter(Boolean)
+    })
+  }
+  if (api === 'google-generative-ai') {
+    return fetchProviderModelsRaw('https://generativelanguage.googleapis.com/v1beta/models' + (key ? '?key=' + encodeURIComponent(key) + '&pageSize=1000' : '?pageSize=1000'), {}, 12000).then((j) => {
+      const list = (j && j.models) || []
+      return list.map((m) => String((m && m.name) || '').replace(/^models\//, '')).filter(Boolean)
+    })
+  }
+  return fetchProviderModelsRaw(baseUrl + '/models', key ? { authorization: 'Bearer ' + key } : {}, 12000).then((j) => {
+    const list = Array.isArray(j) ? j : ((j && (j.data || j.models)) || [])
+    return list.map((m) => typeof m === 'string' ? m : (m && m.id)).filter(Boolean)
+  })
+}
+
+const fetchModelsForApi = (api, baseUrl, apiKey, providerName) => {
+  const key = String(apiKey || '').replace(/^\$.*/, '')
+  return fetchIdsForApi(api, baseUrl, key).then((ids) => {
+    return filterDeadModels(api, baseUrl, key, providerName || '', dedupeList(ids))
+  })
+}
+
+const dedupeList = (arr) => {
+  const out = []
+  for (const item of arr || []) { if (item && out.indexOf(item) < 0) out.push(item) }
+  return out
+}
+
 const fetchOmniModels = () => {
   return new Promise((resolve) => {
     httpGetUrl(OMNI_HOST + '/v1/models', 6000, 3).then((r) => {
@@ -2049,12 +2278,13 @@ const parseModel = (s) => {
 
 const collectConfiguredModels = (mj) => {
   const out = []
+  const bad = readBadModels()
   if (mj && mj.providers) {
     for (const p of Object.keys(mj.providers)) {
       const conf = mj.providers[p] || {}
       const models = conf.models || []
       for (const m of models) {
-        if (m && m.id) out.push(p + '/' + m.id)
+        if (m && m.id && !bad[p + '/' + m.id]) out.push(p + '/' + m.id)
       }
     }
   }
@@ -2100,6 +2330,31 @@ const PROVIDER_PRESETS = [
     { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat (OR)', contextWindow: 128000, maxTokens: 8192 }
   ] }
 ]
+
+$fend('provider_fetch_models', (data) => {
+  const name = data && data.name ? String(data.name).trim() : ''
+  let baseUrl = data && data.baseUrl ? String(data.baseUrl).trim() : ''
+  let api = data && data.api ? String(data.api).trim() : ''
+  let apiKey = data && data.apiKey ? String(data.apiKey).trim() : ''
+  if (name) {
+    const conf = (readModelsJson() || { providers: {} }).providers[name]
+    if (conf) {
+      if (!baseUrl) baseUrl = String(conf.baseUrl || '')
+      if (!api) api = String(conf.api || '')
+      if (!apiKey && conf.apiKey && !/^\$/.test(String(conf.apiKey))) apiKey = String(conf.apiKey)
+    }
+    const preset = PROVIDER_PRESETS.find((p) => p.name === name)
+    if (preset) {
+      if (!baseUrl) baseUrl = preset.baseUrl
+      if (!api) api = preset.api
+    }
+  }
+  return fetchModelsForApi(api, baseUrl, apiKey, name).then((res) => {
+    return { ok: true, models: dedupeList(res.ids), removed: (res.removed || []).length }
+  }).catch((e) => {
+    return { ok: false, error: e.message || String(e) }
+  })
+})
 
 $fend('providers', (data) => {
   const mj = readModelsJson() || { providers: {} }
@@ -2190,12 +2445,43 @@ $fend('provider_save', (data) => {
       if (!mj.providers[name].apiKey) delete mj.providers[name].apiKey
       st.defaultProvider = name
       st.defaultModel = preset.models[0] ? name + '/' + preset.models[0].id : undefined
+      writeFileJson(modelsFile(), mj)
+      writeFileJson(SETTINGS_FILE(), st)
+      try { $store.set('pi_models_cache', 'null') } catch(e) {}
+      try { $store.set('pi_models_time', '0') } catch(e) {}
+      // Preset models are already saved and usable. Now try to refresh the list from the provider API.
+      return new Promise((resolve) => {
+        fetchModelsForApi(preset.api, preset.baseUrl, mj.providers[name].apiKey, name).then((res) => {
+          try {
+            const fresh = readModelsJson()
+            if (fresh && fresh.providers && fresh.providers[name]) {
+              const metaMap = {}
+              for (const m of preset.models) metaMap[m.id] = m
+              const merged = []
+              for (const id of res.ids) {
+                const src = metaMap[id]
+                merged.push(src ? Object.assign({}, src, { id: id }) : { id: id, name: id, contextWindow: 128000, maxTokens: 16384 })
+              }
+              if (merged.length) {
+                fresh.providers[name].models = merged
+                // keep the default model usable if the preset default vanished from the live list
+                const defId = String(st.defaultModel || '').split('/').slice(1).join('/')
+                if (defId && !merged.some((m) => m.id === defId)) {
+                  st.defaultModel = name + '/' + merged[0].id
+                  writeFileJson(SETTINGS_FILE(), st)
+                }
+                writeFileJson(modelsFile(), fresh)
+                try { $store.set('pi_models_cache', 'null') } catch(e2) {}
+                try { $store.set('pi_models_time', '0') } catch(e2) {}
+              }
+            }
+          } catch(e) {}
+          resolve({ ok: true, model: String(st.defaultModel || '') })
+        }).catch(() => {
+          resolve({ ok: true, model: String(st.defaultModel || '') })
+        })
+      })
     }
-    writeFileJson(modelsFile(), mj)
-    writeFileJson(SETTINGS_FILE(), st)
-    try { $store.set('pi_models_cache', 'null') } catch(e) {}
-    try { $store.set('pi_models_time', '0') } catch(e) {}
-    return { ok: true, model: String(st.defaultModel || '') }
   } catch(e) {
     return { ok: false, error: e.message }
   }
@@ -2218,20 +2504,32 @@ $fend('provider_custom_save', (data) => {
     const finalKey = apiKey || prev.apiKey || null
     const modelIds = Array.isArray(data.models) ? data.models.map((m) => String(m).trim()).filter(Boolean) : []
     const models = modelIds.map((id) => ({ id: id, name: id, contextWindow: 128000, maxTokens: 16384 }))
-    if (!models.length) {
+    if (!models.length && !(data.models || []).length) {
+      // editing without touching the model field: keep previously saved models
       const pm = (prev.models || []).map((m) => (m && m.id) ? m.id : '')
       for (const mid of pm) { if (mid) models.push({ id: mid, name: mid, contextWindow: 128000, maxTokens: 16384 }) }
     }
-    if (!models.length) return { ok: false, error: 'at least one model id is required' }
-    mj.providers[name] = { baseUrl: baseUrl, api: api, apiKey: finalKey, authHeader: true, models: models }
-    if (!mj.providers[name].apiKey) delete mj.providers[name].apiKey
-    st.defaultProvider = name
-    st.defaultModel = models.length ? name + '/' + models[0].id : undefined
-    writeFileJson(modelsFile(), mj)
-    writeFileJson(SETTINGS_FILE(), st)
-    try { $store.set('pi_models_cache', 'null') } catch(e) {}
-    try { $store.set('pi_models_time', '0') } catch(e) {}
-    return { ok: true, model: String(st.defaultModel || '') }
+    const finishSave = (list) => {
+      if (!list.length) return { ok: false, error: 'no models available: type model ids or use fetch' }
+      mj.providers[name] = { baseUrl: baseUrl, api: api, apiKey: finalKey, authHeader: true, models: list }
+      if (!mj.providers[name].apiKey) delete mj.providers[name].apiKey
+      st.defaultProvider = name
+      st.defaultModel = name + '/' + list[0].id
+      writeFileJson(modelsFile(), mj)
+      writeFileJson(SETTINGS_FILE(), st)
+      try { $store.set('pi_models_cache', 'null') } catch(e) {}
+      try { $store.set('pi_models_time', '0') } catch(e) {}
+      return { ok: true, model: String(st.defaultModel || '') }
+    }
+    if (models.length) return finishSave(models)
+    // no models provided: try auto-discovery from the endpoint, same as pi login flow
+    return new Promise((resolve) => {
+      fetchModelsForApi(api, baseUrl, finalKey, name).then((res) => {
+        resolve(finishSave(res.ids.map((id) => ({ id: id, name: id, contextWindow: 128000, maxTokens: 16384 }))))
+      }).catch((e) => {
+        resolve({ ok: false, error: 'no models provided and auto-fetch failed: ' + (e.message || e) })
+      })
+    })
   } catch(e) {
     return { ok: false, error: e.message }
   }
@@ -2270,10 +2568,11 @@ $fend('provider_delete', (data) => {
 
 $fend('models', async () => {
   const now = Date.now()
+  const goodModels = (arr) => { const bad = readBadModels(); return (arr || []).filter((m) => m && !bad[m]) }
   let cached, cachedTime
   try { cached = JSON.parse($store.get('pi_models_cache') || 'null') } catch(e) {}
   try { cachedTime = Number($store.get('pi_models_time') || 0) } catch(e) {}
-  if (cached && now - cachedTime < 600000) return { models: cached, cached: true }
+  if (cached && now - cachedTime < 600000) return { models: goodModels(cached), cached: true }
   if (cached) {
     try {
       const list = collectConfiguredModels(readModelsJson())
@@ -2283,7 +2582,7 @@ $fend('models', async () => {
         return { models: list }
       }
     } catch(e) {}
-    return { models: cached }
+    return { models: goodModels(cached) }
   }
   const list = collectConfiguredModels(readModelsJson())
   if (list.length) {
@@ -2318,7 +2617,7 @@ $fend('models', async () => {
       $store.set('pi_models_time', String(now))
       return { models: models }
     }
-    return { models: cached || [] }
+    return { models: goodModels(cached) }
   } catch(e) {
     return { models: cached || [] }
   }
@@ -2606,7 +2905,14 @@ $fend('start', (data) => {
   let curSession = sessionId || ''
   const MAX_RETRY = 3
   let retryLeft = MAX_RETRY
+  const MAX_SWITCH = 10
+  let switchLeft = MAX_SWITCH
   let retrying = false
+  const triedModels = new Set()
+  let autoRetryCount = 0   // pi internal auto-retries seen
+  let lastErrText = ''     // last errorMessage from events
+  let runHadOutput = false // did we stream any text/reasoning/tool output
+  let stderrTail = ''      // tail of stderr for exit diagnosis
 
   const defModel = (() => {
     const st = readSettingsJson()
@@ -2627,6 +2933,7 @@ $fend('start', (data) => {
   let stepCount = 0
   let tokens = null
   let model = null
+  let activeModel = modelStr || defModel || ''
   let initShown = false
   const runningTools = {}
   const seenTools = {}
@@ -2642,6 +2949,7 @@ $fend('start', (data) => {
   }
 
   const send = (type, payload) => {
+    if (type === 'text' || type === 'reasoning' || type === 'out') runHadOutput = true
     if (type !== 'done' && type !== 'error') kickWatchdog()
     $ws.sse(APP_CH, JSON.stringify(Object.assign({ runId: runId }, payload || {}, { type: type })))
   }
@@ -2772,7 +3080,25 @@ $fend('start', (data) => {
       }
       if (msg.errorMessage) {
         const etxt = String(msg.errorMessage)
-        if (isRetryable(etxt) && retryLeft > 0 && !retrying) {
+        lastErrText = etxt
+        let removed = false
+        if (/\b(400|404|410|502)\b/.test(etxt)) {
+          const mk = model || modelStr || defModel || ''
+          if (mk) {
+            const newly = markBadModels([mk])
+            const errLine = etxt.split('\n')[0].slice(0, 160)
+            sendRef('⚠ ' + mk + ' unavailable · ' + (newly ? 'removed from list' : 'already removed') + ' · ' + errLine, 'info')
+            send('model_removed', { model: mk })  // drop from frontend list even if no further switch happens
+            removed = true
+          }
+        }
+        if (removed) {
+          // model is gone for good — switch to the next available model instead of retrying the same one
+          if (!switchToNextModel(etxt, 'removed')) fail(etxt.split('\n')[0])
+        } else if (switchOnly(etxt)) {
+          // transient overload / connection blip — switch directly, no same-model retry, don't mark bad
+          if (!switchToNextModel(etxt, 'switch')) fail(etxt.split('\n')[0])
+        } else if (isRetryable(etxt) && retryLeft > 0 && !retrying) {
           retryLeft--
           const attempt = MAX_RETRY - retryLeft
           const delay = retryDelayMs(retryLeft)
@@ -2780,6 +3106,9 @@ $fend('start', (data) => {
           retrying = true
           kickWatchdog()
           setTimeout(() => { relaunch() }, delay)
+        } else if (isRetryable(etxt)) {
+          // same-model retries exhausted — fall back to switching models
+          if (!switchToNextModel(etxt, 'retry')) fail(etxt.split('\n')[0])
         } else {
           fail(etxt.split('\n')[0])
         }
@@ -2821,21 +3150,102 @@ $fend('start', (data) => {
     }
     if (t === 'compaction_start') { sendRef('↻ compacting…', 'info'); return }
     if (t === 'compaction_end') { sendRef('✓ context compacted', 'info'); return }
-    if (t === 'auto_retry_start') { sendRef('↻ retrying…', 'info'); return }
+    if (t === 'auto_retry_start') { autoRetryCount++; sendRef('↻ retrying…', 'info'); return }
     if (t === 'agent_end' || t === 'agent_settled') {
-      if (retrying) return
-      finish({ content: '', model: model, tokens: tokens })
+      endRun(0, 'event')
       return
     }
   }
 
+  const loadCandidateModels = () => {
+    let list = collectConfiguredModels(readModelsJson())  // excludes bad models already
+    if (!list.length) {
+      // favend runtime may not see models.json (e.g. empty), but the frontend models fend
+      // populates pi_models_cache (incl. --list-models fallback) — reuse that
+      try {
+        const c = JSON.parse($store.get('pi_models_cache') || 'null')
+        if (Array.isArray(c) && c.length) {
+          const bad = readBadModels()
+          list = c.filter((m) => m && !bad[m])
+        }
+      } catch(e) {}
+    }
+    return list
+  }
+  const loadOrderedModels = () => {
+    let list = []
+    const mj = readModelsJson()
+    if (mj && mj.providers) {
+      for (const p of Object.keys(mj.providers)) {
+        const c = mj.providers[p] || {}
+        for (const m of (c.models || [])) if (m && m.id) list.push(p + '/' + m.id)
+      }
+    }
+    if (!list.length) {
+      try {
+        const c = JSON.parse($store.get('pi_models_cache') || 'null')
+        if (Array.isArray(c) && c.length) list = c.slice()
+      } catch(e) {}
+    }
+    return list
+  }
+  const switchToNextModel = (etxt, reason) => {
+    if (retrying || switchLeft <= 0) return false
+    const gone = model || modelStr || defModel || ''
+    triedModels.add(gone)
+    const conf = loadCandidateModels()    // currently available (excludes bad)
+    const order = loadOrderedModels()     // full list, preserves provider/model order
+    const ord = order.length ? order : conf
+    const baseIdx = ord.indexOf(gone)
+    const start = baseIdx >= 0 ? baseIdx + 1 : 0
+    let next = null
+    for (let k = 0; k < ord.length; k++) {
+      const m = ord[(start + k) % ord.length]
+      if (m && !triedModels.has(m) && conf.indexOf(m) >= 0) { next = m; break }
+    }
+    if (!next) return false
+    switchLeft--  // consume one auto-switch attempt
+    retryLeft = MAX_RETRY  // fresh budget for the new model
+    activeModel = next
+    send('model', { model: next, removed: reason === 'removed' })  // keep frontend model selector in sync
+    const why = reason === 'removed' ? (gone + ' removed') : (reason === 'switch' ? (gone + ' switching') : (gone + ' retries exhausted'))
+    const errLine = etxt ? ' · ' + String(etxt).split('\n')[0].slice(0, 160) : ''
+    sendRef('↻ ' + why + ' · switching to ' + next + ' (' + (MAX_SWITCH - switchLeft) + '/' + MAX_SWITCH + ')' + errLine, 'info')
+    retrying = true
+    kickWatchdog()
+    setTimeout(() => { relaunch() }, 800)
+    return true
+  }
   const isRetryable = (etxt) => {
     if (!etxt) return false
-    return /410|429|1302|limit_burst_rate|rate.?limit|速率限制|请求频率|并发|concurrency|5\d\d|admission_busy|chat_admission|server_error|service_temporarily_unavailable|ResourceExhausted/i.test(etxt)
+    return /410|429|422|1302|503|limit_burst_rate|rate.?limit|速率限制|请求频率|并发|concurrency|5\d\d|admission_busy|chat_admission|server_error|service_temporarily_unavailable|ResourceExhausted|temporarily|繁忙|timed.?out|timeout|请求超时/i.test(etxt)
+  }
+  // transient (overload / connection blip / auth denied): skip same-model retry, switch directly — but don't mark bad
+  const switchOnly = (etxt) => {
+    if (!etxt) return false
+    return /\b(401|403)\b|overload|capacity|connection|unauthorized|forbidden|invalid.api.key|permission.denied|权限|未授权|鉴权|过载|连接/i.test(etxt)
   }
   const retryDelayMs = (attemptLeft) => {
     const tried = MAX_RETRY - attemptLeft
-    return [2000, 5000, 10000][tried - 1] || 10000
+    return [5000, 10000, 30000][tried - 1] || 30000
+  }
+  // unified end-of-run: recover (switch model) when the run died with error signs but produced no output
+  const endRun = (code, via) => {
+    if (streamEnded || retrying || pronBreaking) return
+    const errHint = autoRetryCount > 0 || !!lastErrText || /error|fail|unavailable|overload|refused|timeout|econn|exceed/i.test(stderrTail)
+    if (!errHint) {
+      if (code !== 0) fail('pi exited with code ' + code)
+      else finish({ content: '', model: model, tokens: tokens })
+      return
+    }
+    // pi recovered mid-run after a transient hiccup — treat as normal completion
+    if (runHadOutput && code === 0 && via === 'event') {
+      finish({ content: '', model: model, tokens: tokens })
+      return
+    }
+    const line = ((lastErrText || stderrTail || '').trim().split('\n')[0] || '').slice(0, 200)
+    const etxt = line || ('pi exited with code ' + code)
+    if (!switchToNextModel(etxt, 'switch')) fail(etxt)
   }
 
   const qArg = (val) => {
@@ -2849,8 +3259,7 @@ $fend('start', (data) => {
     const args = ['--mode', 'json', '--approve', '--print']
     if (curSession) args.push('--session-id', curSession)
     else args.push('--name', prompt.replace(/\s+/g, ' ').trim().slice(0, 40))
-    if (modelStr) args.push('--model', modelStr)
-    else if (defModel) args.push('--model', defModel)
+    if (activeModel) args.push('--model', activeModel)
     else {
       const fallback = collectConfiguredModels(readModelsJson())
       if (fallback.length) args.push('--model', fallback[0])
@@ -2889,18 +3298,17 @@ $fend('start', (data) => {
       }
     })
     proc.stderr.on('data', (chunk) => {
-      const t2 = stripAnsi(chunk.toString()).trim()
-      if (t2 && t2.indexOf('Warning:') < 0) console.log('[pi run]', t2)
+      const t2 = stripAnsi(chunk.toString()).replace(/\s+/g, ' ').trim()
+      if (!t2 || t2.indexOf('Warning:') >= 0) return
+      console.log('[pi run]', t2)
+      stderrTail = (stderrTail ? stderrTail + ' ' : '') + t2
+      if (stderrTail.length > 400) stderrTail = stderrTail.slice(-400)
     })
 
     proc.on('error', (e) => { fail(e.message || String(e)) })
     proc.on('close', (code) => {
       try { delete runProcs[runId] } catch(e) {} try { $cache.delete('pi_run_' + runId) } catch(e) {}
-      if (streamEnded) return
-      if (retrying) return
-      if (pronBreaking) return
-      if (code !== 0) fail('pi exited with code ' + code)
-      else finish({ content: '', model: model, tokens: tokens })
+      endRun(code, 'close')
     })
 
     kickWatchdog()
