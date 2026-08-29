@@ -60,29 +60,50 @@
     .ctx-bar.warn i { background: #e3b341; }
     .ctx-bar.danger i { background: var(--del); }
     .ctx-num { font-family: 'Cascadia Code', Consolas, monospace; }
+    .header .compact-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 7px; font-size: 12px; font-weight: 500;
+      border: 1px solid var(--bd); background: var(--bk3);
+      color: var(--fc); cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      transition: all .15s;
+    }
+    .header .compact-btn:hover:not(:disabled) {
+      border-color: var(--fc3); background: var(--bk2); color: var(--fc);
+    }
+    .header .compact-btn:disabled { opacity: .55; cursor: not-allowed; }
+    /* 当 token 使用比例 >= 60% 时才用绿色高亮，低于 60% 保持默认灰色 */
+    .header .compact-btn.highlight-green {
+      border-color: rgba(63,185,80,.4); background: rgba(63,185,80,.08);
+      color: var(--ok);
+    }
+    .header .compact-btn.highlight-green:hover:not(:disabled) {
+      border-color: var(--ok); background: rgba(63,185,80,.18); color: #56d364;
+    }
+    .header .compact-btn.busy { border-color: var(--ac); background: rgba(88,166,255,.10); color: var(--ac); }
     .header .load { position: absolute; left: 50%; transform: translateX(-50%); font-size: 22px; color: var(--ac); letter-spacing: 4px; animation: loadPulse 1.2s ease-in-out infinite; }
     @keyframes loadPulse { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
     #modelDropdown { left: auto; right: 0; }
     .dropdown {
       position: absolute; top: 100%; left: 0; margin-top: 4px;
       background: var(--bk2); border: 1px solid var(--bd); border-radius: 8px;
-      min-width: 260px; max-height: 350px; overflow-y: auto; z-index: 200;
+      min-width: 260px; max-height: 350px; overflow-y: hidden; z-index: 200; display: none; flex-direction: column;
       box-shadow: 0 8px 24px rgba(0,0,0,.4); display: none;
     }
-    .dropdown.show { display: block; }
+    .dropdown.show { display: flex; }
     .dropdown .d-item {
       padding: 7px 12px; cursor: pointer; border-bottom: 1px solid var(--bd);
       transition: background .15s;
     }
     .dropdown .d-item:last-child { border-bottom: none; }
     .dropdown .d-item:hover { background: var(--bk3); }
-    .dropdown .d-item.active { background: var(--bk3); border-left: 3px solid var(--ac); }
+    .dropdown .d-item.active, .dropdown .d-item.nav { background: var(--bk3); border-left: 3px solid var(--ac); }
     .dropdown .d-item .d-title { font-size: 13px; color: var(--fc); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .dropdown .d-item .d-sub { font-size: 10px; color: var(--fc3); }
     .dropdown .d-empty { padding: 20px; text-align: center; color: var(--fc3); font-size: 12px; }
     .dropdown .d-more { padding: 8px 12px; text-align: center; font-size: 12px; color: var(--ac); cursor: pointer; border-top: 1px solid var(--bd); }
     .dropdown .d-more:hover { background: var(--bk3); }
-    .dropdown .d-foot { position: sticky; bottom: 0; padding: 7px 12px; text-align: center; font-size: 11px; color: var(--fc3); border-top: 1px solid var(--bd); background: var(--bk2); }
+    .dropdown .d-foot { position: relative; padding: 7px 12px; text-align: center; font-size: 11px; color: var(--fc3); border-top: 1px solid var(--bd); background: var(--bk2); }
+    .dropdown .d-list { overflow-y: auto; flex: 1; min-height: 0; }
     .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
     .welcome { color: var(--fc2); text-align: center; margin: auto; font-size: 15px; line-height: 1.9; max-width: 560px; width: 100%; padding: 16px; }
     .welcome b { color: var(--ac); }
@@ -110,6 +131,8 @@
       border-top-color: var(--ac); border-radius: 50%;
       animation: installSpin .8s linear infinite;
     }
+    .compact-msg { animation: compactPulse 1.5s ease-in-out infinite; }
+    @keyframes compactPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
     .msg { max-width: 85%; padding: 10px 14px; border-radius: 10px; line-height: 1.7; word-break: break-word; font-size: 14px; }
     .msg.user { align-self: flex-end; background: var(--ac); color: #000; border-bottom-right-radius: 2px; }
     .msg.assistant { align-self: flex-start; background: var(--bk2); border: 1px solid var(--bd); border-bottom-left-radius: 2px; }
@@ -155,6 +178,17 @@
     .msg .ref.reasoning { border-left-color: #a78bfa; font-style: italic; }
     .msg .ref.question { border-left-color: #fa0; white-space: pre-wrap; }
     .msg .ref.answer { border-left-color: #0c8; white-space: pre-wrap; }
+    .msg .ref .run-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--ac); margin-left: 8px; vertical-align: middle;
+      animation: pulse 1s infinite;
+    }
+    .msg .ref.tool.generating { animation: toolGen 1.4s ease-in-out infinite; border-left-width: 4px; }
+    @keyframes toolGen {
+      0%, 100% { color: var(--fc2); border-left-color: #58a6ff; background: rgba(88,166,255,.08); }
+      33% { color: #d2a8ff; border-left-color: #d2a8ff; background: rgba(210,168,255,.10); }
+      66% { color: #7ee787; border-left-color: #7ee787; background: rgba(126,231,135,.10); }
+    }
     .msg .tool-out {
       font-size: 12px; color: var(--fc2); white-space: pre-wrap; word-break: break-all;
       font-family: 'Cascadia Code','Fira Code','Consolas','Courier New',monospace;
@@ -218,6 +252,7 @@
     }
     .session-item:hover { background: var(--bk3); border-color: var(--bd); }
     .session-item.active { background: var(--bk3); border-color: var(--ac); }
+    .session-item.nav { background: var(--bk3); border-color: var(--ac); }
     .session-item .s-time { font-size: 11px; color: var(--fc3); }
     .session-item .s-prompt { font-size: 13px; color: var(--fc); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .session-item .s-preview { font-size: 12px; color: var(--fc2); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -485,7 +520,7 @@
           <div class="pc-name">{{ p.name }}</div>
           <div class="pc-desc">{{ p.baseUrl }}</div>
         </div>
-        <input class="pc-key" v-model="providerKeys[p.name]" :placeholder="p.hasKey ? 'key saved · re-enter to change' : 'API key'" type="password">
+        <input class="pc-key" v-model="providerKeys[p.name]" :placeholder="p.keySet ? 'key saved · re-enter to change' : 'API key'" type="password">
         <button class="pc-btn" :class="{used: p.current}" :disabled="providerBusy" @click="useProvider(p.name)">{{ p.current ? 'current' : 'use' }}</button>
         <button class="pc-del" :disabled="providerBusy || p.current" :title="p.current ? 'Cannot delete the current provider' : 'Delete provider'" @click="deleteProvider(p.name)">×</button>
       </div>
@@ -514,7 +549,7 @@
       </div>
       <div class="cp-field">
         <label>API key</label>
-        <input v-model="customForm.apiKey" :placeholder="customEditing ? 'key saved · empty to keep' : 'sk-...'" type="password">
+        <input v-model="customForm.apiKey" :placeholder="customEditing ? 'leave empty to keep current key' : 'API key (required)'" type="password">
       </div>
       <div class="cp-field">
         <label>API type</label>
@@ -552,11 +587,12 @@
       <input v-model="workspace" placeholder="pi workspace (project dir) — agent reads/writes files here" @keydown.enter.prevent="setWorkspace" spellcheck="false">
       <button @click="setWorkspace" :disabled="wsBusy">set</button>
     </div>
-    <div class="session-list">
+    <div class="session-list" tabindex="0" @keydown="onSessionPanelKey" ref="sessionListEl">
       <template v-if="pinnedSessions.length">
         <div class="section-label">PINNED</div>
-        <div v-for="s in pinnedSessions" :key="'p'+s.id" class="session-item"
-             :class="{active: s.id===sessionId}" :style="{opacity: deleting[s.id] ? .4 : 1}" @click="selectSession(s.id)">
+        <div v-for="(s, i) in pinnedSessions" :key="'p'+s.id" class="session-item"
+             :class="{active: s.id===sessionId, nav: s.id===sessionFlatList()[sessionNavIdx]?.id}" :style="{opacity: deleting[s.id] ? .4 : 1}"
+             @click="selectSession(s.id)" @mouseenter="sessionNavIdx = sessionFlatList().findIndex(x => x.id === s.id)">
           <span class="s-del" @click.stop="deleteLocalSession(s.id)" title="Delete">x</span>
           <div class="s-time">{{ fmtTime(s.timestamp) }}</div>
           <div class="s-prompt">{{ (s.prompt||'').substring(0,50) }}</div>
@@ -565,8 +601,9 @@
       </template>
       <template v-if="sessions.length">
         <div class="section-label">Pi</div>
-        <div v-for="s in sessions" :key="'o'+s.id" class="session-item"
-             :class="{active: s.id===sessionId}" :style="{opacity: deleting[s.id] ? .4 : 1}" @click="selectSession(s.id)">
+        <div v-for="(s, i) in sessions" :key="'o'+s.id" class="session-item"
+             :class="{active: s.id===sessionId, nav: s.id===sessionFlatList()[sessionNavIdx]?.id}" :style="{opacity: deleting[s.id] ? .4 : 1}"
+             @click="selectSession(s.id)" @mouseenter="sessionNavIdx = sessionFlatList().findIndex(x => x.id === s.id)">
           <span class="s-del" @click.stop="deleteOCSession(s.id)" title="Delete">x</span>
           <div class="s-time">{{ fmtTime(s.updated||s.created) }}</div>
           <div class="s-prompt">{{ (s.title||'').substring(0,50) }}</div>
@@ -605,10 +642,12 @@
           <div class="d-title">auto</div><div class="d-sub">default model</div>
         </div>
         <div class="d-filter">
-          <input type="text" v-model="modelFilter" placeholder="Filter models..." @click.stop @input="modelFilter = $event.target.value" spellcheck="false" style="width:100%;padding:6px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--bk);color:var(--fc);font-size:12px;outline:none;box-sizing:border-box;">
+          <input type="text" ref="modelFilterInput" v-model="modelFilter" placeholder="Filter models..." @click.stop @input="modelFilter = $event.target.value; modelNavIdx = 0" @keydown.up.prevent="modelNav(-1)" @keydown.down.prevent="modelNav(1)" @keydown.enter.prevent="modelNavSelect()" @keydown.esc.prevent="dropdown = ''; modelNavIdx = 0" spellcheck="false" style="width:100%;padding:6px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--bk);color:var(--fc);font-size:12px;outline:none;box-sizing:border-box;">
         </div>
-        <div v-for="m in filteredModels" :key="m" class="d-item" :class="{active: m===currentModel}" @click="selectModel(m)">
-          <div class="d-title">{{ m }}</div>
+        <div class="d-list">
+          <div v-for="(m, mi) in filteredModels" :key="m" :class="['d-item', {active: m===currentModel, nav: mi===modelNavIdx}]" @click="selectModel(m)" @mouseenter="modelNavIdx = mi">
+            <div class="d-title">{{ m }}</div>
+          </div>
         </div>
         <div class="d-foot" v-if="models.length">{{ models.length }} 个可用模型</div>
       </div>
@@ -618,6 +657,9 @@
       <span class="ctx-bar" :class="{ warn: ctxPct >= 80 && ctxPct < 95, danger: ctxPct >= 95 }"><i :style="ctxStyle"></i></span>
       <span class="ctx-num">{{ ctxLabel }} · {{ ctxPct }}%</span>
     </span>
+    <button class="compact-btn" :class="{busy: compacting, 'highlight-green': ctxPct >= 60 && ctxLimit > 0}" :disabled="compacting || busy || !sessionId" @click="compactChat" :title="sessionId ? 'Manually compact this session\'s context' : 'No active session'">
+      <span>{{ compacting ? ('Compacting… ' + compactElapsed + 's') : 'Compact' }}</span>
+    </button>
   </div>
 
   <div class="messages" ref="messagesEl">
@@ -638,7 +680,7 @@
       <template v-if="m.role === 'user'">{{ m.content }}</template>
       <template v-else>
         <div v-for="(p, pi) in m.parts" :key="pi">
-          <div v-if="p.t === 'ref'" :class="['ref', p.cls || refClass(p.c)]" :style="p.cls === 'reasoning' && p.body ? 'cursor: pointer;' : ''" @click="p.cls === 'reasoning' && p.body ? (p.open = p.open === undefined ? false : !p.open) : null">{{ p.c }}</div>
+          <div v-if="p.t === 'ref'" :class="['ref', p.cls || refClass(p.c), p.running ? 'generating' : '']" :style="p.cls === 'reasoning' && p.body ? 'cursor: pointer;' : ''" @click="p.cls === 'reasoning' && p.body ? (p.open = p.open === undefined ? false : !p.open) : null">{{ p.c }}<span v-if="p.running" class="run-dot"></span></div>
           <div v-if="p.t === 'ref' && p.cls === 'reasoning' && p.body && p.open !== false" class="reasoning-body" @scroll="reasoningScroll($event)">{{ p.body }}</div>
           <pre v-else-if="p.t === 'out'" class="tool-out">{{ p.c }}</pre>
           <template v-else-if="p.t === 'text'">
@@ -713,20 +755,22 @@
         deleting: {}, messages: [], inputText: '', todos: [], runId: '',
         commands: [], cmdOpen: false, cmdIdx: -1,
         histList: [], histIdx: -1, histDraft: '',
-        sessionPanelOpen: false, dropdown: '',
+        sessionPanelOpen: false, sessionNavIdx: 0, sessionNavList: [], dropdown: '',
         notifyMsg: '', notifyShow: false, notifyType: 'error', loading: false,
         piVersion: '', installOverlay: true, installErr: '', installProgress: 'This may take a minute', installLog: [], installCmd: '', installEs: null, installBusy: false,
         ctxUsed: 0, ctxLimit: 0, ctxPct: 0, ctxModel: '',
+        compacting: false, compactRunId: '', compactElapsed: 0, compactTimer: null,
         question: null, qSel: [], qCustom: [], qSubmitting: false, qEl: null,
         workspace: '', wsBusy: false,
         sseMain: null, mainReady: false, sseHandlers: {}, switching: false,
         providerOverlay: false, providerList: [], providerKeys: {}, providerBusy: false,
+        scrollPending: false,
         currentProvider: '', provSeq: 0,
-        omniCurrent: false, omniStatus: 'checking…',
-        omniOverlay: false, omniErr: '', omniProgress: 'Starting OmniRoute...', omniLog: [], omniCmd: '', omniBusy: false, omniEs: null,
+        omniCurrent: false, omniStatus: 'checking…', omniRunning: false,
+        omniOverlay: false, omniErr: '', omniProgress: 'Starting OmniRoute...', omniLog: [], omniCmd: '', omniBusy: false, omniEs: null, omniPendingModel: '',
         customOpen: false, customBusy: false, customEditing: false, customFetchBusy: false,
         customForm: { name: '', baseUrl: '', apiKey: '', api: 'openai-completions', models: '' },
-        modelFilter: '',
+        modelFilter: '', modelNavIdx: 0,
         wfTips: [
           { icon: '◈', name: '了解项目', desc: ' — 结构梳理 · 各模块职责速览', text: '阅读本项目（elecV2P）的目录结构，总结 webser / func / utils / script 各模块的职责和相互关系' },
           { icon: '⏱', name: '定时任务', desc: ' — 写脚本 · 注册 cron 任务', text: '写一个 JS 脚本保存到 script/JSFile/，用 $feed 发送通知，并说明如何在 TASK 里把它配置成每天早上 8 点运行的定时任务' },
@@ -765,7 +809,7 @@
         if (!this.cmdOpen) return []
         const q = this.inputText.replace(/^\s*\//, '').toLowerCase()
         const out = this.commands.filter((c) => {
-          return !q || c.name.toLowerCase().indexOf(q) === 0 || c.description.toLowerCase().indexOf(q) >= 0
+          return !q || c.name.toLowerCase().indexOf(q) === 0 || c.description.toLowerCase().indexOf(q) === 0
         })
         return out.slice(0, 8)
       },
@@ -875,13 +919,87 @@
         else rc += ' act'
         return rc
       },
+      modelNav(delta) {
+        const len = this.filteredModels.length
+        this.modelNavIdx = Math.max(0, Math.min(len - 1, this.modelNavIdx + delta))
+        this.$nextTick(() => {
+          const inp = this.$refs.modelFilterInput
+          const dd = inp && inp.closest && inp.closest('.dropdown')
+          if (!dd) return
+          const list = dd.querySelector('.d-list')
+          const item = list && list.children[this.modelNavIdx]
+          if (item && item.scrollIntoView) {
+            item.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+            if (list && item.offsetTop + item.offsetHeight > list.scrollTop + list.clientHeight) {
+              list.scrollTop = item.offsetTop + item.offsetHeight - list.clientHeight
+            }
+          }
+        })
+      },
+      modelNavSelect() {
+        const m = this.filteredModels[this.modelNavIdx]
+        if (m !== undefined) { this.selectModel(m); this.dropdown = '' }
+      },
       toggleDropdown(which) {
         this.dropdown = this.dropdown === which ? '' : which
+        if (this.dropdown === 'model') { this.modelNavIdx = 0 }
       },
       viewAll() {
         this.dropdown = ''
+        this.openSessionPanel()
+      },
+      openSessionPanel() {
         this.sessionPanelOpen = true
-        this.loadSessions()
+        this.loadSessions().then(() => {
+          this.sessionNavIdx = 0
+          this.$nextTick(() => {
+            const el = this.$refs.sessionListEl
+            if (el && el.focus) el.focus()
+            this.sessionScrollNavIntoView()
+          })
+        })
+      },
+      closeSessionPanel(focusInput) {
+        this.sessionPanelOpen = false
+        this.$nextTick(() => {
+          const el = this.$refs.inputEl
+          if (el && el.focus) el.focus()
+        })
+      },
+      sessionFlatList() {
+        // 合并 pinned + sessions 作为键盘导航的统一列表
+        return [].concat(this.pinnedSessions || []).concat(this.sessions || [])
+      },
+      sessionScrollNavIntoView() {
+        this.$nextTick(() => {
+          const list = this.$refs.sessionListEl
+          if (!list) return
+          const item = list.querySelectorAll('.session-item')[this.sessionNavIdx]
+          if (item && item.scrollIntoView) item.scrollIntoView({ block: 'nearest' })
+        })
+      },
+      sessionNav(delta) {
+        const len = this.sessionFlatList().length
+        if (!len) return
+        let idx = (this.sessionNavIdx + delta + len) % len
+        if (idx < 0) idx += len
+        this.sessionNavIdx = idx
+        this.sessionScrollNavIntoView()
+      },
+      sessionNavSelect() {
+        const list = this.sessionFlatList()
+        const item = list[this.sessionNavIdx]
+        if (!item) { this.showNotify('No session selected'); return }
+        this.selectSession(item.id)
+        this.closeSessionPanel()
+        this.showNotify('Session ' + (item.id || '').slice(0, 8) + ' loaded')
+      },
+      onSessionPanelKey(e) {
+        if (!this.sessionPanelOpen) return
+        if (e.key === 'ArrowDown') { e.preventDefault(); this.sessionNav(1) }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); this.sessionNav(-1) }
+        else if (e.key === 'Enter') { e.preventDefault(); this.sessionNavSelect() }
+        else if (e.key === 'Escape') { e.preventDefault(); this.closeSessionPanel() }
       },
       pickTip(text) {
         if (this.busy) return
@@ -949,11 +1067,27 @@
         }).then((r) => { return r.json() })
       },
       selectModel(m) {
-        this.currentModel = (m || '').replace(/\r/g, '')
+        const model = (m || '').replace(/\r/g, '')
+        const pidx = model.indexOf('/')
+        if (pidx > 0 && model.slice(0, pidx) === 'omniroute' && !this.omniRunning) {
+          this.dropdown = ''
+          if (!confirm('OmniRoute is not started yet.\nEnable and start it now?')) return
+          this.omniPendingModel = model
+          this.useOmniRoute()
+          return
+        }
+        this.currentModel = model
         localStorage.setItem('aichat_pi_last_model', this.currentModel)
         this.dropdown = ''
         this.refreshCtx()
         this.loadProviders().catch(() => {})
+        if (pidx > 0 && model.slice(0, pidx) !== 'omniroute') {
+          const sel = (this.providerList || []).find((x) => x.name === model.slice(0, pidx))
+          if (sel && !sel.keySet) {
+            this.showNotify('Please enter the API key for ' + sel.name + ' first')
+            this.showProviderPicker()
+          }
+        }
       },
       switchDefaultModel(m) {
         this.currentModel = (m || '').replace(/\r/g, '')
@@ -1049,6 +1183,7 @@
           if (data && Array.isArray(data.providers)) self.providerList = data.providers
           self.omniCurrent = !!(data && data.omniCurrent)
           self.omniStatus = data && data.omniStatus ? data.omniStatus : 'offline'
+          self.omniRunning = !!(data && data.omniRunning)
           const cur = (self.providerList || []).find((p) => p.current)
           self.currentProvider = self.omniCurrent ? 'omniroute' : (cur ? cur.name : '')
           return data || {}
@@ -1062,11 +1197,29 @@
         this.providerOverlay = true
         this.loadProviders().catch(() => {})
       },
+      checkProviderReady() {
+        const cm = this.currentModel.replace(/\r/g, '')
+        const sep = cm.indexOf('/')
+        let name = sep > 0 ? cm.slice(0, sep) : this.currentProvider
+        if (!name) {
+          const cur = (this.providerList || []).find((p) => p.current)
+          if (cur) name = cur.name
+        }
+        if (this.omniCurrent || name === 'omniroute') return true
+        const p = (this.providerList || []).find((x) => x.name === name)
+        if (!name || !p || !p.keySet) {
+          if (p) this.showNotify('Please enter the API key for ' + name + ' first')
+          else this.showNotify('Please choose a model provider first')
+          this.showProviderPicker()
+          return false
+        }
+        return true
+      },
       useProvider(name) {
         const self = this
         const p = this.providerList.find((x) => x.name === name) || {}
         const key = (this.providerKeys[name] || '').trim()
-        if (!key && !p.hasKey) { this.showNotify('Please enter an API key for ' + name); return }
+        if (!key && !p.keySet) { this.showNotify('Please enter an API key for ' + name); return }
         this.providerBusy = true
         const fendName = (p.custom || p.overridden) ? 'provider_custom_save' : 'provider_save'
         const payload = { name: name }
@@ -1145,9 +1298,10 @@
                   self.omniCurrent = true
                   self.currentProvider = 'omniroute'
                   self.providerOverlay = false
+                  const pickModel = self.omniPendingModel || (data && data.model) || ''
+                  self.omniPendingModel = ''
                   self.loadSessions().then(() => {
-                    const defModel = data && data.model ? data.model : ''
-                    if (defModel) self.switchDefaultModel(defModel)
+                    if (pickModel) self.switchDefaultModel(pickModel)
                     else self.selectModel('')
                   })
                 } else {
@@ -1180,9 +1334,10 @@
                 self.omniCurrent = true
                 self.currentProvider = 'omniroute'
                 self.providerOverlay = false
+                const pickModel = self.omniPendingModel || (sav && sav.model) || ''
+                self.omniPendingModel = ''
                 self.loadSessions().then(() => {
-                  const defModel = sav && sav.model ? sav.model : ''
-                  if (defModel) self.switchDefaultModel(defModel)
+                  if (pickModel) self.switchDefaultModel(pickModel)
                   else self.selectModel('')
                 })
               } else {
@@ -1260,7 +1415,8 @@
         if (!name) { this.showNotify('Please enter a provider name'); return }
         if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) { this.showNotify('Name must be letters/numbers/hyphens only'); return }
         if (!baseUrl) { this.showNotify('Please enter a base URL'); return }
-        if (!apiKey && !this.customEditing) { this.showNotify('Please enter an API key'); return }
+        const existing = (this.providerList || []).find((x) => x.name === name)
+        if (!apiKey && !(existing && existing.keySet)) { this.showNotify('Please enter an API key'); return }
         this.customBusy = true
         this.fetchFend('provider_custom_save', {
           name: name, baseUrl: baseUrl, apiKey: apiKey, api: this.customForm.api,
@@ -1349,6 +1505,17 @@
         })
       },
       onKey(e) {
+        if (this.sessionPanelOpen && e.key === 'Escape') {
+          e.preventDefault()
+          this.closeSessionPanel()
+          return
+        }
+        if (this.dropdown === 'model' && e.key === 'Escape') {
+          e.preventDefault()
+          this.dropdown = ''
+          this.modelNavIdx = 0
+          return
+        }
         if (this.cmdOpen && this.cmdFiltered.length) {
           if (e.key === 'ArrowDown') {
             e.preventDefault()
@@ -1436,9 +1603,75 @@
         if (/^\/new\s*$/.test(prompt)) {
           this.inputText = ''
           this.$nextTick(() => { self.autosize() })
-          this.clearChat()
+          this.newSession()
+          this.showNotify('New session started')
           return
         }
+        if (/^\/clear\s*$/.test(prompt)) {
+          // 只清空前端显示，不重置 session
+          this.inputText = ''
+          this.$nextTick(() => { self.autosize() })
+          this.clearChat()
+          this.showNotify('Chat cleared')
+          return
+        }
+        if (/^\/compact\s*$/.test(prompt)) {
+          this.inputText = ''
+          this.$nextTick(() => { self.autosize() })
+          self.compactChat()
+          return
+        }
+        const sessionMatch = prompt.match(/^\/session\s*(.*)/i)
+        if (sessionMatch) {
+          // /session 不带参数 → 打开左侧 session 面板
+          // /session <id> → 加载指定 session
+          const arg = (sessionMatch[1] || '').trim()
+          this.inputText = ''
+          this.$nextTick(() => { self.autosize() })
+          if (arg) {
+            this.selectSession(arg)
+            this.showNotify('Session ' + arg.slice(0, 8) + ' loaded')
+          } else {
+            this.openSessionPanel()
+          }
+          return
+        }
+        const modelMatch = prompt.match(/^\/model\s*(.*)/i)
+        if (modelMatch) {
+          // /model 不带参数 → 打开 model 下拉
+          // /model <name> → 切换模型
+          const arg = (modelMatch[1] || '').trim()
+          if (arg) {
+            this.selectModel(arg)
+            this.showNotify('Model switched to ' + arg)
+          } else {
+            this.toggleDropdown('model')
+            this.$nextTick(() => {
+              const el = self.$refs.modelFilterInput
+              if (el && el.focus) { el.focus(); el.select && el.select() }
+            })
+          }
+          this.inputText = ''
+          this.$nextTick(() => { self.autosize() })
+          return
+        }
+        if (/^\/help\s*$/.test(prompt)) {
+          this.inputText = ''
+          this.$nextTick(() => { self.autosize() })
+          const cmds = (this.commands || [])
+          const cmdLines = cmds.map((c) => `• /${c.name}  —  ${c.description}`).join('  \n  ')
+          const extra = `\n\n💡  小提示：\n  /new  开启新 session（保留当前不重置）\n  /clear  清空前端显示（不切 session）\n  /session  打开左侧历史面板，方向键选中，Enter 载入\n  /model  切换模型（可带参数或不带参数）\n  /compact  压缩上下文节省 token`
+          this.messages.push({ role: 'assistant', parts: [{ t: 'text', c: (cmdLines || 'No commands') + extra }], streaming: false })
+          this.$nextTick(() => { this.scrollBottom() })
+          return
+        }
+        if (/^\/(new|clear|session|model|help)\b/.test(prompt)) {
+          // known command with no further match above; drop the text and ignore
+          this.inputText = ''
+          this.$nextTick(() => { self.autosize() })
+          return
+        }
+        if (!this.checkProviderReady()) return
         this.saveHistory(prompt)
         this.inputText = ''
         this.$nextTick(() => { self.autosize() })
@@ -1455,7 +1688,23 @@
 
         let textBuf = ''
         let textFlush = null
+        let reasonBuf = ''
+        let reasonFlush = null
+        const flushReasoning = () => {
+          if (reasonFlush) { clearTimeout(reasonFlush); reasonFlush = null }
+          if (!reasonBuf) return
+          let target = null
+          for (let i = el.parts.length - 1; i >= 0; i--) {
+            const p = el.parts[i]
+            if (p.t === 'ref' && p.cls === 'reasoning' && p.reasonBody) { target = p; break }
+          }
+          if (target) target.body = (target.body || '') + reasonBuf
+          else el.parts.push({ t: 'ref', c: '✱ reasoning', cls: 'reasoning', body: reasonBuf, reasonBody: true })
+          reasonBuf = ''
+          self.scrollReasoningBottom()
+        }
         const flushText = () => {
+          flushReasoning()
           if (textFlush) { clearTimeout(textFlush); textFlush = null }
           if (!textBuf) return
           const last = el.parts[el.parts.length - 1]
@@ -1469,6 +1718,19 @@
 
         const onMsg = (data) => {
           try {
+            const clearRunning = () => {
+              for (let i = 0; i < el.parts.length; i++) if (el.parts[i].running) el.parts[i].running = false
+            }
+            if (data.type === 'running') {
+              // 工具开始执行：在对应 ref 行点亮一个运行指示灯，消除"卡住"的观感
+              clearRunning()
+              const lastRef = el.parts[el.parts.length - 1]
+              if (lastRef && lastRef.t === 'ref') {
+                lastRef.running = true
+                self.scrollBottom()
+              }
+              return
+            }
             if (data.type === 'init') {
               if (data.content && el.initShown !== data.content) {
                 flushText()
@@ -1484,6 +1746,8 @@
               }
               self.currentModel = (data.model || '').replace(/\r/g, '')
               try { localStorage.setItem('aichat_pi_last_model', self.currentModel) } catch(e) {}
+              const mp = self.currentModel.indexOf('/')
+              if (mp > 0) self.currentProvider = self.currentModel.slice(0, mp)
               return
             }
             if (data.type === 'model_removed') {
@@ -1493,15 +1757,20 @@
               return
             }
             if (data.type === 'ref') {
+              clearRunning()
               flushText()
-              el.parts.push({ t: 'ref', c: data.content, cls: data.cls || '' })
+              if (data.uid) {
+                const found = el.parts.find((p) => p.uid === data.uid)
+                if (found) { found.c = data.content; found.cls = data.cls || '' }
+                else el.parts.push({ t: 'ref', c: data.content, cls: data.cls || '', uid: data.uid })
+              } else {
+                el.parts.push({ t: 'ref', c: data.content, cls: data.cls || '', reasonBody: data.cls === 'reasoning' && data.content.indexOf('✱') === 0 })
+              }
             }
             if (data.type === 'reasoning') {
               flushText()
-              const lastP = el.parts[el.parts.length - 1]
-              if (lastP && lastP.t === 'ref' && lastP.cls === 'reasoning') lastP.body = (lastP.body || '') + (data.content || '')
-              else el.parts.push({ t: 'ref', c: '✱ reasoning', cls: 'reasoning', body: data.content || '' })
-              self.scrollReasoningBottom()
+              reasonBuf += data.content || ''
+              if (!reasonFlush) reasonFlush = setTimeout(flushReasoning, 50)
             }
             if (data.type === 'out') {
               flushText()
@@ -1758,18 +2027,104 @@
         })
       },
       clearChat() {
+        // 只清空前端的显示内容，不开启新 session
         this.messages = []
-        this.sessionId = ''
         this.qEl = null
         this.question = null
         this.qSel = []
         this.qCustom = []
         this.ctxUsed = 0
         this.ctxPct = 0
+      },
+      newSession() {
+        // 真正开启一个新 session（之前 /new 的行为）
+        this.clearChat()
+        this.sessionId = ''
         try { localStorage.removeItem('aichat_pi_last_session') } catch(e) {}
       },
       compactChat() {
-        this.clearChat()
+        if (this.compacting || this.busy) return
+        if (!this.sessionId) { this.showNotify('No active session to compact'); return }
+        const sid = this.sessionId
+        const self = this
+        const compactId = 'compact-' + Date.now()
+        this.compacting = true
+        this.compactElapsed = 0
+        if (this.compactTimer) clearInterval(this.compactTimer)
+        this.compactTimer = setInterval(() => { self.compactElapsed++ }, 1000)
+        // SSE handler for compact events
+        const onMsg = (data) => {
+          if (!data) return
+          if (data.runId && data.runId !== compactId) return
+          try {
+            if (data.type === 'compact_log' && data.message) {
+              console.log('[compact]', data.message)
+              self.messages.push({
+                role: 'assistant',
+                parts: [{ t: 'text', c: '↻ ' + data.message }],
+                streaming: false
+              })
+              self.scrollBottom()
+              return
+            }
+            if (data.type === 'compaction_start') {
+              self.messages.push({
+                role: 'assistant',
+                parts: [{ t: 'text', c: '↻ Compacting context...', cls: 'compact-msg' }],
+                streaming: false
+              })
+              self.scrollBottom()
+              return
+            }
+            if (data.type === 'compaction_end') {
+              const r = data.result || {}
+              const lines = []
+              if (r.summary) lines.push('Summary: ' + r.summary)
+              if (r.tokensBefore !== undefined) lines.push('Before: ~' + r.tokensBefore + ' tokens')
+              if (r.estimatedTokensAfter !== undefined) lines.push('After: ~' + r.estimatedTokensAfter + ' tokens')
+              if (r.usage) lines.push('Usage: ' + JSON.stringify(r.usage))
+              const msg = lines.join('\n') || 'Compaction finished'
+              self.messages.push({
+                role: 'assistant',
+                parts: [{ t: 'text', c: '↻ ' + msg }],
+                streaming: false
+              })
+              self.scrollBottom()
+              return
+            }
+            if (data.type === 'compact_done') {
+              self.compacting = false
+              if (self.compactTimer) { clearInterval(self.compactTimer); self.compactTimer = null }
+              const r = data.result || {}
+              if (r.estimatedTokensAfter) {
+                self.ctxUsed = r.estimatedTokensAfter
+                if (self.ctxLimit) self.ctxPct = Math.round(self.ctxUsed / self.ctxLimit * 1000) / 10
+              } else if (data.result && data.result.tokensBefore) {
+                // Fallback: if estimatedTokensAfter not set, use tokensBefore as approximation
+                self.ctxUsed = data.result.tokensBefore
+                if (self.ctxLimit) self.ctxPct = Math.round(self.ctxUsed / self.ctxLimit * 1000) / 10
+              }
+              self.showNotify('Context compacted', 'success')
+              return
+            }
+            if (data.type === 'error') {
+              self.compacting = false
+              if (self.compactTimer) { clearInterval(self.compactTimer); self.compactTimer = null }
+              self.showNotify('Compact failed: ' + (data.message || data.error || 'unknown'), 'error')
+              return
+            }
+          } catch(e) {}
+        }
+        this.sseHandlers[compactId] = onMsg
+        this.fetchFend('compact', { runId: compactId, session: sid, model: this.currentModel }, 180000).then((data) => {
+          if (!data || data.ok === false) {
+            onMsg({ type: 'error', message: (data && (data.error || data.message)) || 'compact failed' })
+          }
+        }).catch((e) => {
+          onMsg({ type: 'error', message: e.message || String(e) })
+        }).then(() => {
+          delete this.sseHandlers[compactId]
+        })
       },
       startInstall() {
         if (this.installBusy) return
@@ -1856,7 +2211,10 @@
         el.__stick = el.scrollTop + el.clientHeight >= el.scrollHeight - 24
       },
       scrollReasoningBottom() {
+        if (this.scrollPending) return
+        this.scrollPending = true
         this.$nextTick(() => {
+          this.scrollPending = false
           const els = document.querySelectorAll('.reasoning-body')
           if (!els.length) return
           const el = els[els.length - 1]
@@ -1869,6 +2227,7 @@
         this.omniOverlay = false
         this.omniErr = ''
         this.omniBusy = false
+        this.omniPendingModel = ''
         this.showProviderPicker()
       },
       initApp() {
@@ -1952,6 +2311,7 @@
         } catch(e) {}
       }
       mainEs.onerror = () => {}
+      this.$nextTick(() => { const el = self.$refs.inputEl; if (el && el.focus) el.focus() })
 
       this.startInstall()
     }
@@ -2266,7 +2626,26 @@ const toolArg = (inp) => {
     const newLines = typeof i.new_string === 'string' && i.new_string ? i.new_string.split('\n').length : 0
     arg += ' · -' + oldLines + '/+' + newLines
   }
+  if (Array.isArray(i.edits) && i.edits.length) {
+    let oldLines = 0, newLines = 0
+    for (const ed of i.edits) {
+      const o = ed && (ed.oldText || ed.old_string)
+      const n = ed && (ed.newText || ed.new_string)
+      if (o) oldLines += o.split('\n').length
+      if (n) newLines += n.split('\n').length
+    }
+    arg += ' · -' + oldLines + '/+' + newLines
+    if (i.edits.length > 1) arg += ' · ' + i.edits.length + ' blocks'
+  }
   return arg
+}
+
+const isFileEditTool = (name) => { return /^(edit|write)$/.test(String(name || '').toLowerCase()) }
+const toolCallRef = (name, arg) => {
+  name = String(name || 'tool')
+  const suf = arg ? ' · ' + maskSecrets(arg) : ''
+  if (isFileEditTool(name)) return { c: '← ' + name + suf, cls: 'edit' }
+  return { c: '◈ ' + name + suf, cls: 'tool' }
 }
 
 const parseModel = (s) => {
@@ -2373,14 +2752,14 @@ $fend('providers', (data) => {
     const existing = (mj.providers || {})[p.name] || {}
     const hasKey = !!(existing.apiKey && String(existing.apiKey) !== '' && !/^\$/.test(String(existing.apiKey)))
     const presetModels = (existing.models && existing.models.length) ? existing.models : p.models
-    list.push({ name: p.name, baseUrl: existing.baseUrl || p.baseUrl, api: existing.api || p.api, hasKey: hasKey, current: eff === p.name, custom: false, overridden: !!(existing.models && existing.models.length), models: presetModels.map((m) => (m && m.id) || '').filter(Boolean) })
+    list.push({ name: p.name, baseUrl: existing.baseUrl || p.baseUrl, api: existing.api || p.api, hasKey: hasKey, keySet: !!existing.apiKey, current: eff === p.name, custom: false, overridden: !!(existing.models && existing.models.length), models: presetModels.map((m) => (m && m.id) || '').filter(Boolean) })
   }
   for (const key in (mj.providers || {})) {
     if (key === 'omniroute') continue
     if (PROVIDER_PRESETS.find((p) => p.name === key)) continue
     const existing = mj.providers[key] || {}
     const hasKey = !!(existing.apiKey && String(existing.apiKey) !== '' && !/^\$/.test(String(existing.apiKey)))
-    list.push({ name: key, baseUrl: existing.baseUrl || '', api: existing.api || 'openai-completions', hasKey: hasKey, current: eff === key, custom: true, models: (existing.models || []).map((m) => (m && m.id) || '').filter(Boolean) })
+    list.push({ name: key, baseUrl: existing.baseUrl || '', api: existing.api || 'openai-completions', hasKey: hasKey, keySet: !!existing.apiKey, current: eff === key, custom: true, models: (existing.models || []).map((m) => (m && m.id) || '').filter(Boolean) })
   }
   let omniCurrent = eff === 'omniroute'
   let omniStatus = 'disabled'
@@ -2388,14 +2767,15 @@ $fend('providers', (data) => {
   else if ((mj.providers || {}).omniroute) omniStatus = 'installed · not default'
   return new Promise((resolve) => {
     httpGetUrl(OMNI_HOST + '/', 3000).then((r) => {
-      if (r.status === 200) {
+      const running = r.status === 200
+      if (running) {
         if (omniStatus.indexOf('enabled') < 0 && omniStatus.indexOf('pending') < 0) omniStatus = 'running'
         else if (omniStatus.indexOf('pending') === 0) omniStatus = 'running · pending config'
       } else {
         if (omniStatus.indexOf('enabled') >= 0) omniStatus = 'default but not running'
       }
-      resolve({ ok: true, providers: list, omniCurrent: omniCurrent, omniStatus: omniStatus, hasOmniConfig: !!(mj.providers || {}).omniroute })
-    }).catch(() => { resolve({ ok: true, providers: list, omniCurrent: omniCurrent, omniStatus: omniStatus, hasOmniConfig: !!(mj.providers || {}).omniroute }) })
+      resolve({ ok: true, providers: list, omniCurrent: omniCurrent, omniStatus: omniStatus, hasOmniConfig: !!(mj.providers || {}).omniroute, omniRunning: running })
+    }).catch(() => { resolve({ ok: true, providers: list, omniCurrent: omniCurrent, omniStatus: omniStatus, hasOmniConfig: !!(mj.providers || {}).omniroute, omniRunning: false }) })
   })
 })
 
@@ -2502,6 +2882,7 @@ $fend('provider_custom_save', (data) => {
     const st = readSettingsJson()
     const prev = mj.providers[name] || {}
     const finalKey = apiKey || prev.apiKey || null
+    if (!finalKey) return { ok: false, error: 'API key required for ' + name }
     const modelIds = Array.isArray(data.models) ? data.models.map((m) => String(m).trim()).filter(Boolean) : []
     const models = modelIds.map((id) => ({ id: id, name: id, contextWindow: 128000, maxTokens: 16384 }))
     if (!models.length && !(data.models || []).length) {
@@ -2845,7 +3226,8 @@ const convFromFile = (full) => {
       else if (p.type === 'thinking' && p.thinking) plist.push({ t: 'ref', c: '✱ reasoning', cls: 'reasoning', body: p.thinking })
       else if (p.type === 'toolCall') {
         const arg = toolArg(p.arguments || {})
-        plist.push({ t: 'ref', c: '◈ ' + (p.name || 'tool') + (arg ? ' · ' + maskSecrets(arg) : ''), cls: 'tool' })
+        const ref = toolCallRef(p.name || 'tool', arg)
+        plist.push({ t: 'ref', c: ref.c, cls: ref.cls })
       }
     }
     if (msg.errorMessage) plist.push({ t: 'text', c: 'Error: ' + msg.errorMessage, cls: 'err-text' })
@@ -2888,7 +3270,12 @@ $fend('workspace_set', (data) => {
 
 $fend('commands', () => {
   return { ok: true, commands: [
-    { name: 'new', description: 'start a new session' }
+    { name: 'new', description: 'start a new session' },
+    { name: 'clear', description: 'clear chat display (keep current session)' },
+    { name: 'compact', description: 'compact context to reduce token usage' },
+    { name: 'session', description: 'open session panel, or /session <id> to load one' },
+    { name: 'model', description: 'switch model (use /model <model>)' },
+    { name: 'help', description: 'list commands' }
   ] }
 })
 
@@ -2911,6 +3298,8 @@ $fend('start', (data) => {
   const triedModels = new Set()
   let autoRetryCount = 0   // pi internal auto-retries seen
   let lastErrText = ''     // last errorMessage from events
+  let lastErrAt = 0        // ms timestamp of last errorMessage, to flag error-recovery compaction
+  const hardFails = {}     // per-model consecutive 5xx/network failure count
   let runHadOutput = false // did we stream any text/reasoning/tool output
   let stderrTail = ''      // tail of stderr for exit diagnosis
 
@@ -2939,6 +3328,12 @@ $fend('start', (data) => {
   const seenTools = {}
   const lastToolOut = {}
   const reasoningSeen = {}
+  const openReasoning = new Set() // 仍在输出 thinking、尚未收到 thinking_end 的内容块
+  const streamTc = {}
+  let tcUidSeq = 0
+  let compactingSince = 0
+  let compactTick = null
+  let compactTag = '' // 'error recovery' / 'overflow' — carried to the done line
   let watchdog = null
   let aliveTimer = null
   let toolHeartbeat = null
@@ -2993,6 +3388,12 @@ $fend('start', (data) => {
   }
   const finish = (payload) => {
     if (streamEnded) return
+    if (switchLeft < MAX_SWITCH && !(payload && payload.timeout)) {
+      // 整个 run 成功完成才重置自动切换次数；期间的真实失败会累积计数，避免中途闪断即清零
+      switchLeft = MAX_SWITCH
+      retryLeft = MAX_RETRY
+      sendRef('✓ ' + (model || 'model') + ' run completed · switch budget reset (0/' + MAX_SWITCH + ')', 'info')
+    }
     streamEnded = true
     if (watchdog) clearTimeout(watchdog)
     if (aliveTimer) clearInterval(aliveTimer)
@@ -3043,26 +3444,52 @@ $fend('start', (data) => {
       const ci = ame.contentIndex || 0
       if (at === 'text_delta') {
         const pending = Object.keys(reasoningSeen).filter(k => reasoningSeen[k])
-        for (const k of pending) { reasoningSeen[k] = false; sendRef('✓ reasoning done', 'reasoning') }
+        for (const k of pending) { reasoningSeen[k] = false; openReasoning.delete(k); sendRef('✓ reasoning done', 'reasoning') }
         if (ame.delta) send('text', { content: ame.delta })
         return
       }
       if (at === 'thinking_start' || at === 'thinking_delta') {
-        if (!reasoningSeen[ci]) { reasoningSeen[ci] = true; sendRef('✱ reasoning', 'reasoning') }
+        if (!reasoningSeen[ci]) { reasoningSeen[ci] = true; openReasoning.add(ci); sendRef('✱ reasoning', 'reasoning') }
         if (at === 'thinking_delta' && ame.delta) send('reasoning', { content: ame.delta })
         return
       }
       if (at === 'thinking_end') {
-        if (reasoningSeen[ci]) { reasoningSeen[ci] = false; sendRef('✓ reasoning done', 'reasoning') }
+        if (reasoningSeen[ci]) { reasoningSeen[ci] = false; openReasoning.delete(ci); sendRef('✓ reasoning done', 'reasoning') }
         return
+      }
+      if (at === 'toolcall_start') {
+        // 工具调用正在流式生成（名称要到 toolcall_end 才知道）：先亮占位脉冲，消除静默等待感
+        // deepseek 类后端可能在工具调用之后才补发 thinking_end：
+        // 这里先把仍未结束的 reasoning 块标成 done，保证「✓ reasoning done」行排在工具 ref 之前
+        const open = Array.from(openReasoning)
+        if (open.length) {
+          openReasoning.clear()
+          for (const k of open) { reasoningSeen[k] = false; sendRef('✓ reasoning done', 'reasoning') }
+        }
+        const uid = 'tc-' + (++tcUidSeq)
+        streamTc[ci] = uid
+        send('ref', { content: '◈ generating tool call…', cls: 'tool', uid: uid })
+        send('running', { tool: 'tool-call', callId: uid })
+        return
+      }
+      if (at === 'toolcall_delta') {
+        return // 内容累积中，保持脉冲点亮；toolcall_end 一次性显示最终 ref
       }
       if (at === 'toolcall_end') {
         const tc = ame.toolCall || {}
         const arg = toolArg(tc.arguments || {})
         const callId = tc.toolCallId || tc.id || tc.name || 'tool'
-        if (!seenTools[callId]) {
+        const uid = streamTc[ci] || undefined
+        delete streamTc[ci]
+        if (uid) {
+          // 把占位行「就地升级」为最终 ref（← edit · -N/+N），避免多出/闪断一行
           seenTools[callId] = true
-          sendRef('◈ ' + (tc.name || 'tool') + (arg ? ' · ' + maskSecrets(arg) : ''), 'tool')
+          const ref = toolCallRef(tc.name || 'tool', arg)
+          send('ref', { content: ref.c, cls: ref.cls, uid: uid })
+        } else if (!seenTools[callId]) {
+          seenTools[callId] = true
+          const ref = toolCallRef(tc.name || 'tool', arg)
+          sendRef(ref.c, ref.cls)
         }
         return
       }
@@ -3070,6 +3497,12 @@ $fend('start', (data) => {
     }
     if (t === 'message_end') {
       const msg = ev.message || {}
+      for (const k in streamTc) delete streamTc[k]
+      const leftOpen = Array.from(openReasoning)
+      if (leftOpen.length) {
+        openReasoning.clear()
+        for (const k of leftOpen) { reasoningSeen[k] = false; sendRef('✓ reasoning done', 'reasoning') }
+      }
       if (msg.provider && msg.model) {
         model = msg.provider + '/' + msg.model
         send('init', { content: '> build · ' + model })
@@ -3078,41 +3511,18 @@ $fend('start', (data) => {
         tokens = msg.usage
         emitCtx(msg.usage.totalTokens)
       }
-      if (msg.errorMessage) {
-        const etxt = String(msg.errorMessage)
-        lastErrText = etxt
-        let removed = false
-        if (/\b(400|404|410|502)\b/.test(etxt)) {
-          const mk = model || modelStr || defModel || ''
-          if (mk) {
-            const newly = markBadModels([mk])
-            const errLine = etxt.split('\n')[0].slice(0, 160)
-            sendRef('⚠ ' + mk + ' unavailable · ' + (newly ? 'removed from list' : 'already removed') + ' · ' + errLine, 'info')
-            send('model_removed', { model: mk })  // drop from frontend list even if no further switch happens
-            removed = true
-          }
-        }
-        if (removed) {
-          // model is gone for good — switch to the next available model instead of retrying the same one
-          if (!switchToNextModel(etxt, 'removed')) fail(etxt.split('\n')[0])
-        } else if (switchOnly(etxt)) {
-          // transient overload / connection blip — switch directly, no same-model retry, don't mark bad
-          if (!switchToNextModel(etxt, 'switch')) fail(etxt.split('\n')[0])
-        } else if (isRetryable(etxt) && retryLeft > 0 && !retrying) {
-          retryLeft--
-          const attempt = MAX_RETRY - retryLeft
-          const delay = retryDelayMs(retryLeft)
-          sendRef('↻ transient error, retrying in ' + Math.round(delay / 1000) + 's… (attempt ' + attempt + '/' + MAX_RETRY + ')' + (etxt && etxt !== 'transient error' ? ' · ' + etxt.split('\n')[0] : ''), 'info')
-          retrying = true
-          kickWatchdog()
-          setTimeout(() => { relaunch() }, delay)
-        } else if (isRetryable(etxt)) {
-          // same-model retries exhausted — fall back to switching models
-          if (!switchToNextModel(etxt, 'retry')) fail(etxt.split('\n')[0])
-        } else {
-          fail(etxt.split('\n')[0])
-        }
+      if (!msg.errorMessage) {
+        lastErrAt = 0   // fresh successful response — later compaction is context-driven, not error recovery
+      } else {
+        handleModelError(String(msg.errorMessage))
       }
+      return
+    }
+    if (t === 'error' || t === 'session_error') {
+      // terminal / session-level errors don't always carry a message_end — feed them through the same retry/switch/fail chain
+      const errObj = ev.error || ev || {}
+      const em = typeof errObj === 'string' ? errObj : (errObj.message || errObj.error || errObj.errorMessage || '')
+      handleModelError(String(em || '').split('\n')[0].slice(0, 400))
       return
     }
     if (t === 'tool_execution_start') {
@@ -3120,9 +3530,11 @@ $fend('start', (data) => {
       const arg = toolArg(ev.args || {})
       if (!seenTools[callId]) {
         seenTools[callId] = true
-        sendRef('◈ ' + (ev.toolName || 'tool') + (arg ? ' · ' + maskSecrets(arg) : ''), 'tool')
+        const ref = toolCallRef(ev.toolName || 'tool', arg)
+        sendRef(ref.c, ref.cls)
       }
       runningTools[callId] = { tool: ev.toolName || 'tool', arg: arg, started: Date.now(), lastUpdate: Date.now(), lastOutput: '' }
+      send('running', { tool: ev.toolName || 'tool', callId: callId })
       return
     }
     if (t === 'tool_execution_update') {
@@ -3139,17 +3551,55 @@ $fend('start', (data) => {
     if (t === 'tool_execution_end') {
       const callId = ev.toolCallId || ev.toolName
       delete runningTools[callId]
-      sendRef((ev.isError ? '✗ ' : '✓ ') + (ev.toolName || 'tool') + (ev.isError ? ' failed' : ' done'), 'tool')
-      const out = extractToolText(ev.result)
+      const tname = ev.toolName || 'tool'
+      let out = extractToolText(ev.result)
+      // edit/write 后台结果里带有的 diff/patch，一并返回前端显示
+      if (!ev.isError && isFileEditTool(tname) && ev.result && ev.result.details) {
+        const patch = ev.result.details.patch || ev.result.details.diff || ''
+        if (patch) out = (out ? out + '\n' : '') + String(patch).slice(0, 6000)
+      }
       if (out) emitOut(callId, maskSecrets(out), (d) => { send('out', { content: d }) })
+      sendRef((ev.isError ? '✗ ' : '✓ ') + tname + (ev.isError ? ' failed' : ' done'), 'tool')
       return
     }
     if (t === 'bash_execution_update') {
       if (ev.delta) send('out', { content: maskSecrets(ev.delta) })
       return
     }
-    if (t === 'compaction_start') { sendRef('↻ compacting…', 'info'); return }
-    if (t === 'compaction_end') { sendRef('✓ context compacted', 'info'); return }
+    if (t === 'compaction_start') {
+      compactingSince = Date.now()
+      const afterErr = lastErrAt && Date.now() - lastErrAt < 30000
+      const reason = String(ev.reason || '')
+      compactTag = afterErr ? 'error recovery' : (reason === 'overflow' ? 'overflow' : '')
+      const base = '↻ compacting…' + (compactTag ? ' (' + compactTag + ')' : '')
+      send('ref', { content: base, cls: 'info', uid: 'compact' })
+      send('running', { tool: 'context-compaction', callId: 'compact' })
+      if (!compactTick) {
+        compactTick = setInterval(() => {
+          if (!compactingSince || streamEnded) {
+            if (compactTick) { clearInterval(compactTick); compactTick = null }
+            return
+          }
+          const s = Math.round((Date.now() - compactingSince) / 1000)
+          send('ref', { content: base + ' (' + s + 's)', cls: 'info', uid: 'compact' })
+        }, 2000)
+      }
+      return
+    }
+    if (t === 'compaction_end') {
+      compactingSince = 0
+      if (compactTick) { clearInterval(compactTick); compactTick = null }
+      const r = ev.result || {}
+      const sum = typeof r.summary === 'string' && r.summary ? String(r.summary).trim() : ''
+      if (sum) send('out', { content: maskSecrets(sum) })
+      let line = '✓ context compacted' + (compactTag ? ' (' + compactTag + ')' : '')
+      compactTag = ''
+      if (r.tokensBefore && r.estimatedTokensAfter) {
+        line += ' · ' + Math.round(r.tokensBefore / 1000) + 'k → ' + Math.round(r.estimatedTokensAfter / 1000) + 'k tokens'
+      }
+      sendRef(line, 'info')
+      return
+    }
     if (t === 'auto_retry_start') { autoRetryCount++; sendRef('↻ retrying…', 'info'); return }
     if (t === 'agent_end' || t === 'agent_settled') {
       endRun(0, 'event')
@@ -3220,14 +3670,80 @@ $fend('start', (data) => {
     if (!etxt) return false
     return /410|429|422|1302|503|limit_burst_rate|rate.?limit|速率限制|请求频率|并发|concurrency|5\d\d|admission_busy|chat_admission|server_error|service_temporarily_unavailable|ResourceExhausted|temporarily|繁忙|timed.?out|timeout|请求超时/i.test(etxt)
   }
+  // connection-level / 5xx "hard" failures: retryable once, but a repeat for the same model means it's broken
+  const isHardFail = (etxt) => {
+    if (!etxt) return false
+    return /(?:^|\D)(?:5\d\d)\b|fetch failed|socket hang|econn|getaddrinfo|network error|netserver|connection (?:refused|reset|closed)|http_50x|initiating request/i.test(etxt)
+  }
   // transient (overload / connection blip / auth denied): skip same-model retry, switch directly — but don't mark bad
   const switchOnly = (etxt) => {
     if (!etxt) return false
-    return /\b(401|403)\b|overload|capacity|connection|unauthorized|forbidden|invalid.api.key|permission.denied|权限|未授权|鉴权|过载|连接/i.test(etxt)
+    return /\b(401|402|403)\b|overload|capacity|connection|unauthorized|forbidden|invalid.api.key|permission.denied|权限|未授权|鉴权|过载|连接/i.test(etxt)
   }
   const retryDelayMs = (attemptLeft) => {
     const tried = MAX_RETRY - attemptLeft
     return [5000, 10000, 30000][tried - 1] || 30000
+  }
+  let lastErrKey = ''      // dedupe identical (model, error) fired by different event types
+  let lastErrAt2 = 0
+  // single decision point for every model error (message_end, error/session_error events, exit path).
+  // Guarantees retry -> switch -> fail ordering and never bails out while a relaunch is pending.
+  const handleModelError = (etxt) => {
+    if (!etxt) return
+    lastErrText = etxt
+    lastErrAt = Date.now()
+    const errLine = String(etxt).split('\n')[0].slice(0, 200)
+    const mk = model || modelStr || defModel || ''
+    const key = (mk + '|' + etxt).slice(0, 400)
+    if (key === lastErrKey && Date.now() - lastErrAt2 < 4000) return
+    lastErrKey = key
+    lastErrAt2 = Date.now()
+    let removed = false
+    if (mk && /\b(400|404|410|502)\b/.test(etxt)) {
+      const newly = markBadModels([mk])
+      sendRef('⚠ ' + mk + ' unavailable · ' + (newly ? 'removed from list' : 'already removed') + ' · ' + errLine, 'info')
+      send('model_removed', { model: mk })  // drop from frontend list even if no further switch happens
+      removed = true
+    } else if (mk && isHardFail(etxt)) {
+      hardFails[mk] = (hardFails[mk] || 0) + 1
+      if (hardFails[mk] >= 2) {
+        const newly = markBadModels([mk])
+        sendRef('⚠ ' + mk + ' repeatedly failing (' + hardFails[mk] + 'x 5xx/network) · ' + (newly ? 'removed from list' : 'already removed') + ' · ' + errLine, 'info')
+        send('model_removed', { model: mk })
+        removed = true
+      }
+    }
+    if (removed) {
+      // model is gone for good — switch to the next available model instead of retrying the same one
+      if (!switchToNextModel(etxt, 'removed')) fail(errLine)
+      return
+    }
+    if (switchOnly(etxt)) {
+      // transient overload / connection blip — switch directly, no same-model retry, don't mark bad
+      if (!switchToNextModel(etxt, 'switch')) {
+        if (!retrying) fail(errLine)   // a relaunch is already pending — wait for it instead of dying
+      }
+      return
+    }
+    if (isRetryable(etxt)) {
+      if (retryLeft > 0 && switchLeft > 0) {
+        if (retrying) return           // retry relaunch already scheduled — don't stack another
+        retryLeft--
+        const attempt = MAX_RETRY - retryLeft
+        const delay = retryDelayMs(retryLeft)
+        sendRef('↻ transient error, retrying in ' + Math.round(delay / 1000) + 's… (attempt ' + attempt + '/' + MAX_RETRY + ')' + (etxt && etxt !== 'transient error' ? ' · ' + errLine : ''), 'info')
+        retrying = true
+        kickWatchdog()
+        setTimeout(() => { relaunch() }, delay)
+        return
+      }
+      // same-model retries exhausted — fall back to switching models
+      if (!switchToNextModel(etxt, 'retry')) {
+        if (!retrying) fail(errLine)
+      }
+      return
+    }
+    if (!retrying) fail(errLine)
   }
   // unified end-of-run: recover (switch model) when the run died with error signs but produced no output
   const endRun = (code, via) => {
@@ -3245,7 +3761,7 @@ $fend('start', (data) => {
     }
     const line = ((lastErrText || stderrTail || '').trim().split('\n')[0] || '').slice(0, 200)
     const etxt = line || ('pi exited with code ' + code)
-    if (!switchToNextModel(etxt, 'switch')) fail(etxt)
+    handleModelError(etxt)
   }
 
   const qArg = (val) => {
@@ -3328,6 +3844,7 @@ $fend('start', (data) => {
         const rt = runningTools[id]
         if (now - rt.lastUpdate > 10000) {
           sendRef('◈ ' + rt.tool + ' running (' + Math.floor((now - rt.started) / 1000) + 's)', 'tool')
+          send('running', { tool: rt.tool, callId: id })
           rt.lastUpdate = now
         }
         if (rt.lastOutput) emitOut(id, maskSecrets(rt.lastOutput), (d) => { send('out', { content: d }) })
@@ -3348,6 +3865,7 @@ $fend('start', (data) => {
       pronBreaking = false
       if (streamEnded) return
       retrying = false
+      lastErrKey = ''   // a new attempt is a fresh event, never deduped against the previous one
       spawnProcess()
     }, 500)
   }
@@ -3359,14 +3877,134 @@ $fend('start', (data) => {
 
 $fend('stop', async (data) => {
   if (!data) return { ok: false }
-  const rp = runProcs[data.runId] || $cache.get('pi_run_' + data.runId)
+  const rp = runProcs[data.runId] || $cache.get('pi_run_' + data.runId) || $cache.get('pi_compact_' + data.runId)
   if (rp) {
     killTree(rp)
     try { delete runProcs[data.runId] } catch(e) {}
     try { $cache.delete('pi_run_' + data.runId) } catch(e) {}
+    try { $cache.delete('pi_compact_' + data.runId) } catch(e) {}
     return { ok: true, mode: 'run' }
   }
   return { ok: false, error: 'no active run' }
+})
+
+// Manually compact an existing session's context via pi's RPC mode.
+// Spawns a short-lived pi process that loads the session and runs compact(),
+// then returns immediately so the frontend polls session_ctx for token changes.
+$fend('compact', (data) => {
+  if (!data || !data.session) return { ok: false, error: 'session is required' }
+  const runId = data.runId || 'compact-' + Date.now()
+  const cwd = getWorkDir()
+  const sessionId = String(data.session)
+  const modelStr = (data.model || '').replace(/\r/g, '')
+
+  const send = (type, payload) => {
+    $ws.sse(APP_CH, JSON.stringify(Object.assign({ runId: runId }, payload || {}, { type: type })))
+  }
+
+  // RPC mode: read JSON commands from stdin, write events/responses as JSON lines to stdout
+  const args = ['--mode', 'rpc', '--approve', '--session-id', sessionId]
+  if (modelStr) args.push('--model', modelStr)
+  else {
+    const fallback = collectConfiguredModels(readModelsJson())
+    if (fallback.length) args.push('--model', fallback[0])
+  }
+
+  const env = Object.assign({}, process.env, { NODE_OPTIONS: '--no-warnings', PI_SKIP_VERSION_CHECK: '1', NO_COLOR: '1' })
+
+  return new Promise((resolve) => {
+    let proc = null
+    let buf = ''
+    let resolved = false
+    const REQ_ID = 'req_' + runId
+
+    const finish = (result) => {
+      if (resolved) return
+      resolved = true
+      if (proc) killTree(proc)
+      try { delete runProcs[runId] } catch(e) {}
+      try { $cache.delete('pi_compact_' + runId) } catch(e) {}
+      resolve(result)
+    }
+    const kickWatchdog = () => {
+      if (watchdog) clearTimeout(watchdog)
+      watchdog = setTimeout(() => {
+        send('error', { message: 'compact timeout (180s)' })
+        finish({ ok: false, error: 'timeout' })
+      }, 180000)
+    }
+    let watchdog = null
+    let compactResult = null
+    kickWatchdog()
+    try {
+      proc = spawn(PI_BIN, args, { cwd: cwd, env: env, windowsHide: true, shell: IS_WIN, detached: !IS_WIN, stdio: ['pipe', 'pipe', 'pipe'] })
+    } catch(e) {
+      send('error', { message: 'spawn failed: ' + e.message })
+      return finish({ ok: false, error: 'spawn failed: ' + e.message })
+    }
+    runProcs[runId] = proc
+    try { $cache.set('pi_compact_' + runId, proc) } catch(e) {}
+    proc.stdin.on('error', () => {})
+    proc.stdout.setEncoding('utf8')
+    proc.stdout.on('data', (chunk) => {
+      buf += chunk
+      let nl
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, nl)
+        buf = buf.slice(nl + 1)
+        if (!line.trim()) continue
+        let ev
+        try { ev = JSON.parse(line.trim()) } catch(e) { continue }
+        if (ev.type === 'response' && ev.id === REQ_ID) {
+          if (ev.success) {
+            send('compact_done', { ok: true, result: compactResult })
+            finish({ ok: true, result: compactResult })
+          } else {
+            const msg = ev.error || 'compact failed'
+            send('error', { message: msg })
+            finish({ ok: false, error: msg })
+          }
+          return
+        }
+        if (ev.type === 'session' && ev.id) {
+          send('session', { id: ev.id })
+        } else if (ev.type === 'compaction_start') {
+          send('compaction_start', {})
+        } else if (ev.type === 'compaction_end') {
+          const r = ev.result || {}
+          compactResult = r
+          send('compaction_end', { ok: true, result: r })
+        }
+        kickWatchdog()
+      }
+    })
+    proc.stderr.setEncoding('utf8')
+    proc.stderr.on('data', (chunk) => {
+      const t = stripAnsi(chunk.toString()).trim()
+      if (t && t.indexOf('Warning:') < 0) {
+        console.log('[pi compact]', t)
+        send('compact_log', { message: t.slice(0, 200) })
+      }
+    })
+    proc.on('error', (e) => {
+      send('error', { message: 'process error: ' + e.message })
+      finish({ ok: false, error: 'process error: ' + e.message })
+    })
+    proc.on('close', (code) => {
+      if (!resolved) {
+        if (code === 0) {
+          send('compact_done', { ok: true })
+          finish({ ok: true })
+        } else {
+          send('error', { message: 'pi exited with code ' + code })
+          finish({ ok: false, error: 'pi exited with code ' + code })
+        }
+      }
+    })
+    setTimeout(() => {
+      try { proc.stdin.write(JSON.stringify({ type: 'compact', id: REQ_ID }) + '\n') } catch(e) {}
+    }, 300)
+  })
 })
 
 const resolveOmniVersion = (tries) => {

@@ -9,6 +9,10 @@ CONFIG.eapp = Object.assign({
     enable: true,
     logo_type: 1,
     apps: [{
+      "name": "Pi-Agent",
+      "type": "efh",
+      "target": "https://raw.ev2.workers.dev/elecV2/elecV2P/master/script/JSFile/pi.efh",
+    }, {
       "name": "说明文档",
       "type": "url",
       "target": "https://github.com/elecV2/elecV2P-dei/blob/master/docs/dev_note/webUI%20首页快捷运行程序%20eapp.md",
@@ -32,10 +36,6 @@ CONFIG.eapp = Object.assign({
       "name": "OPENCODE",
       "type": "efh",
       "target": "https://raw.ev2.workers.dev/elecV2/elecV2P/master/script/JSFile/opencode.efh",
-    }, {
-      "name": "Pi-Agent",
-      "type": "efh",
-      "target": "https://raw.ev2.workers.dev/elecV2/elecV2P/master/script/JSFile/pi.efh",
     }, {
       "name": "PM2 LS",
       "type": "shell",

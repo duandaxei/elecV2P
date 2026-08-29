@@ -35,6 +35,8 @@
       background: var(--bk3); color: var(--fc2); font-size: 12px; cursor: pointer;
     }
     .header button:hover { color: var(--fc); border-color: var(--fc3); }
+    .header .mode-btn { color: var(--ac); border-color: var(--ac); }
+    .header .mode-btn.run { color: var(--warn, #e0a53c); border-color: var(--warn, #e0a53c); }
     .header .dropdown-trigger { font-size: 12px; color: var(--fc2); cursor: pointer; position: relative; white-space: nowrap; }
     .header .dropdown-trigger b { color: var(--ok); }
     .header .dropdown-trigger:hover b { text-decoration: underline; }
@@ -74,6 +76,15 @@
     .dropdown .d-empty { padding: 20px; text-align: center; color: var(--fc3); font-size: 12px; }
     .dropdown .d-more { padding: 8px 12px; text-align: center; font-size: 12px; color: var(--ac); cursor: pointer; border-top: 1px solid var(--bd); }
     .dropdown .d-more:hover { background: var(--bk3); }
+    .dropdown .model-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; border-top: 1px solid var(--bd); position: sticky; bottom: 0;
+      background: var(--bk2);
+    }
+    .dropdown .model-count { font-size: 11px; color: var(--fc3); }
+    .dropdown .model-refresh { font-size: 12px; color: var(--ac); cursor: pointer; }
+    .dropdown .model-refresh:hover { text-decoration: underline; }
+    .dropdown .model-refresh.busy { color: var(--fc3); cursor: default; text-decoration: none; }
     .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
     .welcome { color: var(--fc2); text-align: center; margin: auto; font-size: 15px; line-height: 2; }
     .welcome b { color: var(--ac); }
@@ -259,12 +270,59 @@
     }
     .install-overlay button:hover { background: var(--bk2); }
     @keyframes installSpin { to { transform: rotate(360deg) } }
+    .login-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bk); display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 14px; padding: 24px;
+    }
+    .login-overlay .title { font-size: 18px; color: var(--fc); }
+    .login-overlay .sub { font-size: 12px; color: var(--fc2); max-width: 80%; word-break: break-all; text-align: center; }
+    .login-select, .login-input {
+      width: 480px; max-width: 90%; padding: 10px 12px; border-radius: 8px;
+      border: 1px solid var(--bd); background: var(--bk3); color: var(--fc);
+      font-size: 14px; outline: none;
+    }
+    .login-select:focus, .login-input:focus { border-color: var(--ac); }
+    .login-tip { font-size: 11px; color: var(--fc3); max-width: 80%; word-break: break-all; text-align: center; }
+    .login-err { color: var(--del); font-size: 13px; max-width: 80%; word-break: break-all; text-align: center; }
+    .login-actions { display: flex; gap: 10px; }
+    .login-actions button {
+      padding: 8px 20px; border: 1px solid var(--bd); border-radius: 6px;
+      background: var(--bk3); color: var(--fc); font-size: 13px; cursor: pointer;
+    }
+    .login-actions button:first-child { background: var(--ac); color: #000; border-color: var(--ac); font-weight: bold; }
+    .login-actions button:hover { filter: brightness(1.1); }
+    .login-actions button:disabled { opacity: .5; cursor: not-allowed; }
+    .mode-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bk); display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px; padding: 24px;
+    }
+    .mode-overlay .title { font-size: 18px; color: var(--fc); }
+    .mode-overlay .sub { font-size: 12px; color: var(--fc3); }
+    .mode-overlay .mode-item {
+      width: 520px; max-width: 90%; padding: 12px 16px; border-radius: 8px;
+      border: 1px solid var(--bd); background: var(--bk2); text-align: left;
+    }
+    .mode-overlay .mode-item.cur { border-color: var(--ac); }
+    .mode-overlay .m-name { font-size: 14px; color: var(--fc); font-weight: bold; }
+    .mode-overlay .m-name .m-cur { font-size: 11px; color: var(--ac); font-weight: normal; margin-left: 6px; }
+    .mode-overlay .m-desc { font-size: 12px; color: var(--fc2); margin-top: 4px; line-height: 1.6; }
+    .mode-actions { display: flex; gap: 10px; }
+    .mode-actions button {
+      padding: 8px 20px; border: 1px solid var(--bd); border-radius: 6px;
+      background: var(--bk3); color: var(--fc); font-size: 13px; cursor: pointer;
+    }
+    .mode-actions button:first-child { background: var(--ac); color: #000; border-color: var(--ac); font-weight: bold; }
+    .mode-actions button:hover { filter: brightness(1.1); }
+    .mode-actions button:disabled { opacity: .5; cursor: not-allowed; }
     .notify {
       position: fixed; bottom: 68px; left: 50%; transform: translateX(-50%);
       padding: 6px 14px; border-radius: 6px; font-size: 12px; z-index: 9998;
-      background: var(--del); color: #fff; opacity: 0; transition: opacity .25s;
+      background: var(--ok); color: #000; opacity: 0; transition: opacity .25s;
       pointer-events: none; white-space: nowrap;
     }
+    .notify.err { background: var(--del); color: #fff; }
     .notify.show { opacity: 1; }
     .todo-panel {
       flex-shrink: 0; max-height: 140px; overflow-y: auto;
@@ -355,7 +413,40 @@
     <button v-if="installErr" @click="retryInstall" :disabled="installBusy">{{ installBusy ? 'Retrying...' : 'Retry' }}</button>
   </div>
 
-  <div class="notify" :class="{show: notifyShow}">{{ notifyMsg }}</div>
+  <div class="login-overlay" v-if="loginOverlay">
+    <div class="title">Login with API Key</div>
+    <div class="sub" v-if="loginConnected.length">Currently connected: {{ loginConnected.join(', ') }}</div>
+    <div class="sub" v-else>No model provider connected yet. Enter an API key to start using models.</div>
+    <select class="login-select" v-model="loginProvider">
+      <option v-for="p in loginProviders" :key="p.id" :value="p.id">{{ p.name || p.id }}{{ p.hint ? ' — ' + p.hint : '' }}</option>
+    </select>
+    <input class="login-input" type="password" v-model="loginKey" placeholder="Paste your API key here" @keydown.enter.prevent="submitLogin" spellcheck="false" autocomplete="off">
+    <div class="login-tip" v-if="loginProvider==='opencode'">OpenCode Zen token — the free models (big-pickle etc.) work with it. Get your token at opencode.ai/auth, then paste it here.</div>
+    <div class="login-err" v-if="loginErr">{{ loginErr }}</div>
+    <div class="login-actions">
+      <button @click="submitLogin" :disabled="loginBusy">{{ loginBusy ? 'Saving...' : 'Login' }}</button>
+      <button @click="loginOverlay=false" :disabled="loginBusy">Cancel</button>
+    </div>
+  </div>
+
+  <div class="mode-overlay" v-if="modeOverlay">
+    <div class="title">Switch OpenCode run mode</div>
+    <div class="sub">Current mode: {{ runMode }}</div>
+    <div class="mode-item" :class="{cur: runMode==='serve'}">
+      <div class="m-name">serve<span class="m-cur" v-if="runMode==='serve'">(current)</span></div>
+      <div class="m-desc">Resident background server (<code>opencode serve</code> :14096). Streaming responses, session history and context bar available. Uses extra memory (~100MB+).</div>
+    </div>
+    <div class="mode-item" :class="{cur: runMode==='run'}">
+      <div class="m-name">run<span class="m-cur" v-if="runMode==='run'">(current)</span></div>
+      <div class="m-desc">One-shot per message (<code>opencode run</code>). No resident server, minimal memory. No session history / context bar while in this mode.</div>
+    </div>
+    <div class="mode-actions">
+      <button @click="applyRunMode()" :disabled="modeBusy">{{ modeBusy ? 'Switching...' : 'Switch to ' + (runMode === 'run' ? 'serve' : 'run') }}</button>
+      <button @click="modeOverlay=false" :disabled="modeBusy">Cancel</button>
+    </div>
+  </div>
+
+  <div class="notify" :class="{show: notifyShow, err: notifyType==='err'}">{{ notifyMsg }}</div>
 
   <div class="overlay" :class="{show: sessionPanelOpen}" @click="sessionPanelOpen=false"></div>
 
@@ -413,8 +504,15 @@
         <div class="d-item" :class="{active: !currentModel}" @click="selectModel('')">
           <div class="d-title">auto</div><div class="d-sub">default model</div>
         </div>
+        <div v-if="!cleanModels.length" class="d-item" :class="{active: currentModel==='opencode'}" @click="selectModel('opencode')">
+          <div class="d-title">opencode — OpenCode Zen</div><div class="d-sub">default · free zen models (big-pickle etc.)</div>
+        </div>
         <div v-for="m in cleanModels" :key="m" class="d-item" :class="{active: m===currentModel}" @click="selectModel(m)">
           <div class="d-title">{{ m }}</div>
+        </div>
+        <div class="model-foot">
+          <span class="model-count">{{ cleanModels.length }} models</span>
+          <span class="model-refresh" :class="{busy: modelLoading}" @click="refreshModels" title="Re-fetch model list">{{ modelLoading ? '刷新中…' : '刷新' }}</span>
         </div>
       </div>
     </span>
@@ -423,6 +521,8 @@
       <span class="ctx-bar" :class="{ warn: ctxPct >= 80 && ctxPct < 95, danger: ctxPct >= 95 }"><i :style="ctxStyle"></i></span>
       <span class="ctx-num">{{ ctxLabel }} · {{ ctxPct }}%</span>
     </span>
+    <button class="mode-btn" :class="{run: runMode==='run'}" @click="toggleRunMode()" :title="runMode==='run' ? 'opencode run mode — one-shot per message, no resident server' : 'opencode serve mode — resident server, falls back to run'">{{ runMode === 'run' ? 'run' : 'serve' }}</button>
+    <button @click="openLogin()" title="Login with an API key">key</button>
     <button @click="compactChat()">compact</button>
   </div>
 
@@ -519,12 +619,25 @@
         deleting: {}, messages: [], inputText: '', todos: [], runId: '',
         commands: [], cmdOpen: false, cmdIdx: -1,
         histList: [], histIdx: -1, histDraft: '',
-        sessionPanelOpen: false, dropdown: '',
+        sessionPanelOpen: false, dropdown: '', modelLoading: false,
+        runMode: 'serve', modeOverlay: false, modeBusy: false,
         notifyMsg: '', notifyShow: false, loading: false,
+        notifyType: 'ok',
         ocVersion: '', installOverlay: true, installErr: '', installProgress: 'This may take a minute', installLog: [], installCmd: '', installEs: null, installBusy: false,
         ctxUsed: 0, ctxLimit: 0, ctxPct: 0, ctxModel: '',
         question: null, qSel: [], qCustom: [], qSubmitting: false, qEl: null,
         permission: null, permissionSubmitting: false,
+        loginOverlay: false, loginBusy: false, loginErr: '', loginProvider: 'opencode', loginKey: '',
+        loginFetched: false, loginConnected: [],
+        loginProviders: [
+          { id: 'opencode', name: 'OpenCode Zen', hint: 'token from opencode.ai/auth — free models available' },
+          { id: 'openai', name: 'openai', hint: '' },
+          { id: 'anthropic', name: 'anthropic', hint: '' },
+          { id: 'google', name: 'google', hint: 'Gemini' },
+          { id: 'openrouter', name: 'openrouter', hint: '' },
+          { id: 'deepseek', name: 'deepseek', hint: '' },
+          { id: 'groq', name: 'groq', hint: '' },
+        ],
         sseMain: null, mainReady: false, sseHandlers: {}, switching: false,
         _lastRunSession: ''
       }
@@ -669,8 +782,9 @@
         this.sessionPanelOpen = true
         this.loadSessions()
       },
-      showNotify(msg) {
+      showNotify(msg, ok) {
         this.notifyMsg = msg
+        this.notifyType = ok === false ? 'err' : 'ok'
         this.notifyShow = true
         clearTimeout(notifyTimer)
         notifyTimer = setTimeout(() => { this.notifyShow = false }, 6000)
@@ -679,12 +793,12 @@
         const self = this
         this.loading = true
         return Promise.all([
-          this.fetchFend('sessions', {}, 10000).catch((e) => { self.showNotify('sessions: ' + e.message); return { pinned: [] } }),
-          this.fetchFend('models', {}, 15000).catch((e) => { self.showNotify('models: ' + e.message); return { models: [] } })
+          this.fetchFend('sessions', {}, 10000).catch((e) => { self.showNotify('sessions: ' + e.message, false); return { pinned: [] } }),
+          this.fetchFend('models', {}, 15000).catch((e) => { self.showNotify('models: ' + e.message, false); return { models: [] } })
         ]).then((results) => {
           self.models = (results[1] && results[1].models) || []
           self.pinnedSessions = (results[0] && results[0].pinned) || []
-          return self.fetchFend('opencode_sessions', {}, 8000).catch((e) => { self.showNotify('opencode sessions: ' + e.message); return { sessions: [] } })
+          return self.fetchFend('opencode_sessions', {}, 8000).catch((e) => { self.showNotify('opencode sessions: ' + e.message, false); return { sessions: [] } })
         }).then((oc) => {
           if (oc && oc.sessions) self.sessions = oc.sessions
         }).finally(() => { self.loading = false })
@@ -701,6 +815,21 @@
         localStorage.setItem('aichat_oc_last_model', this.currentModel)
         this.dropdown = ''
         this.refreshCtx()
+      },
+      refreshModels() {
+        const self = this
+        if (this.modelLoading) return
+        this.modelLoading = true
+        this.fetchFend('models', { force: true, model: this.currentModel }, 20000).then((data) => {
+          const list = (data && data.models) || []
+          const out = []
+          list.forEach((m) => { const c = String(m).replace(/\r/g, ''); if (out.indexOf(c) < 0) out.push(c) })
+          self.models = out
+          if (self.currentModel && out.indexOf(self.currentModel) < 0) self.currentModel = ''
+          self.showNotify('Models refreshed: ' + out.length)
+        }).catch((e) => {
+          self.showNotify('Refresh models: ' + e.message, false)
+        }).finally(() => { self.modelLoading = false })
       },
       selectSession(id) {
         const prev = this.sessionId
@@ -732,7 +861,7 @@
           self.loadSessions()
           self.showNotify('Session deleted')
         }).catch((e) => {
-          self.showNotify('Delete failed: ' + e.message)
+          self.showNotify('Delete failed: ' + e.message, false)
         }).then(() => { delete self.deleting[id] })
       },
       deleteOCSession(id) {
@@ -745,10 +874,10 @@
             self.loadSessions()
             self.showNotify('Session deleted')
           } else {
-            self.showNotify('Delete failed: ' + (data.error || 'unknown'))
+            self.showNotify('Delete failed: ' + (data.error || 'unknown'), false)
           }
         }).catch((e) => {
-          self.showNotify('Delete failed: ' + e.message)
+          self.showNotify('Delete failed: ' + e.message, false)
         }).then(() => { delete self.deleting[id] })
       },
       autosize() {
@@ -1179,11 +1308,11 @@
         }
         this.fetchFend('stop', { runId: runId, session: sessionId }, 15000).then((data) => {
           if (!data.ok) {
-            self.showNotify('stop failed: ' + (data.error || (data.code ? 'code ' + data.code : 'unknown')))
+            self.showNotify('stop failed: ' + (data.error || (data.code ? 'code ' + data.code : 'unknown')), false)
           }
           self.busy = false
         }).catch((e) => {
-          self.showNotify('stop error: ' + e.message)
+          self.showNotify('stop error: ' + e.message, false)
           self.busy = false
         })
       },
@@ -1225,11 +1354,11 @@
             self.qSel = []
             self.qCustom = []
           } else {
-            self.showNotify('Reply failed: ' + ((data && data.error) || 'unknown'))
+            self.showNotify('Reply failed: ' + ((data && data.error) || 'unknown'), false)
           }
         }).catch((e) => {
           self.qSubmitting = false
-          self.showNotify('Reply failed: ' + e.message)
+          self.showNotify('Reply failed: ' + e.message, false)
         })
       },
       qReject() {
@@ -1245,11 +1374,11 @@
             self.qSel = []
             self.qCustom = []
           } else {
-            self.showNotify('Reject failed: ' + ((data && data.error) || 'unknown'))
+            self.showNotify('Reject failed: ' + ((data && data.error) || 'unknown'), false)
           }
         }).catch((e) => {
           self.qSubmitting = false
-          self.showNotify('Reject failed: ' + e.message)
+          self.showNotify('Reject failed: ' + e.message, false)
         })
       },
       permissionReply(reply) {
@@ -1264,11 +1393,11 @@
             self.showNotify('Permission ' + label + ': ' + (p.action || 'request'))
             self.permission = null
           } else {
-            self.showNotify('Permission reply failed: ' + ((data && data.error) || 'unknown'))
+            self.showNotify('Permission reply failed: ' + ((data && data.error) || 'unknown'), false)
           }
         }).catch((e) => {
           self.permissionSubmitting = false
-          self.showNotify('Permission reply failed: ' + e.message)
+          self.showNotify('Permission reply failed: ' + e.message, false)
         })
       },
       clearChat() {
@@ -1368,12 +1497,98 @@
         const self = this
         self.startInstall()
       },
+      openLogin() {
+        const self = this
+        this.loginOverlay = true
+        this.loginErr = ''
+        if (this.loginFetched) return
+        this.fetchFend('login_check', {}, 12000).then((data) => {
+          self.loginFetched = true
+          if (data && data.ok) {
+            const list = (data.providers && data.providers.length) ? data.providers : self.loginProviders
+            self.loginProviders = list
+            self.loginConnected = data.connected || [];
+            if (self.loginProvider === 'opencode' && !self.loginProviders.some((p) => p.id === 'opencode')) {
+              self.loginProvider = (self.loginProviders[0] || {}).id || ''
+            }
+          } else if (data && data.serverDown) {
+            self.loginErr = 'opencode server is not running'
+          }
+        }).catch((e) => { self.loginErr = e.message })
+      },
+      submitLogin() {
+        const self = this
+        const provider = this.loginProvider
+        const key = this.loginKey.trim()
+        if (!provider) { this.loginErr = 'Please select a provider'; return }
+        if (!key) { this.loginErr = 'Please enter an API key'; return }
+        this.loginBusy = true
+        this.loginErr = ''
+        this.fetchFend('login_apikey', { provider: provider, key: key }, 30000).then((data) => {
+          self.loginBusy = false
+          if (data && data.ok) {
+            self.loginOverlay = false
+            self.loginKey = ''
+            self.showNotify('API key saved for ' + provider + '. Start a chat and pick a model above.')
+            self.loadSessions()
+          } else {
+            self.loginErr = (data && data.error) || 'login failed'
+          }
+        }).catch((e) => {
+          self.loginBusy = false
+          self.loginErr = e.message
+        })
+      },
+      maybeAskLogin() {
+        const self = this
+        if (this.loginOverlay || this.models.length) return
+        this.fetchFend('login_check', {}, 12000).then((data) => {
+          if (data && data.ok && data.possible) {
+            self.loginFetched = true
+            const providers = data.providers && data.providers.length ? data.providers : self.loginProviders
+            self.loginProviders = providers
+            self.loginConnected = data.connected || []
+            self.loginProvider = providers.some((p) => p.id === 'opencode') ? 'opencode' : (((providers[0] || {}).id) || '')
+            self.loginErr = ''
+            self.loginOverlay = true
+          }
+        }).catch(() => {})
+      },
+      loadMode() {
+        const self = this
+        return this.fetchFend('mode', {}, 8000).then((data) => {
+          if (data && data.mode) self.runMode = data.mode
+        }).catch(() => {})
+      },
+      toggleRunMode() {
+        this.modeOverlay = true
+      },
+      applyRunMode() {
+        const self = this
+        if (this.modeBusy) return
+        const next = this.runMode === 'run' ? 'serve' : 'run'
+        this.modeBusy = true
+        this.fetchFend('set_mode', { mode: next }, 20000).then((data) => {
+          self.modeBusy = false
+          if (data && data.ok) {
+            self.runMode = data.mode || next
+            self.modeOverlay = false
+            self.showNotify(self.runMode === 'run' ? 'Mode: opencode run (one-shot per message)' : 'Mode: opencode serve')
+          } else {
+            self.showNotify('Failed to switch mode', false)
+          }
+        }).catch((e) => {
+          self.modeBusy = false
+          self.showNotify('Mode switch: ' + e.message, false)
+        })
+      },
       initApp() {
         if (_inited) return
         _inited = true
         this.installOverlay = false
         this.loading = true
         const self = this
+        this.loadMode()
         this.loadCommands()
         this.loadHistory()
         this.loadSessions().then(() => {
@@ -1387,6 +1602,7 @@
             }
           }
           self.refreshCtx()
+          self.maybeAskLogin()
         })
       },
       refreshCtx() {
@@ -1515,6 +1731,13 @@ const httpGet = (path, port, timeout) => {
   })
 }
 
+const httpGetJson = (path, port, timeout) => {
+  return httpGet(path, port || 14096, timeout).then((r) => {
+    if (r.status !== 200 || !r.body || !r.body.trim()) return null
+    try { return JSON.parse(r.body) } catch(e) { return null }
+  })
+}
+
 let serverReadyAt = 0
 let serverReadyOk = false
 const serverReady = (force) => {
@@ -1529,6 +1752,38 @@ const serverReady = (force) => {
     serverReadyAt = Date.now()
     return false
   })
+}
+
+const getRunMode = () => {
+  try { return $store.get('opencode_run_mode') === 'run' ? 'run' : 'serve' } catch(e) { return 'serve' }
+}
+
+const syncRunCache = (sessionId, newTitle) => {
+  if (!sessionId) return
+  try {
+    let cache = []
+    try { cache = JSON.parse($store.get('aichat_oc_sessions_cache') || '[]') } catch(e) {}
+    if (!Array.isArray(cache)) cache = []
+    const now = Date.now()
+    const idx = cache.findIndex((s) => { return s && s.id === sessionId })
+    if (idx < 0) {
+      const title = newTitle || ('New session - ' + new Date(now).toISOString())
+      cache.unshift({ id: sessionId, title: title, created: now, updated: now })
+    } else {
+      const it = cache.splice(idx, 1)[0]
+      cache.unshift(Object.assign({}, it, { updated: now }))
+    }
+    $store.set('aichat_oc_sessions_cache', JSON.stringify(cache))
+    $store.set('aichat_oc_sessions_time', String(Date.now()))
+  } catch(e) {}
+}
+
+const stopServe = () => {
+  try { shutdownServer() } catch(e) {}
+  try {
+    const pid = $store.get('opencode_server_pid')
+    if (pid && isAlive(pid)) { try { process.kill(Number(pid), 'SIGTERM') } catch(e) {} }
+  } catch(e) {}
 }
 
 const emitOut = (lastStore, callId, out, sendFn) => {
@@ -1860,6 +2115,7 @@ const runCliMode = (data, runId) => {
   let tokens = null
   let model = modelStr || null
   let knownSession = !!sessionId
+  let runSessionId = ''
   let seenSessionSent = false
   const seenTools = {}
   const lastToolOut = {}
@@ -1916,6 +2172,10 @@ const runCliMode = (data, runId) => {
     if (aliveTimer) clearInterval(aliveTimer)
     if (toolHeartbeat) clearInterval(toolHeartbeat)
     try { proc.kill() } catch(e) {}
+    if (runSessionId) {
+      const newTitle = knownSession ? null : String(data.prompt || '').replace(/\s+/g, ' ').trim().slice(0, 50)
+      syncRunCache(runSessionId, newTitle)
+    }
     send('done', Object.assign({ steps: stepCount }, payload || {}))
   }
   const fail = (msg) => {
@@ -1930,9 +2190,12 @@ const runCliMode = (data, runId) => {
 
   const handleEvent = (ev) => {
     const sid = ev.sessionID
-    if (sid && !seenSessionSent) {
-      seenSessionSent = true
-      if (!knownSession) send('session', { id: sid })
+    if (sid) {
+      runSessionId = sid
+      if (!seenSessionSent) {
+        seenSessionSent = true
+        if (!knownSession) send('session', { id: sid })
+      }
     }
     const t = ev.type
     const part = ev.part || {}
@@ -2068,10 +2331,28 @@ const runCliMode = (data, runId) => {
   return { ok: true, runId: runId }
 }
 
+$fend('mode', async () => {
+  let up = false
+  try { up = await serverReady() } catch(e) {}
+  return { mode: getRunMode(), serverUp: up }
+})
+
+$fend('set_mode', async (data) => {
+  const mode = (data && data.mode === 'run') ? 'run' : 'serve'
+  try { $store.set('opencode_run_mode', mode) } catch(e) {}
+  if (mode === 'run') {
+    stopServe()
+    return { ok: true, mode: mode, serverUp: false }
+  }
+  let up = false
+  try { up = await ensureServer() } catch(e) {}
+  return { ok: true, mode: mode, serverUp: up }
+})
+
 $fend('start', async (data) => {
   if (!data || !data.prompt) return { error: 'prompt is required' }
   const runId = data.runId || Date.now() + '-' + Math.random().toString(36).slice(2, 8)
-  if (!(await ensureServer())) return runCliMode(data, runId)
+  if (getRunMode() === 'run' || !(await ensureServer())) return runCliMode(data, runId)
   const prompt = data.prompt
   const httpMod = require('http')
 
@@ -2656,38 +2937,40 @@ $fend('ensure_opencode', async (data) => {
   }
 })
 
-$fend('models', async () => {
+$fend('models', async (data) => {
+  const force = data && data.force
   const now = Date.now()
   let cached, cachedTime
   try { cached = JSON.parse($store.get('aichat_models_cache') || 'null') } catch(e) {}
   try { cachedTime = Number($store.get('aichat_models_time') || 0) } catch(e) {}
-  if (cached && now - cachedTime < 60000) return { models: cached, cached: true }
-  if (cached) {
-    try {
-      const r = await execAsync(redirCmd(OC_BIN + ' models'), 10000)
-      const raw = r.stdout
-      console.log('[models cached-refresh] raw:', raw.trim())
-      if (raw && raw.trim()) {
-        const list = raw.trim().split('\n').filter(Boolean).map((s) => { return s.trim() })
-        $store.set('aichat_models_cache', JSON.stringify(list))
-        $store.set('aichat_models_time', String(Date.now()))
-        return { models: list }
-      }
-    } catch(e) {}
-    return { models: cached }
+  if (!force && cached && now - cachedTime < 60000) return { models: cached, cached: true }
+  const parseList = (raw) => {
+    if (!raw) return []
+    const out = []
+    String(raw).split('\n').forEach((s) => {
+      const c = stripAnsi(s).trim()
+      if (!c || /^models cache refreshed$/i.test(c) || c.charAt(0) === '#') return
+      if (out.indexOf(c) < 0) out.push(c)
+    })
+    return out
+  }
+  const runList = async (opt) => {
+    const r = await execAsync(redirCmd(OC_BIN + ' models' + (opt && opt.refresh ? ' --refresh' : '')), opt && opt.refresh ? 20000 : 10000)
+    return r.stdout
   }
   try {
-    const r = await execAsync(redirCmd(OC_BIN + ' models'), 10000)
-    const raw = r.stdout
-    console.log('[models] raw:', raw.trim())
-    if (!raw || !raw.trim()) return { models: [] }
-    const list = raw.trim().split('\n').filter(Boolean).map((s) => { return s.trim() })
-    $store.set('aichat_models_cache', JSON.stringify(list))
-    $store.set('aichat_models_time', String(now))
-    return { models: list }
+    const raw = await runList(force ? { refresh: true } : {})
+    console.log('[models]' + (force ? ' force-refresh' : '') + ' raw:', stripAnsi(raw).trim())
+    const list = parseList(raw)
+    if (list.length) {
+      $store.set('aichat_models_cache', JSON.stringify(list))
+      $store.set('aichat_models_time', String(Date.now()))
+      return { models: list }
+    }
   } catch(e) {
-    return { models: cached || [] }
+    console.log('[models] exec error:', e.message)
   }
+  return { models: cached || [] }
 })
 
 $fend('sessions', () => {
@@ -2752,12 +3035,17 @@ $fend('opencode_delete_session', async (data) => {
   if (!data || !data.id) return { ok: false }
   try {
     await execAsync(redirCmd(OC_BIN + ' session delete ' + data.id), 10000)
-    try { $store.set('aichat_oc_sessions_cache', '') } catch(e2) {}
-    try { $store.set('aichat_oc_sessions_time', '0') } catch(e2) {}
-    return { ok: true }
   } catch(e) {
     return { ok: false, error: e.message }
   }
+  try {
+    let cache = []
+    try { cache = JSON.parse($store.get('aichat_oc_sessions_cache') || '[]') } catch(e) {}
+    if (Array.isArray(cache)) {
+      $store.set('aichat_oc_sessions_cache', JSON.stringify(cache.filter((s) => { return s && s.id !== data.id })))
+    }
+  } catch(e2) {}
+  return { ok: true }
 })
 
 const ocPost = (path, body) => {
@@ -2778,6 +3066,89 @@ const ocPost = (path, body) => {
     req.end()
   })
 }
+
+const httpPut = (path, body) => {
+  return new Promise((resolve) => {
+    const httpMod = require('http')
+    const payload = body ? JSON.stringify(body) : ''
+    const req = httpMod.request({
+      host: '127.0.0.1', port: 14096, path: path, method: 'PUT',
+      headers: body ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } : {}
+    }, (res) => {
+      let buf = ''
+      res.on('data', (c) => { buf += c })
+      res.on('end', () => { resolve({ status: res.statusCode, body: buf }) })
+    })
+    req.on('error', (e) => { resolve({ status: 0, body: '', error: e.message }) })
+    req.setTimeout(8000, () => { req.destroy(); resolve({ status: 0, body: '', error: 'timeout' }) })
+    if (body) req.write(payload)
+    req.end()
+  })
+}
+
+const LOGIN_FALLBACK_PROVIDERS = [
+  { id: 'opencode', name: 'OpenCode Zen', hint: 'token from opencode.ai/auth — free models available (big-pickle etc.)' },
+  { id: 'openai', name: 'OpenAI', hint: 'platform.openai.com/api-keys' },
+  { id: 'anthropic', name: 'Anthropic', hint: 'console.anthropic.com' },
+  { id: 'google', name: 'Google Gemini', hint: 'aistudio.google.com/apikey' },
+  { id: 'openrouter', name: 'OpenRouter', hint: 'openrouter.ai/keys' },
+  { id: 'deepseek', name: 'DeepSeek', hint: '' },
+  { id: 'groq', name: 'Groq', hint: 'console.groq.com/keys' },
+  { id: 'xai', name: 'xAI (Grok)', hint: 'console.x.ai' },
+  { id: 'mistral', name: 'Mistral', hint: '' },
+  { id: 'togetherai', name: 'Together AI', hint: '' },
+  { id: 'zhipuai', name: 'Zhipu AI (GLM)', hint: '' },
+  { id: 'moonshotai', name: 'Moonshot (Kimi)', hint: '' },
+  { id: 'minimax', name: 'MiniMax', hint: '' }
+]
+
+$fend('login_check', async () => {
+  let up = false
+  try { up = await ensureServer() } catch(e) {}
+  if (!up) {
+    return { ok: true, possible: true, serverDown: true, connected: [], providers: LOGIN_FALLBACK_PROVIDERS.slice() }
+  }
+  const provider = await httpGetJson('/provider', 14096, 8000).catch(() => null)
+  const connected = (provider && Array.isArray(provider.connected)) ? provider.connected : []
+  const list = []
+  try {
+    const authMethods = await httpGetJson('/provider/auth', 14096, 8000)
+    if (authMethods) {
+      for (const pid of Object.keys(authMethods)) {
+        const methods = authMethods[pid] || []
+        for (const m of methods) {
+          if (m && m.type === 'api') {
+            list.push({ id: pid, name: pid, hint: (m.label && m.label !== 'Manually enter API Key' && m.label !== 'API key') ? m.label : '' })
+            break
+          }
+        }
+      }
+    }
+  } catch(e) {}
+  for (const f of LOGIN_FALLBACK_PROVIDERS) {
+    if (!list.some((x) => x.id === f.id)) list.push(f)
+  }
+  return { ok: true, possible: true, serverDown: false, connected: connected, providers: list }
+})
+
+$fend('login_apikey', async (data) => {
+  const provider = data && data.provider ? String(data.provider).trim() : ''
+  const key = data && data.key ? String(data.key).trim() : ''
+  if (!provider) return { ok: false, error: 'provider is empty' }
+  if (!key) return { ok: false, error: 'API key is empty' }
+  if (!(await ensureServer())) return { ok: false, error: 'opencode server is not running' }
+  const r = await httpPut('/auth/' + encodeURIComponent(provider), { type: 'api', key: key })
+  if (r.status === 200) {
+    const accepted = r.body && r.body.trim() === 'true'
+    if (accepted) {
+      console.log('[login_apikey] provider', provider, 'saved')
+      return { ok: true, provider: provider }
+    }
+    return { ok: false, error: 'login rejected: ' + r.body.slice(0, 200) }
+  }
+  if (r.error) return { ok: false, error: r.error }
+  return { ok: false, error: 'auth failed (http ' + r.status + '): ' + r.body.slice(0, 200) }
+})
 
 $fend('question_reply', async (data) => {
   if (!data || !data.requestID || !Array.isArray(data.answers)) return { ok: false, error: 'invalid params' }
@@ -2820,4 +3191,3 @@ $fend('permission_reply', async (data) => {
 
 </body>
 </html>
-

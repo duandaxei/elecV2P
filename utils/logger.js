@@ -1,6 +1,5 @@
 /**
  * 待优化
- * - isLog cache
  * - 不输出不处理
  **/
 
@@ -8,7 +7,7 @@ const fs = require('fs')
 const path = require('path')
 const { format } = require('util')
 const { now } = require('./time')
-const { sString, kSize } = require('./string')
+const { sString, kSize, surlName } = require('./string')
 
 const { CONFIG } = require('../config')
 
@@ -42,12 +41,21 @@ class logger {
   warn = this.notify
 
   constructor({ head, level, isalignHead, cb, file }) {
-    if(head) this._head = head
+    if(head) {
+      if (/^https?:\/\//.test(head)) {
+        head = surlName(head)
+      }
+      this._head = head
+    }
     if(level && LOG_LEVELS.hasOwnProperty(level)) this._level = LOG_LEVELS[level]
     if(cb) this._cb = cb
     if (file) {
-      file = file.trim().replace(/\/|\\/g, '-');
-      this._file = /\.log$/.test(file) ? file : file + '.log';
+      file = file.trim();
+      if (/^https?:\/\//.test(file)) {
+        file = surlName(file)
+      }
+      file = file.replace(/\/|\\/g, '-')
+      this._file = /\.log$/.test(file) ? file : file + '.log'
     }
 
     if (isalignHead !== false) {
