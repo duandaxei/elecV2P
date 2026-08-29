@@ -271,6 +271,13 @@
       padding: 12px 16px; border-top: 1px solid var(--bd);
       font-size: 11px; color: var(--fc3); text-align: center;
     }
+    .theme-foot .go-setting {
+      display: inline-block; margin-top: 8px; padding: 6px 14px;
+      border: 1px solid var(--bd); border-radius: 6px;
+      background: transparent; color: var(--ac); font-size: 12px; cursor: pointer;
+      transition: all .15s;
+    }
+    .theme-foot .go-setting:hover { border-color: var(--ac); background: rgba(88,166,255,.08); }
     .session-panel {
       position: fixed; left: -320px; top: 0; bottom: 0; width: 300px;
       background: transparent; border-right: 1px solid var(--bd);
@@ -463,7 +470,7 @@
     }
     .custom-panel {
       width: min(520px, 94vw); max-height: 86vh; overflow-y: auto;
-      background: transparent; border: 1px solid var(--bd); border-radius: 12px;
+      background: var(--bk2); border: 1px solid var(--bd); border-radius: 12px;
       padding: 22px; display: flex; flex-direction: column; gap: 12px;
     }
     .custom-panel .cp-title { font-size: 16px; color: var(--fc); font-weight: bold; }
@@ -662,13 +669,14 @@
           <div class="theme-desc">同步 elecV2P 当前使用的主题</div>
         </div>
         <div v-if="elecV2PTheme && elecV2PTheme.list" class="theme-section">预设主题</div>
-        <div v-for="(theme, idx) in elecV2PTheme.list" :key="idx" class="theme-item" :class="{active: currentTheme === theme}" @click="selectTheme(theme)">
+        <div v-for="(theme, idx) in (elecV2PTheme && elecV2PTheme.list ? elecV2PTheme.list : [])" :key="idx" class="theme-item" :class="{active: currentTheme === theme}" @click="selectTheme(theme)">
           <div class="theme-name">{{ theme.name }}</div>
           <div class="theme-desc">主色调: {{ theme.mainbk || '未设置' }} · 文字色: {{ theme.maincl || '未设置' }}</div>
         </div>
       </div>
       <div class="theme-foot">
         <div class="theme-info">主题会立即应用到 Pi 界面</div>
+        <button class="go-setting" @click="goThemeSetting">前往主题设置页面 →</button>
       </div>
     </div>
   </div>
@@ -1062,6 +1070,23 @@
         // 关闭其他下拉菜单
         this.dropdown = ''
       },
+      goThemeSetting() {
+        // 在原页面/新标签页打开 elecV2P 主题设置页面（webUI 根路径 + #setting 面板），
+        // 而不跳转当前 pi 标签页。
+        const url = window.location.origin + '/#setting'
+        let opened = false
+        try {
+          const p = window.parent
+          // 若嵌在 iframe 中，优先在原（父）页面切换 hash，保持浏览器历史
+          if (p && p !== window) {
+            p.location.hash = '#setting'
+            opened = true
+          }
+        } catch (e) {}
+        if (!opened) {
+          window.open(url, '_blank')
+        }
+      },
       selectTheme(theme) {
         this.applyTheme(theme)
         this.themeSelectorOpen = false
@@ -1392,21 +1417,31 @@
           method: 'get',
           headers: {'Content-Type': 'application/json'}
         }).then((r) => { return r.json() }).then((data) => {
-          if (data && data.theme) {
-            self.elecV2PTheme = data.theme
-            // 恢复用户上次选择的主题；未选择过或选了默认则保持 Pi 原生主题
-            let sel = null
-            try { sel = localStorage.getItem('aichat_pi_theme') } catch (e) {}
-            if (sel && sel !== 'default') {
-              if (sel === 'simple') {
-                self.applyTheme(self.elecV2PTheme.simple || {})
-              } else if (typeof sel === 'string' && sel.indexOf('list:') === 0) {
-                const idx = parseInt(sel.slice(5), 10)
-                const t = self.elecV2PTheme.list && self.elecV2PTheme.list[idx]
-                if (t) self.applyTheme(t)
-              } else {
-                try { self.applyTheme(JSON.parse(sel)) } catch (e) {}
-              }
+          // 后端未保存过主题时 CONFIG.webUI.theme 不存在，这里回退到内置默认预设，
+          // 保证未保存时弹窗也有预设主题可选、也能应用。
+          let theme = data && data.theme
+          if (!theme || !theme.list || !theme.list.length) {
+            theme = {
+              simple: null,
+              list: [
+                { name: '简单暗黑', mainbk: '#000C', maincl: '#6E77FB', appbk: '#000C', style: '' },
+                { name: '简单透明', mainbk: '#0000', maincl: '#FFC107', appbk: 'url(https://images.unsplash.com/photo-1646505183416-f3301d2a8127?auto=format)', style: '.content>div,.elecBtn--long,.efssset_container,.efsslist{border: 1px solid var(--tras-bk);}.eapp_item .eapp_name,.efsslist_content .efssa{color: var(--main-cl);}.loginfo.loginfo--full{background: var(--secd-bk);}.codeditor{--main-bk: var(--secd-bk);}' }
+              ]
+            }
+          }
+          self.elecV2PTheme = theme
+          // 恢复用户上次选择的主题；未选择过或选了默认则保持 Pi 原生主题
+          let sel = null
+          try { sel = localStorage.getItem('aichat_pi_theme') } catch (e) {}
+          if (sel && sel !== 'default') {
+            if (sel === 'simple') {
+              self.applyTheme(self.elecV2PTheme.simple || {})
+            } else if (typeof sel === 'string' && sel.indexOf('list:') === 0) {
+              const idx = parseInt(sel.slice(5), 10)
+              const t = self.elecV2PTheme.list && self.elecV2PTheme.list[idx]
+              if (t) self.applyTheme(t)
+            } else {
+              try { self.applyTheme(JSON.parse(sel)) } catch (e) {}
             }
           }
         }).catch(() => {})
