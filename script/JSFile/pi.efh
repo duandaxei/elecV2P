@@ -82,7 +82,7 @@
     .header .compact-btn.busy { border-color: var(--ac); background: rgba(88,166,255,.10); color: var(--ac); }
     .header .theme-btn {
       display: inline-flex; align-items: center; justify-content: center;
-      padding: 4px 10px; border-radius: 7px; font-size: 12px;
+      padding: 4px 16px; margin-left: 18px; border-radius: 7px; font-size: 12px;
       border: 1px solid var(--bd); background: transparent;
       color: var(--fc); cursor: pointer; white-space: nowrap; flex-shrink: 0;
       transition: all .15s;
@@ -91,16 +91,18 @@
       border-color: var(--fc3); background: transparent; color: var(--fc);
     }
     .header .theme-btn .theme-icon {
-      font-size: 14px;
+      font-size: 11px;
     }
     .header .load { position: absolute; left: 50%; transform: translateX(-50%); font-size: 22px; color: var(--ac); letter-spacing: 4px; animation: loadPulse 1.2s ease-in-out infinite; }
     @keyframes loadPulse { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
     #modelDropdown { left: auto; right: 0; }
     .dropdown {
       position: absolute; top: 100%; left: 0; margin-top: 4px;
-      background: transparent; border: 1px solid var(--bd); border-radius: 8px;
+      background: var(--bk2); background: color-mix(in srgb, var(--bk2) 32%, transparent);
+      border: 1px solid var(--bd); border-radius: 8px;
       min-width: 260px; max-height: 350px; overflow-y: hidden; z-index: 200; display: none; flex-direction: column;
       box-shadow: 0 8px 24px rgba(0,0,0,.4); display: none;
+      backdrop-filter: blur(8px) saturate(1.3); -webkit-backdrop-filter: blur(8px) saturate(1.3);
     }
     .dropdown.show { display: flex; }
     .dropdown .d-item {
@@ -108,13 +110,13 @@
       transition: background .15s;
     }
     .dropdown .d-item:last-child { border-bottom: none; }
-    .dropdown .d-item:hover { background: var(--bk3); }
-    .dropdown .d-item.active, .dropdown .d-item.nav { background: var(--bk3); border-left: 3px solid var(--ac); }
+    .dropdown .d-item:hover { background: var(--bk3); background: color-mix(in srgb, var(--bk3) 55%, transparent); }
+    .dropdown .d-item.active, .dropdown .d-item.nav { background: var(--bk3); background: color-mix(in srgb, var(--bk3) 55%, transparent); border-left: 3px solid var(--ac); }
     .dropdown .d-item .d-title { font-size: 13px; color: var(--fc); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .dropdown .d-item .d-sub { font-size: 10px; color: var(--fc3); }
     .dropdown .d-empty { padding: 20px; text-align: center; color: var(--fc3); font-size: 12px; }
     .dropdown .d-more { padding: 8px 12px; text-align: center; font-size: 12px; color: var(--ac); cursor: pointer; border-top: 1px solid var(--bd); }
-    .dropdown .d-more:hover { background: var(--bk3); }
+    .dropdown .d-more:hover { background: var(--bk3); background: color-mix(in srgb, var(--bk3) 55%, transparent); }
     .dropdown .d-foot { position: relative; padding: 7px 12px; text-align: center; font-size: 11px; color: var(--fc3); border-top: 1px solid var(--bd); background: transparent; }
     .dropdown .d-list { overflow-y: auto; flex: 1; min-height: 0; }
     .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
@@ -261,6 +263,8 @@
     }
     .theme-item:hover { border-color: var(--fc3); background: transparent; }
     .theme-item.active { border-color: var(--ac); background: rgba(88,166,255,.08); }
+    .theme-item.nav { border-color: var(--ac); box-shadow: 0 0 0 1px var(--ac); }
+    .theme-item.nav.active { background: rgba(88,166,255,.14); }
     .theme-name { font-size: 14px; color: var(--fc); font-weight: bold; margin-bottom: 4px; }
     .theme-desc { font-size: 12px; color: var(--fc2); }
     .theme-section {
@@ -280,7 +284,9 @@
     .theme-foot .go-setting:hover { border-color: var(--ac); background: rgba(88,166,255,.08); }
     .session-panel {
       position: fixed; left: -320px; top: 0; bottom: 0; width: 300px;
-      background: transparent; border-right: 1px solid var(--bd);
+      background: var(--bk2); background: color-mix(in srgb, var(--bk2) 32%, transparent);
+      border-right: 1px solid var(--bd);
+      backdrop-filter: blur(8px) saturate(1.3); -webkit-backdrop-filter: blur(8px) saturate(1.3);
       transition: left .25s; z-index: 100; display: flex; flex-direction: column;
     }
     .session-panel.open { left: 0; }
@@ -318,9 +324,9 @@
       padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px;
       border: 1px solid transparent; transition: all .15s; position: relative;
     }
-    .session-item:hover { background: var(--bk3); border-color: var(--bd); }
-    .session-item.active { background: var(--bk3); border-color: var(--ac); }
-    .session-item.nav { background: var(--bk3); border-color: var(--ac); }
+    .session-item:hover { background: var(--bk3); background: color-mix(in srgb, var(--bk3) 55%, transparent); border-color: var(--bd); }
+    .session-item.active { background: var(--bk3); background: color-mix(in srgb, var(--bk3) 55%, transparent); border-color: var(--ac); }
+    .session-item.nav { background: var(--bk3); background: color-mix(in srgb, var(--bk3) 55%, transparent); border-color: var(--ac); }
     /* 移除 session-item 的 focus 样式 */
     .session-item:focus,
     .session-item:focus-visible {
@@ -364,14 +370,16 @@
     .cmd-wrap { position: relative; flex-shrink: 0; }
     .cmd-dropdown {
       position: absolute; left: 16px; right: 16px; bottom: calc(100% + 4px);
-      background: transparent; border: 1px solid var(--bd); border-radius: 10px;
+      background: var(--bk2); background: color-mix(in srgb, var(--bk2) 32%, transparent);
+      border: 1px solid var(--bd); border-radius: 10px;
+      backdrop-filter: blur(8px) saturate(1.3); -webkit-backdrop-filter: blur(8px) saturate(1.3);
       box-shadow: 0 6px 24px rgba(0,0,0,.35); max-height: 220px; overflow-y: auto; z-index: 50;
     }
     .cmd-item {
       display: flex; align-items: baseline; gap: 8px; padding: 8px 12px; cursor: pointer;
     }
     .cmd-item + .cmd-item { border-top: 1px solid var(--bd); }
-    .cmd-item.active, .cmd-item:hover { background: var(--bk3); }
+    .cmd-item.active, .cmd-item:hover { background: var(--bk3); background: color-mix(in srgb, var(--bk3) 55%, transparent); }
     .cmd-item .name { color: var(--ac); font-weight: bold; font-family: monospace; flex-shrink: 0; }
     .cmd-item .desc { color: var(--fc2); font-size: 12px; word-break: break-all; }
     .install-overlay {
@@ -654,22 +662,22 @@
 
   <div class="overlay" :class="{show: sessionPanelOpen}" @click="sessionPanelOpen=false"></div>
 
-  <div class="theme-overlay" v-if="themeSelectorOpen">
-    <div class="theme-panel">
+  <div class="theme-overlay" v-if="themeSelectorOpen" @click.self="themeSelectorOpen=false" @keydown="onThemeKey">
+    <div class="theme-panel" tabindex="-1" ref="themePanelEl">
       <button class="theme-close" @click="themeSelectorOpen=false" title="Close">×</button>
       <div class="theme-title">选择主题</div>
       <div class="theme-sub">选择 elecV2P 的主题来同步应用到 Pi 界面</div>
-      <div class="theme-list">
-        <div class="theme-item" :class="{active: !currentTheme}" @click="selectTheme(null)">
+      <div class="theme-list" ref="themeListEl">
+        <div class="theme-item" :class="{active: !currentTheme, nav: themeNavIdx === 0}" @click="selectTheme(null)" @mouseenter="themeNavIdx = 0">
           <div class="theme-name">默认主题</div>
           <div class="theme-desc">Pi 的原始深色主题</div>
         </div>
-        <div v-if="elecV2PTheme && elecV2PTheme.simple" class="theme-item" :class="{active: currentTheme === elecV2PTheme.simple}" @click="selectTheme(elecV2PTheme.simple)">
+        <div v-if="elecV2PTheme && elecV2PTheme.simple" class="theme-item" :class="{active: currentTheme === elecV2PTheme.simple, nav: themeNavIdx === 1}" @click="selectTheme(elecV2PTheme.simple)" @mouseenter="themeNavIdx = 1">
           <div class="theme-name">当前 elecV2P 主题</div>
           <div class="theme-desc">同步 elecV2P 当前使用的主题</div>
         </div>
         <div v-if="elecV2PTheme && elecV2PTheme.list" class="theme-section">预设主题</div>
-        <div v-for="(theme, idx) in (elecV2PTheme && elecV2PTheme.list ? elecV2PTheme.list : [])" :key="idx" class="theme-item" :class="{active: currentTheme === theme}" @click="selectTheme(theme)">
+        <div v-for="(theme, idx) in (elecV2PTheme && elecV2PTheme.list ? elecV2PTheme.list : [])" :key="idx" class="theme-item" :class="{active: currentTheme === theme, nav: (elecV2PTheme && elecV2PTheme.simple ? 2 : 1) + idx === themeNavIdx}" @click="selectTheme(theme)" @mouseenter="themeNavIdx = (elecV2PTheme && elecV2PTheme.simple ? 2 : 1) + idx">
           <div class="theme-name">{{ theme.name }}</div>
           <div class="theme-desc">主色调: {{ theme.mainbk || '未设置' }} · 文字色: {{ theme.maincl || '未设置' }}</div>
         </div>
@@ -873,7 +881,7 @@
         scrollPending: false,
         currentProvider: '', provSeq: 0,
         omniCurrent: false, omniStatus: 'checking…', omniRunning: false,
-        elecV2PTheme: null, currentTheme: null, themeSelectorOpen: false,
+        elecV2PTheme: null, currentTheme: null, themeSelectorOpen: false, themeNavIdx: 0,
         omniOverlay: false, omniErr: '', omniProgress: 'Starting OmniRoute...', omniLog: [], omniCmd: '', omniBusy: false, omniEs: null, omniPendingModel: '',
         customOpen: false, customBusy: false, customEditing: false, customFetchBusy: false,
         customForm: { name: '', baseUrl: '', apiKey: '', api: 'openai-completions', models: '' },
@@ -919,6 +927,17 @@
           return !q || c.name.toLowerCase().indexOf(q) === 0 || c.description.toLowerCase().indexOf(q) === 0
         })
         return out.slice(0, 8)
+      },
+      themeItems() {
+        const items = [{ label: '默认主题', desc: 'Pi 的原始深色主题', theme: null }]
+        if (this.elecV2PTheme && this.elecV2PTheme.simple) {
+          items.push({ label: '当前 elecV2P 主题', desc: '同步 elecV2P 当前使用的主题', theme: this.elecV2PTheme.simple })
+        }
+        const list = (this.elecV2PTheme && this.elecV2PTheme.list) || []
+        for (const t of list) {
+          items.push({ label: t.name || '未命名主题', desc: '主色调: ' + (t.mainbk || '未设置'), theme: t })
+        }
+        return items
       },
       ctxLabel() {
         if (!this.ctxLimit) return ''
@@ -1067,8 +1086,34 @@
       },
       showThemeSelector() {
         this.themeSelectorOpen = true
+        this.themeNavIdx = 0
         // 关闭其他下拉菜单
         this.dropdown = ''
+        this.$nextTick(() => {
+          const el = this.$refs.themePanelEl
+          if (el && el.focus) el.focus()
+        })
+      },
+      onThemeKey(e) {
+        if (!this.themeSelectorOpen) return
+        const n = this.themeItems.length
+        if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          this.themeNavIdx = (this.themeNavIdx + 1) % n
+          this.scrollThemeActive()
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault()
+          this.themeNavIdx = (this.themeNavIdx - 1 + n) % n
+          this.scrollThemeActive()
+        } else if (e.key === 'Enter' && !(e.ctrlKey || e.metaKey)) {
+          e.preventDefault()
+          this.selectTheme(this.themeItems[this.themeNavIdx].theme)
+        } else if (e.key === 'Tab' || e.key === 'Escape') {
+          e.preventDefault()
+          this.themeSelectorOpen = false
+          this.themeNavIdx = 0
+          this.$nextTick(() => { this.$refs.inputEl?.focus() })
+        }
       },
       goThemeSetting() {
         // 在原页面/新标签页打开 elecV2P 主题设置页面（webUI 根路径 + #setting 面板），
@@ -1090,6 +1135,8 @@
       selectTheme(theme) {
         this.applyTheme(theme)
         this.themeSelectorOpen = false
+        // 选完主题后把焦点还给主输入框，方便继续输入
+        this.$nextTick(() => { this.$refs.inputEl?.focus() })
         // 记住用户的选择，刷新后恢复（default / simple / list:index / 原始对象兜底）
         let sel
         if (!theme) {
@@ -1106,6 +1153,14 @@
           if (sel === 'json') localStorage.setItem('aichat_pi_theme', JSON.stringify(theme))
           else localStorage.setItem('aichat_pi_theme', sel)
         } catch (e) {}
+      },
+      scrollThemeActive() {
+        const listEl = this.$refs.themeListEl
+        if (!listEl) return
+        this.$nextTick(() => {
+          const el = listEl.children[this.themeNavIdx]
+          if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' })
+        })
       },
       scrollToCurrentModel() {
         const dropdownEl = document.getElementById('modelDropdown')
@@ -2003,17 +2058,38 @@
           this.$nextTick(() => { self.autosize() })
           return
         }
+        const themeMatch = prompt.match(/^\/theme\s*(.*)/i)
+        if (themeMatch) {
+          // /theme 不带参数 → 打开主题选择弹窗
+          // /theme <name> → 直接应用指定主题
+          const arg = (themeMatch[1] || '').trim()
+          if (arg) {
+            const t = (this.elecV2PTheme && this.elecV2PTheme.list || []).concat(this.elecV2PTheme && this.elecV2PTheme.simple ? [this.elecV2PTheme.simple] : [])
+            const hit = t.find((x) => x && (x.name === arg || (x.name || '').toLowerCase() === arg.toLowerCase()))
+            if (hit) {
+              this.selectTheme(hit)
+              this.showNotify('Theme applied: ' + (hit.name || arg), 'success')
+            } else {
+              this.showNotify('No theme named "' + arg + '"', 'error')
+            }
+          } else {
+            this.showThemeSelector()
+          }
+          this.inputText = ''
+          this.$nextTick(() => { self.autosize() })
+          return
+        }
         if (/^\/help\s*$/.test(prompt)) {
           this.inputText = ''
           this.$nextTick(() => { self.autosize() })
           const cmds = (this.commands || [])
           const cmdLines = cmds.map((c) => `• /${c.name}  —  ${c.description}`).join('  \n  ')
-          const extra = `\n\n💡  小提示：\n  /new  开启新 session（保留当前不重置）\n  /clear  清空前端显示（不切 session）\n  /session  打开左侧历史面板，方向键选中，Enter 载入\n  /model  切换模型（可带参数或不带参数）\n  /compact  压缩上下文节省 token`
+          const extra = `\n\n💡  小提示：\n  /new  开启新 session（保留当前不重置）\n  /clear  清空前端显示（不切 session）\n  /session  打开左侧历史面板，方向键选中，Enter 载入\n  /model  切换模型（可带参数或不带参数）\n  /theme  打开主题选择弹窗（可带参数直接应用）\n  /compact  压缩上下文节省 token`
           this.messages.push({ role: 'assistant', parts: [{ t: 'text', c: (cmdLines || 'No commands') + extra }], streaming: false })
           this.$nextTick(() => { this.scrollBottom() })
           return
         }
-        if (/^\/(new|clear|session|model|help)\b/.test(prompt)) {
+        if (/^\/(new|clear|session|model|theme|help)\b/.test(prompt)) {
           // known command with no further match above; drop the text and ignore
           this.inputText = ''
           this.$nextTick(() => { self.autosize() })
@@ -2038,16 +2114,28 @@
         let textFlush = null
         let reasonBuf = ''
         let reasonFlush = null
+        let curReason = null // 当前打开的 reasoning 块（HTML ref part）
+        // 收尾当前 reasoning 块：把剩余缓冲写入它，标记关闭，后续内容另起新块
+        const closeReason = () => {
+          if (reasonBuf) {
+            if (curReason) curReason.body = (curReason.body || '') + reasonBuf
+            else {
+              curReason = { t: 'ref', c: '✱ reasoning', cls: 'reasoning', body: reasonBuf, reasonBody: true }
+              el.parts.push(curReason)
+            }
+            reasonBuf = ''
+          }
+          if (curReason) curReason.closed = true
+          curReason = null
+        }
         const flushReasoning = () => {
           if (reasonFlush) { clearTimeout(reasonFlush); reasonFlush = null }
           if (!reasonBuf) return
-          let target = null
-          for (let i = el.parts.length - 1; i >= 0; i--) {
-            const p = el.parts[i]
-            if (p.t === 'ref' && p.cls === 'reasoning' && p.reasonBody) { target = p; break }
+          if (!curReason || curReason.closed) {
+            curReason = { t: 'ref', c: '✱ reasoning', cls: 'reasoning', body: '', reasonBody: true }
+            el.parts.push(curReason)
           }
-          if (target) target.body = (target.body || '') + reasonBuf
-          else el.parts.push({ t: 'ref', c: '✱ reasoning', cls: 'reasoning', body: reasonBuf, reasonBody: true })
+          curReason.body = (curReason.body || '') + reasonBuf
           reasonBuf = ''
           self.scrollReasoningBottom()
         }
@@ -2111,8 +2199,13 @@
                 const found = el.parts.find((p) => p.uid === data.uid)
                 if (found) { found.c = data.content; found.cls = data.cls || '' }
                 else el.parts.push({ t: 'ref', c: data.content, cls: data.cls || '', uid: data.uid })
+              } else if (data.cls === 'reasoning' && data.content.indexOf('✱') === 0) {
+                // 新的 reasoning 块开始：先收尾上一个块，本块内容稍后由 flushReasoning 另起新块
+                closeReason()
               } else {
-                el.parts.push({ t: 'ref', c: data.content, cls: data.cls || '', reasonBody: data.cls === 'reasoning' && data.content.indexOf('✱') === 0 })
+                // reasoning done 行 / 工具 / 信息等显示行：先收尾尚未结束的 reasoning 块，避免内容串块
+                closeReason()
+                el.parts.push({ t: 'ref', c: data.content, cls: data.cls || '' })
               }
             }
             if (data.type === 'reasoning') {
@@ -2688,6 +2781,7 @@
 </script>
 
 <script favend>
+// @grant persist
 const { spawn, exec } = require('child_process')
 const fs = require('fs')
 const path = require('path')
@@ -3642,6 +3736,7 @@ $fend('commands', () => {
     { name: 'compact', description: 'compact context to reduce token usage' },
     { name: 'session', description: 'open session panel, or /session <id> to load one' },
     { name: 'model', description: 'switch model (use /model <model>)' },
+    { name: 'theme', description: 'open theme selector' },
     { name: 'help', description: 'list commands' }
   ] }
 })
@@ -3694,8 +3789,22 @@ $fend('start', (data) => {
   const runningTools = {}
   const seenTools = {}
   const lastToolOut = {}
-  const reasoningSeen = {}
-  const openReasoning = new Set() // 仍在输出 thinking、尚未收到 thinking_end 的内容块
+  // reasoning 块开关：同一消息内可能有多次 thinking（contentIndex 可能复用），
+  // 用单一「当前是否打开」标志保证：每块只发一次「✱ reasoning」，
+  // 不会因 ci 复用而漏掉后面的块。收尾时只复位标志，不额外输出「done」行（后台 session 里也不存在该行）。
+  let reasoningOpen = false
+  const reasonBegin = () => {
+    if (!reasoningOpen) {
+      reasoningOpen = true
+      sendRef('✱ reasoning', 'reasoning')
+    }
+  }
+  const reasonEnd = () => {
+    if (reasoningOpen) {
+      reasoningOpen = false
+      sendRef('✓ reasoning done', 'reasoning')
+    }
+  }
   const streamTc = {}
   let tcUidSeq = 0
   let compactingSince = 0
@@ -3810,29 +3919,24 @@ $fend('start', (data) => {
       const at = ame.type
       const ci = ame.contentIndex || 0
       if (at === 'text_delta') {
-        const pending = Object.keys(reasoningSeen).filter(k => reasoningSeen[k])
-        for (const k of pending) { reasoningSeen[k] = false; openReasoning.delete(k); sendRef('✓ reasoning done', 'reasoning') }
+        reasonEnd()
         if (ame.delta) send('text', { content: ame.delta })
         return
       }
       if (at === 'thinking_start' || at === 'thinking_delta') {
-        if (!reasoningSeen[ci]) { reasoningSeen[ci] = true; openReasoning.add(ci); sendRef('✱ reasoning', 'reasoning') }
+        reasonBegin()
         if (at === 'thinking_delta' && ame.delta) send('reasoning', { content: ame.delta })
         return
       }
       if (at === 'thinking_end') {
-        if (reasoningSeen[ci]) { reasoningSeen[ci] = false; openReasoning.delete(ci); sendRef('✓ reasoning done', 'reasoning') }
+        reasonEnd()
         return
       }
       if (at === 'toolcall_start') {
         // 工具调用正在流式生成（名称要到 toolcall_end 才知道）：先亮占位脉冲，消除静默等待感
         // deepseek 类后端可能在工具调用之后才补发 thinking_end：
         // 这里先把仍未结束的 reasoning 块标成 done，保证「✓ reasoning done」行排在工具 ref 之前
-        const open = Array.from(openReasoning)
-        if (open.length) {
-          openReasoning.clear()
-          for (const k of open) { reasoningSeen[k] = false; sendRef('✓ reasoning done', 'reasoning') }
-        }
+        reasonEnd()
         const uid = 'tc-' + (++tcUidSeq)
         streamTc[ci] = uid
         send('ref', { content: '◈ generating tool call…', cls: 'tool', uid: uid })
@@ -3865,11 +3969,7 @@ $fend('start', (data) => {
     if (t === 'message_end') {
       const msg = ev.message || {}
       for (const k in streamTc) delete streamTc[k]
-      const leftOpen = Array.from(openReasoning)
-      if (leftOpen.length) {
-        openReasoning.clear()
-        for (const k of leftOpen) { reasoningSeen[k] = false; sendRef('✓ reasoning done', 'reasoning') }
-      }
+      reasonEnd()
       if (msg.provider && msg.model) {
         model = msg.provider + '/' + msg.model
         send('init', { content: '> build · ' + model })

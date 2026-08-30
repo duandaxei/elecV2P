@@ -24,6 +24,11 @@ const CONFIG_RUNJS = {
   white: {                // 白名单脚本。放行所有网络请求，不进行屏蔽检测
     enable: false,
     list: []
+  },
+
+  persist: {              // efh 后台常驻会话（@grant persist）
+    enable: true,         // 是否启用常驻机制
+    idle: 300             // 空闲多少秒后自动释放常驻 context
   }
 }
 
@@ -32,6 +37,142 @@ CONFIG.CONFIG_RUNJS = Object.assign(CONFIG_RUNJS, CONFIG.CONFIG_RUNJS)
 
 const efhcache = new Map();
 const scriptcache = new Map();
+
+// efh 常驻会话。key: efh 后台脚本文件名
+// session = {
+//   filename, hash, context(CONTEXT.final), ready,
+//   handlers: Map<key, fn>, init: Promise|null,
+//   queue: [{key, data, resolve, reject}], lastActive, total
+// }
+const residentCtx = new Map();
+
+// 空闲扫描，自动释放常驻 context
+const persistResidentIdle = setInterval(() => {
+  if (residentCtx.size === 0) return
+  const now = Date.now()
+  for (const [name, sess] of residentCtx) {
+    if (sess.ready && (now - (sess.lastActive || 0) > CONFIG_RUNJS.persist.idle * 1000)) {
+      clog.debug('release persistent context of', name, 'by idle timeout')
+      releaseResident(name)
+    }
+  }
+}, 10000).unref()
+
+function releaseResident(name) {
+  const sess = residentCtx.get(name)
+  if (!sess) return
+  residentCtx.delete(name)
+  if (sess.context?.final) {
+    delete sess.context.final._resident
+  }
+}
+
+// 常驻 init：在持久化 sandbox 里执行一遍顶层代码，注册所有 $fend handler
+function persistInit(name, jscode, addContext) {
+  const fconsole = new logger({ head: name, level: 'debug', file: CONFIG_RUNJS.jslogfile ? name : false })
+  const CONTEXT = new context({ fconsole, name })
+  CONTEXT.final.__dirname  = Jsfile.get(name, 'dir')
+  CONTEXT.final.__filename = Jsfile.get(name, 'path')
+  CONTEXT.final.__taskname = addContext.__taskname
+  CONTEXT.final.__taskid   = addContext.__taskid
+  CONTEXT.final.require = (request)=>{
+    request = require.resolve(request, { paths: [CONTEXT.final.__dirname] })
+    return require(request)
+  }
+  CONTEXT.final.require.resolve = (request)=>require.resolve(request, { paths: [CONTEXT.final.__dirname] })
+  CONTEXT.final.require.clear = (request)=>delete require.cache[require.resolve(request, { paths: [CONTEXT.final.__dirname] })]
+  CONTEXT.final.require.cache = require.cache
+  CONTEXT.final.$env = { ...process.env, userid: CONFIG_Port.userid, vernum: CONFIG_Port.vernum, version: CONFIG_Port.version, ...addContext.env, ...addContext.$env }
+
+  const handlers = new Map()
+  CONTEXT.final._resident = handlers
+
+  const options = { filename: name, breakOnSigint: true }
+  let scopeglobal = vm.createContext(CONTEXT.final)
+  let precompiled = new vm.Script(jscode, { filename: name })
+  try {
+    precompiled.runInContext(scopeglobal, options)
+  } catch (error) {
+    clog.error('persistent init of', name, 'error:', error.stack || error.message)
+    return null
+  }
+  return CONTEXT
+}
+
+// 常驻主入口：开启 @grant persist 的 efh 后台脚本。
+// 首次调用做 init（跑一遍顶层注册 handlers），之后按 $fend key 原样分发，不再重编译/重跑顶层。
+function persistRunJS(name, jscode, addContext={}) {
+  const rq = addContext.$request || {}
+  let body = rq.body
+  if (sType(body) === 'string') {
+    try { body = JSON.parse(body) } catch(e) { body = {} }
+  } else if (sType(body) !== 'object') {
+    body = {}
+  }
+  const key = body?.key || rq.query?.key || ''
+  const data = body?.data
+
+  let sess = residentCtx.get(name)
+  // 文件 hash 变化 → 重建会话
+  if (sess && sess.hash !== addContext.__md5hash) {
+    clog.debug('hash changed, rebuild persistent context of', name)
+    releaseResident(name)
+    sess = null
+  }
+
+  if (!sess) {
+    sess = { filename: name, jscode, hash: addContext.__md5hash, context: null, ready: false, handlers: null, init: null, lastActive: Date.now(), dispatch: 0 }
+    residentCtx.set(name, sess)
+    sess.init = Promise.resolve().then(()=>{
+      const CONTEXT = persistInit(name, jscode, addContext)
+      // 若 init 失败，移除会话，后续请求回退传统 runJS
+      if (!CONTEXT) { releaseResident(name); return null }
+      sess.context = CONTEXT
+      sess.handlers = CONTEXT.final._resident
+      sess.ready = true
+      sess.lastActive = Date.now()
+      return sess
+    })
+  }
+
+  if (sess.ready) {
+    return dispatchOrQueue(sess, key, data, addContext)
+  }
+  // 会话创建/初始化中，等待 init 完成
+  return sess.init.then((s)=>{
+    if (!s || !s.ready) {
+      // init 失败回退传统模式
+      return runJS(name, jscode, addContext)
+    }
+    return dispatchOrQueue(s, key, data, addContext)
+  })
+}
+
+function dispatchOrQueue(sess, key, data, addContext) {
+  sess.lastActive = Date.now()
+  if (!sess.handlers || !sess.handlers.has(key)) {
+    // 未注册的 key：回退传统整脚本跑一遍（保底语义）
+    return runJS(sess.filename, sess.jscode, addContext)
+  }
+  // 把当前 $request 注入常驻 sandbox，供 handler 直接读取
+  if (sess.context?.final && addContext.$request) {
+    sess.context.final.$request = addContext.$request
+  }
+  sess.dispatch++
+  return persistDispatch(sess, key, data)
+}
+
+// 常驻分发：命中已注册的 $fend handler
+async function persistDispatch(sess, key, data) {
+  const fn = sess.handlers.get(key)
+  try {
+    let result = (typeof fn === 'function') ? await fn(data) : fn
+    return result
+  } catch (error) {
+    clog.error(`persistent $fend ${key} of ${sess.filename} error:`, error.stack || error.message)
+    return { error: error.message }
+  }
+}
 
 // 初始化脚本运行
 if (CONFIG.init?.runjs && CONFIG.init.runjsenable !== false) {
@@ -563,6 +704,34 @@ async function runJSFile(filename, addContext={}) {
   }
   if (!/\.(js|efh)$/i.test(filename)) {
     filename += '.js'
+  }
+
+  // 常驻模式：仅对声明了 @grant persist 的 efh 后台（favend）脚本生效
+  const bPersist = CONFIG_RUNJS.persist.enable &&
+                   /^\/\/ +@grant +persist/m.test(rawcode) &&            // 脚本声明常驻
+                   /\.efh$/.test(filename) &&                            // efh 后台
+                   (addContext.$request?.method) === 'POST' &&           // 请求式交互
+                   addContext.from === 'favend'
+  if (bPersist) {
+    if (!residentCtx.has(filename)) {
+      clog.debug('run in persistent mode, init resident context for', filename)
+    }
+    return persistRunJS(filename, rawcode, addContext).then(res=>{
+      if (res !== undefined) {
+        let rstr = sString(res)
+        if (CONFIG.gloglevel === 'debug') {
+          runclog.debug(`run ${filename} result: ${rstr.slice(0, 1200)}`)
+        } else if (rstr.length > 480) {
+          runclog.info(`run ${filename} result: ${rstr.slice(0, 480)}...`)
+        } else {
+          runclog.info(`run ${filename} result: ${rstr}`)
+        }
+      }
+      return res
+    }).catch(e=>{
+      runclog.error(`run ${filename}, persistent error: ${errStack(e)}`)
+      return e.message
+    })
   }
 
   return new Promise((resolve, reject)=>{

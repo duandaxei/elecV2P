@@ -360,6 +360,16 @@ class contextBase {
     }
   }
   $fend = async (key, fn) => {
+    // 常驻（@grant persist）注册模式：
+    // 只把 key -> fn 登记进会话的 handlers Map，本次执行不进行分发。
+    if (this._resident) {
+      if (this._resident.has && this._resident.set) {
+        this._resident.set(key, fn || {})
+      } else if (this._resident && this._resident.store) {
+        this._resident.store.set(key, fn || {})
+      }
+      return 'registered'
+    }
     // 待优化：
     // - 无 $fend 匹配问题
     // - 多 $fend 匹配优化(done)
