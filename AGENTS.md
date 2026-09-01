@@ -67,12 +67,9 @@ Playwright e2e in `test/*.spec.mjs`, run individually (`node test/e2e.spec.mjs`)
 - No formatter/linter; match surrounding style (tabs/4-space per file). New JS uses no trailing semicolons.
 - Frontend i18n: add strings to both `web/src/i18n/locales/{zh,en}.json`.
 - `web/dist` is generated — never hand-edit, rebuild.
+- After any frontend `web/src` edit, run `npm run build` to repackage. No need to restart via `pm2`.
 - List files are strict JSON — no comments.
-- **Never traverse `node_modules/`**; target specific dirs (`webser/`, `func/`, `utils/`, `script/`, `web/src/`).
-
-## Webhook API
-
-`GET/POST /webhook?token=<wbrtoken>&type=<type>&...` — types: `runjs`(fn) · `shell`(command) · `status` · `info` · `task` · `security` · `devdebug`.
+- **Never traverse `node_modules/` or `.git/`**; target specific dirs (`webser/`, `func/`, `utils/`, `script/`, `web/src/`). When using `grep`, `Glob`, `Grep`, `find`, `rg`, or similar search/traversal commands, always exclude these dirs (e.g. `--exclude-dir=node_modules`, `--exclude-dir=.git`, or search within specific source dirs only). Only search them when explicitly requested.
 
 ## Links
 

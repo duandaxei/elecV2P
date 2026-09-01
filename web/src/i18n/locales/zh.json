@@ -311,5 +311,9 @@
   "cut": "剪切",
   "type": "类型",
   "fullscreen": "全屏",
-  "exit_fullscreen": "退出全屏"
+  "exit_fullscreen": "退出全屏",
+  "minimize": "最小化",
+  "maximize": "最大化",
+  "restore": "还原",
+  "minimized_windows": "最小化窗口"
 }

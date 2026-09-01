@@ -12,7 +12,13 @@ const { sJson, sType, errStack, surlName, progressBar, sTypetoExt } = require('.
 const { CONFIG, CONFIG_Port } = require('../config')
 
 const { list, file } = require('./file')
-const uagent = list.get('useragent.list')
+let _uagent = null
+function getUagentList() {
+  if (_uagent === null) {
+    _uagent = list.get('useragent.list')
+  }
+  return _uagent
+}
 
 const CONFIG_Axios = {
   proxy: {
@@ -82,7 +88,7 @@ const eData = {
 }
 
 function getUagent() {
-  return uagent[CONFIG_Axios.uagent]?.header || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36'
+  return getUagentList()[CONFIG_Axios.uagent]?.header || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36'
 }
 
 function isBlock(request) {

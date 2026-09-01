@@ -17,11 +17,6 @@ CONFIG.eapp = Object.assign({
       "type": "url",
       "target": "https://github.com/elecV2/elecV2P-dei/blob/master/docs/dev_note/webUI%20首页快捷运行程序%20eapp.md",
     }, {
-      "name": "简易记事本",
-      "type": "efh",
-      "target": "https://raw.ev2.workers.dev/elecV2/elecV2P-dei/master/examples/JSTEST/efh/notepad.efh",
-      "hash": "94f669c165f0f33ec73fd32f446b32e3"
-    }, {
       "name": "清空日志",
       "logo": "https://raw.ev2.workers.dev/elecV2/elecV2P/master/efss/logo/dlog.png",
       "type": "js",
@@ -41,9 +36,10 @@ CONFIG.eapp = Object.assign({
       "type": "shell",
       "target": "pm2 ls",
     }, {
-      "name": "查看目录文件",
-      "type": "shell",
-      "target": "ls -cwd %ei%",
+      "name": "ShellCmd",
+      "type": "efh",
+      "target": "https://raw.ev2.workers.dev/elecV2/elecV2P/master/script/JSFile/shellcmd.efh",
+      "note": "执行任意 shell 命令，默认 ls",
     }, {
       "name": "随机配色",
       "type": "eval",

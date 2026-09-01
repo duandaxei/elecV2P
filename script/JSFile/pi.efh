@@ -3756,8 +3756,17 @@ $fend('start', (data) => {
   let retryLeft = MAX_RETRY
   const MAX_SWITCH = 10
   let switchLeft = MAX_SWITCH
+  let switchBudgetNotified = false
   let retrying = false
   const triedModels = new Set()
+  // per-tool hard timeout: a single tool call (e.g. `pm2 restart elecV2P`) can hang forever when
+  // the spawned shell leaves a background daemon holding the stdio pipe, so pi never emits
+  // tool_execution_end. Cap it (default 10min, configure via settings.json `piToolTimeout` seconds).
+  const MAX_TOOL_MS = (() => {
+    const v = Number(readSettingsJson().piToolTimeout)
+    return isFinite(v) && v > 0 ? v * 1000 : 10 * 60 * 1000
+  })()
+  const wedgedTools = new Set()   // tool arg-signatures that already timed out this run (avoid re-run loops)
   let autoRetryCount = 0   // pi internal auto-retries seen
   let lastErrText = ''     // last errorMessage from events
   let lastErrAt = 0        // ms timestamp of last errorMessage, to flag error-recovery compaction
@@ -3868,6 +3877,7 @@ $fend('start', (data) => {
       // 整个 run 成功完成才重置自动切换次数；期间的真实失败会累积计数，避免中途闪断即清零
       switchLeft = MAX_SWITCH
       retryLeft = MAX_RETRY
+      switchBudgetNotified = false
       sendRef('✓ ' + (model || 'model') + ' run completed · switch budget reset (0/' + MAX_SWITCH + ')', 'info')
     }
     streamEnded = true
@@ -4107,7 +4117,15 @@ $fend('start', (data) => {
     return list
   }
   const switchToNextModel = (etxt, reason) => {
-    if (retrying || switchLeft <= 0) return false
+    if (retrying) return false
+    if (switchLeft <= 0) {
+      // switch budget exhausted — no further auto-switch attempt is possible, the run stops
+      // (no model is actually switched here; the old message claiming "model switched" was misleading)
+      if (switchBudgetNotified) return false
+      switchBudgetNotified = true
+      sendRef('⚠ auto-switch budget exhausted (' + (MAX_SWITCH - switchLeft) + '/' + MAX_SWITCH + ' used) — all fallbacks failed, run stopped, model not switched', 'info')
+      return false
+    }
     const gone = model || modelStr || defModel || ''
     triedModels.add(gone)
     const conf = loadCandidateModels()    // currently available (excludes bad)
@@ -4125,9 +4143,9 @@ $fend('start', (data) => {
     retryLeft = MAX_RETRY  // fresh budget for the new model
     activeModel = next
     send('model', { model: next, removed: reason === 'removed' })  // keep frontend model selector in sync
-    const why = reason === 'removed' ? (gone + ' removed') : (reason === 'switch' ? (gone + ' switching') : (gone + ' retries exhausted'))
-    const errLine = etxt ? ' · ' + String(etxt).split('\n')[0].slice(0, 160) : ''
-    sendRef('↻ ' + why + ' · switching to ' + next + ' (' + (MAX_SWITCH - switchLeft) + '/' + MAX_SWITCH + ')' + errLine, 'info')
+    const shortErr = (etxt || '').split('\n')[0].slice(0, 120) || reason
+    const why = reason === 'removed' ? (gone + ' removed') : (gone + ' ' + shortErr)
+    sendRef('↻ ' + why + ' · switching to ' + next + ' (' + (MAX_SWITCH - switchLeft) + '/' + MAX_SWITCH + ')', 'info')
     retrying = true
     kickWatchdog()
     setTimeout(() => { relaunch() }, 800)
@@ -4309,6 +4327,26 @@ $fend('start', (data) => {
       const now = Date.now()
       for (const id in runningTools) {
         const rt = runningTools[id]
+        // hard per-tool timeout: if a single tool call exceeds MAX_TOOL_MS, it's wedged
+        // (e.g. a daemon-spawning command that never closes its output pipe). Recover instead
+        // of hanging forever: notify, drop the entry, and relaunch a fresh pi process.
+        if (!rt.wedged && now - rt.started > MAX_TOOL_MS) {
+          rt.wedged = true
+          const sig = String(rt.arg || '').slice(0, 200)
+          const secs = Math.floor((now - rt.started) / 1000)
+          if (wedgedTools.has(sig)) {
+            // same command already timed out once this run — likely poisoned (leaks a daemon).
+            // stop instead of looping: fail the run.
+            sendRef('✗ tool "' + rt.tool + '" timed out again (' + secs + 's) — appears unkillable (background process), stopping', 'tool')
+            fail('Tool "' + rt.tool + '" timed out twice and may leave a background process running')
+            return
+          }
+          wedgedTools.add(sig)
+          sendRef('✗ tool "' + rt.tool + '" timed out (' + secs + 's) — killing pi and resuming so the chat isn\'t stuck', 'tool')
+          delete runningTools[id]
+          relaunch()
+          return
+        }
         if (now - rt.lastUpdate > 10000) {
           sendRef('◈ ' + rt.tool + ' running (' + Math.floor((now - rt.started) / 1000) + 's)', 'tool')
           send('running', { tool: rt.tool, callId: id })

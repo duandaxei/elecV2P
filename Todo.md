@@ -10,7 +10,6 @@
 <div style="background-color: #003153;margin-top: 12px;border-radius: 8px;">
 <h3 style="font-size: 24px;text-align: center;border-bottom: 1px solid;color: white;padding: 6px;margin-bottom: 0;">Project</h3>
 <pre style="margin-bottom: 0;white-space: pre-line;word-break: break-word;margin: 0;padding: 6px 10px;text-align: left;display: flex;">
-- EAPP 订阅/分类
 - 前端可选择后台节点
 - 规则及定时任务的移动和排序
 - CTRL+K 全局搜索（规则/任务/脚本 等
@@ -21,6 +20,8 @@
 <div style="width: 50%;background-color: #2d8800;border-radius: 8px;margin: 0 12px; max-height: 480px; overflow: hidden auto;">
 <h3 style="font-size: 24px;text-align: center;border-bottom: 1px solid;color: white;padding: 6px;margin-bottom: 0;">Done</h3>
 <pre style="margin-bottom: 0;white-space: pre-line;word-break: break-word;margin: 0;padding: 6px 10px;text-align: left;display: flex;">
+- [x] evui 弹窗最小化/最大化
+- [x] 首页增加Pi-Agent/Opencode应用
 - [x] RULES 默认不对 body 进行匹配
 - [x] 可处理最大返回数据大小修改为 15M
 - [x] ws 断线后 LOGO 变化

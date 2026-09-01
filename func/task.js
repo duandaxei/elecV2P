@@ -561,9 +561,10 @@ const taskInit = function() {
       break
     }
   }
-}();
+}
 
 module.exports = {
+  taskInit,
   taskMa: new Proxy(taskMan, {
     set(target, prop){
       clog.error('forbid redefine $task method', prop)

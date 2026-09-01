@@ -311,5 +311,9 @@
   "zip": "ZIP",
   "cut": "CUT",
   "fullscreen": "FULLSCREEN",
-  "exit_fullscreen": "EXIT FULLSCREEN"
+  "exit_fullscreen": "EXIT FULLSCREEN",
+  "minimize": "MINIMIZE",
+  "maximize": "MAXIMIZE",
+  "restore": "RESTORE",
+  "minimized_windows": "Minimized Windows"
 }

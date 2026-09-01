@@ -157,7 +157,18 @@ export default {
     epRun(app, idx){
       switch(app.type) {
       case 'efh':
-        this.$uApi.open('run/?target=' + encodeURI(app.target))
+        this.$evui({
+          id: 'eapp_efh_' + app.hash,
+          title: app.name,
+          width: 900,
+          height: 600,
+          resizable: true,
+          draggable: true,
+          style: {
+            content: 'padding: 0;'
+          },
+          content: `<iframe src="run/?target=${ encodeURIComponent(app.target) }" style="position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;"></iframe>`
+        })
         this.logs.unshift(`[${this.$logHead('eapp notify')}][${this.$sTime(null, 1)}] 执行 EFH: ${ app.target }`)
         break
       case 'url':

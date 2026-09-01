@@ -422,6 +422,8 @@ const file = {
     if (!fstat.isDirectory()) {
       return [fileInfo('', folder, fstat)]
     }
+    if (ext instanceof Array) ext = new Set(ext)
+    if (noext instanceof Array) noext = new Set(noext)
 
     let curnum = 0, fnlist = [], subfolder = [], newfolder = folder
     while (curnum<max) {
@@ -431,32 +433,35 @@ const file = {
         subf = subf + '/'
         index = ''        // 子目录不进行 index 检测
       }
-      let list = fs.readdirSync(newfolder), list_len = list.length
+      let list = fs.readdirSync(newfolder, { withFileTypes: true }), list_len = list.length
       for (let i = 0;i < list_len;i++) {
-        let fd = list[i]
+        let dirent = list[i], fd = dirent.name
         if (dotfiles !== 'allow' && /^\./.test(fd)) {
           continue
         }
-        let fstat = fs.statSync(path.join(newfolder, fd))
-        if (fstat.isDirectory()) {
+        if (dirent.isDirectory()) {
           subfolder.push(subf + fd)
         } else {
+          if (!dirent.isFile()) continue
           let extname = path.extname(fd).toLowerCase()
-          if (ext.length && ext.indexOf(extname) === -1) {
+          if (ext && ext.size && !ext.has(extname)) {
             continue
           }
-          if (noext.length && noext.indexOf(extname) !== -1) {
+          if (noext && noext.size && noext.has(extname)) {
             continue
           }
           if (index && index.includes(fd)) {
+            // dirent 不含 size/mtime，回退到 statSync
+            let ifstat = fs.statSync(path.join(newfolder, fd))
             return [{
               name: subf + fd,
-              size: kSize(fstat.size),
-              mtime: fstat.mtimeMs,
+              size: kSize(ifstat.size),
+              mtime: ifstat.mtimeMs,
               index: true,
             }]
           }
-          fnlist.push(fileInfo(subf, fd, fstat))
+          let fileSt = detail ? fs.statSync(path.join(newfolder, fd)) : null
+          fnlist.push(fileInfo(subf, fd, fileSt || {}))
           curnum++
           if (curnum >= max) {
             return fnlist
@@ -736,7 +741,7 @@ const store = {
     return false
   },
   all() {
-    return fs.readdirSync(fpath.store)
+    return fs.readdirSync(fpath.store).filter(key => !/^[._]/.test(key))
   },
   backup(targetfile = ''){
     const zip = new Zip();
@@ -752,17 +757,19 @@ const store = {
   },
 }
 
-let estartinfo = store.get('elecV2PStartInfo');
-if (estartinfo && sType(estartinfo) === 'array') {
-  if (estartinfo.length >= 99) {
-    clog.info('elecV2P start for', estartinfo.length, 'times, reset to 1');
-    estartinfo = [];
+setImmediate(()=>{
+  let estartinfo = store.get('elecV2PStartInfo');
+  if (estartinfo && sType(estartinfo) === 'array') {
+    if (estartinfo.length >= 99) {
+      clog.info('elecV2P start for', estartinfo.length, 'times, reset to 1');
+      estartinfo = [];
+    }
+    estartinfo.push(now(null, true, 0));
+  } else {
+    estartinfo = [now(null, true, 0)];
   }
-  estartinfo.push(now(null, true, 0));
-} else {
-  estartinfo = [now(null, true, 0)];
-}
-store.put(estartinfo, 'elecV2PStartInfo', { note: 'Every time of elecV2P start' });
-clog.info('elecV2P start', estartinfo.length, 'times');
+  store.put(estartinfo, 'elecV2PStartInfo', { note: 'Every time of elecV2P start' });
+  clog.info('elecV2P start', estartinfo.length, 'times');
+})
 
 module.exports = { list, Jsfile, store, file }

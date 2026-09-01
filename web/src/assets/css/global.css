@@ -952,10 +952,18 @@ noscript {
   pointer-events: auto;
   background-color: var(--main-cl);
   background-image: linear-gradient(110deg,var(--secd-fc) 25%,transparent 0),linear-gradient(315deg,transparent 30%,var(--tras-bk) 30%),linear-gradient(45deg,transparent 66%,var(--secd-bk) 0),linear-gradient(333deg,var(--icon-bk) 53%,transparent 0);
+  transform-origin: 50% 50%;
+  transition: opacity .28s ease-in, transform .3s cubic-bezier(.34,1.56,.64,1);
 }
 
 .ediv.active {
   box-shadow: 0px 0px 3px 3px var(--tras-bk);
+}
+
+.ediv--minimized {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.08);
 }
 
 .ediv.active:before {
@@ -994,12 +1002,96 @@ noscript {
   padding: 0 1em;
 }
 
+.ediv_title--minimize,
+.ediv_title--maximize {
+  float: right;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity .15s, background .15s;
+}
+
+.ediv_title--minimize:hover,
+.ediv_title--maximize:hover {
+  opacity: 1;
+  background: var(--tras-bk);
+}
+
+.ediv_btn_icon {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  position: relative;
+}
+
+.ediv_btn_icon--min {
+  border-bottom: 2px solid currentColor;
+}
+
+.ediv_btn_icon--max {
+  border: 2px solid currentColor;
+  border-radius: 1px;
+}
+
+.ediv_btn_icon--restore {
+  border: 2px solid currentColor;
+  border-radius: 1px;
+}
+
+.ediv_btn_icon--restore::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 3px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid currentColor;
+  border-radius: 1px;
+  background: var(--main-bk);
+}
+
 .ediv_title--close {
   float: right;
+  width: 36px;
+  height: 36px;
+  margin-left: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-top-right-radius: 8px;
   background: var(--delt-bk);
-  padding: 0 8px;
   cursor: pointer;
+  font-size: 20px;
+  opacity: 0.7;
+  transition: opacity .15s;
+}
+
+.ediv_title--close:hover {
+  opacity: 1;
+}
+
+.ediv--maximized {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  transform: none !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 100 !important;
+  border-radius: 0;
+}
+
+.ediv--maximized .ediv_title {
+  border-radius: 0;
+}
+
+.ediv--maximized .ediv_content {
+  border-radius: 0;
 }
 
 .ediv_btncontainer {
@@ -1017,6 +1109,126 @@ noscript {
 .ediv_cbbtn {
   min-width: 120px;
 }
+
+/* dock (minimized windows) */
+.evui_dock {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  max-width: 60vw;
+  padding: 10px 18px 6px;
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 18px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+  pointer-events: auto;
+}
+
+.evui_dock_item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.evui_dock_iconwrap {
+  position: relative;
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1);
+}
+
+.evui_dock_icon {
+  display: block;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: box-shadow .18s;
+}
+
+.evui_dock_item:hover .evui_dock_iconwrap {
+  transform: translateY(-8px) scale(1.22);
+}
+
+.evui_dock_item:hover .evui_dock_icon {
+  box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+}
+
+.evui_dock_item:hover + .evui_dock_item .evui_dock_iconwrap,
+.evui_dock_item:has(+ .evui_dock_item:hover) .evui_dock_iconwrap {
+  transform: translateY(-3px) scale(1.06);
+}
+
+.evui_dock_close {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--delt-bk);
+  color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s;
+  z-index: 1;
+}
+
+.evui_dock_item:hover .evui_dock_close {
+  opacity: 1;
+}
+
+.evui_dock_close:hover {
+  background: #d32f2f;
+}
+
+.evui_dock_label {
+  position: absolute;
+  bottom: calc(100% + 18px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 9px;
+  background: rgba(30,30,30,0.85);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.3;
+  border-radius: 6px;
+  white-space: nowrap;
+  z-index: 120;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .12s;
+}
+
+.evui_dock_item:hover .evui_dock_label {
+  opacity: 1;
+  visibility: visible;
+}
+
+.evui_dock_label::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(30,30,30,0.85);
+}
+/* dock end */
 /* evui end */
 
 /* animation */

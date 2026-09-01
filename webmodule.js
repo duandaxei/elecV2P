@@ -6,7 +6,7 @@ const compression = require('compression')
 
 const { CONFIG, CONFIG_Port } = require('./config')
 
-const { crtHost } = require('./func')
+const { crtHost, taskInit } = require('./func')
 const { isAuthReq, logger, websocketSer, htmlTemplate } = require('./utils')
 const clog = new logger({ head: 'webServer' })
 
@@ -92,6 +92,8 @@ module.exports = () => {
 
     server.listen(CONFIG_Port.webst, ()=>{
       clog.notify('elecV2P', 'v' + CONFIG_Port.version, 'started on port', CONFIG_Port.webst);
+      // webUI 就绪后再初始化定时任务，让关键路径更早 ready
+      taskInit()
     })
 
     websocketSer({ server, path: '/elecV2P' })

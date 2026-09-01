@@ -201,6 +201,9 @@ async function taskCount(filename) {
     clog.debug(filename, 'skip count run times by set')
     return
   }
+  if (/^https?:/.test(filename)) {
+    filename = surlName(filename)
+  }
   if (/test/.test(filename)) {
     clog.debug(filename, 'match key word: test, skip count run times')
     return
