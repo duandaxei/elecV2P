@@ -315,5 +315,7 @@
   "minimize": "最小化",
   "maximize": "最大化",
   "restore": "还原",
-  "minimized_windows": "最小化窗口"
+  "minimized_windows": "最小化窗口",
+  "evui_too_many_title": "evui 窗口数量过多",
+  "evui_too_many_msg": "当前 evui 窗口超过 12 个，可能会影响使用性能。后续只会保留最后打开的 12 个窗口到 store 中。"
 }

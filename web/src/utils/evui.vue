@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="evui">
-    <VueDragResize v-for="(ediv, drid) in displayList" :key="drid" className="ediv" dragHandle=".ediv_title--name" :parent="true" :prevent-deactivation="false" :active="ediv.active" :w="ediv.width" :h="ediv.height" :x="ediv.left" :y="ediv.top" :z="ediv.z" :resizable="ediv.resizable" :draggable="ediv.draggable" :handles="['tl','tr','bl','br']" :lock-aspect-ratio="false" :class="{ 'ediv--minimized': ediv.minimized, 'ediv--maximized': ediv.maximized }" @deactivated="ediv.z=1" @activated="ediv.z=2" @resizestop="(...args) => updateVal(args, drid)" @dragstop="(...args) => updateVal(args, drid)">
+    <VueDragResize v-for="(ediv, drid) in displayList" :key="drid" className="ediv" dragHandle=".ediv_title--name" :parent="true" :prevent-deactivation="false" :active="ediv.active" :w="ediv.width" :h="ediv.height" :x="ediv.left" :y="ediv.top" :z="ediv.z" :resizable="ediv.resizable" :draggable="ediv.draggable" :handles="['tl','tr','bl','br']" :lock-aspect-ratio="false" :class="{ 'ediv--minimized': ediv.minimized, 'ediv--maximized': ediv.maximized }" @deactivated="ediv.z=1" @activated="ediv.z=2" @resizeStop="(...args) => updateVal(args, drid)" @dragStop="(...args) => updateVal(args, drid)">
       <h3 class="ediv_title" :style="ediv.style.title" @click="ediv.maximized ? null : (ediv.z=2)">
         <span class="ediv_title--name" :title="drid">{{ ediv.title }}</span>
         <span class="ediv_title--minimize" @click="evMinimize(drid)" :title="$t('minimize')"><i class="ediv_btn_icon ediv_btn_icon--min"></i></span>
@@ -17,8 +17,8 @@
     <div v-if="hasMinimized" class="evui_dock">
       <div v-for="ediv in minimizedList" :key="ediv._id" class="evui_dock_item" @click="evRestoreMinimized(ediv._id)">
         <span class="evui_dock_label">{{ ediv.title }}</span>
-        <div class="evui_dock_iconwrap" :style="dockIconStyle">
-          <img class="evui_dock_icon" :src="minLogo(ediv)" :alt="ediv.title" :style="dockIconStyle" />
+        <div class="evui_dock_iconwrap">
+          <img class="evui_dock_icon" :src="minLogo(ediv)" :alt="ediv.title" />
           <span class="evui_dock_close" @click.stop="evRemove(ediv._id)" title="x"><svg viewBox="0 0 24 24" width="10" height="10"><path fill="currentColor" d="M6.4 5L5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg></span>
         </div>
       </div>
@@ -58,16 +58,14 @@ export default {
       },
       script: '',
       draglist: { },
+      docklist: { },
       dirty: false,
       maxZ: 2,
     }
   },
   computed: {
     hasMinimized() {
-      return Object.values(this.draglist).some(e => e.minimized)
-    },
-    minimizedCount() {
-      return Object.values(this.draglist).filter(e => e.minimized).length
+      return Object.values(this.draglist).some(e => e.minimized) || Object.keys(this.docklist).length > 0
     },
     displayList() {
       const list = {}
@@ -80,19 +78,13 @@ export default {
       const list = []
       for (const [id, item] of Object.entries(this.draglist)) {
         if (item.minimized) {
-          list.push({ ...item, _id: id })
+          list.push({ ...item, _id: id, _source: 'drag' })
         }
       }
+      for (const [id, item] of Object.entries(this.docklist)) {
+        list.push({ ...item, _id: id, _source: 'dock' })
+      }
       return list
-    },
-    dockIconStyle() {
-      const n = this.minimizedCount
-      const gap = 20
-      const pad = 36
-      const maxW = Math.min(window.innerWidth * 0.6, 720)
-      const avail = maxW - pad - gap * (n - 1)
-      const size = Math.max(40, Math.min(44, Math.floor(avail / n)))
-      return { width: size + 'px', height: size + 'px' }
     },
   },
   created() {
@@ -116,8 +108,9 @@ export default {
           break
         case 'close':
         case 'delete':
-          if (this.draglist[sobj.id]) {
-            this.$message.success('收到服务器端关闭', this.draglist[sobj.id].title, 'evui 界面的命令', sobj.message && '\n附带信息: ' + sobj.message )
+          if (this.draglist[sobj.id] || this.docklist[sobj.id]) {
+            const item = this.draglist[sobj.id] || this.docklist[sobj.id]
+            this.$message.success('收到服务器端关闭', item.title, 'evui 界面的命令', sobj.message && '\n附带信息: ' + sobj.message )
             this.evRemove(sobj.id)
           }
           break
@@ -166,6 +159,7 @@ export default {
         newval.height = rect[3]
       }
       Object.assign(this.draglist[drid], newval)
+      this.markDirty()
     },
     neweu(evui = {}){
       let id = evui.id || this.$uStr.euid()
@@ -184,6 +178,10 @@ export default {
       evui.z = ++this.maxZ
       evui.active = true
       this.draglist[id] = evui
+      // 窗口数量超过 12 时，提示可能影响性能，且不进行 store 持久化
+      if (Object.keys(this.draglist).length > 12) {
+        this.$message.success(this.$t('evui_too_many_title'), this.$t('evui_too_many_msg'), 6)
+      }
       this.dirty = evui.persist !== false
       if (reqMaximized) this.evMaximize(id)
     },
@@ -209,9 +207,12 @@ export default {
     persistAll() {
       if (!this.dirty) return
       const data = {}
-      const entries = Object.entries(this.draglist)
+      const entries = [
+        ...Object.entries(this.draglist),
+        ...Object.entries(this.docklist),
+      ]
       // 只保留最新的 10 个窗口
-      const latest = entries.slice(-10)
+      const latest = entries.slice(-12)
       for (const [id, item] of latest) {
         // content 大于 20KB 直接丢弃
         if (item.content && this.$sString(item.content).length > 20 * 1024) continue
@@ -258,11 +259,13 @@ export default {
           store = {}
         }
         for (const id of Object.keys(store)) {
-          if (this.draglist[id]) continue
-          this.neweu({ id, ...store[id] })
-          if (store[id].minimized) {
-            this.draglist[id].minimized = true
-            this.draglist[id].active = false
+          if (this.draglist[id] || this.docklist[id]) continue
+          const data = store[id]
+          if (data.minimized) {
+            // 最小化状态的窗口不调用 neweu，仅作为 dock 项，节省 content 加载
+            this.docklist[id] = data
+          } else {
+            this.neweu({ id, ...data })
           }
         }
         this.dirty = false
@@ -284,7 +287,14 @@ export default {
       item.active = false
       this.markDirty()
     },
-    evRestoreMinimized(id) {
+    evRestoreMinimized(id){
+      // 先判断来源
+      if (this.docklist[id]) {
+        const data = this.docklist[id]
+        delete this.docklist[id]
+        this.neweu({ id, ...data })
+        return
+      }
       const item = this.draglist[id]
       if (!item) return
       item.minimized = false
@@ -306,6 +316,11 @@ export default {
           this.$wsrecv.send(id, 'close')
         }
         delete this.draglist[id]
+        this.markDirty()
+        return
+      }
+      if (this.docklist[id]) {
+        delete this.docklist[id]
         this.markDirty()
       }
     },

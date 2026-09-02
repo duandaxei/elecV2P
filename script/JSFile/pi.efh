@@ -887,11 +887,11 @@
         customForm: { name: '', baseUrl: '', apiKey: '', api: 'openai-completions', models: '' },
         modelFilter: '', modelNavIdx: 0,
         wfTips: [
-          { icon: '◈', name: '了解项目', desc: ' — 结构梳理 · 各模块职责速览', text: '阅读本项目（elecV2P）的目录结构，总结 webser / func / utils / script 各模块的职责和相互关系' },
+          { icon: '◈', name: '了解项目', desc: ' — 结构梳理 · 各模块职责速览', text: '简单介绍一下本项目（elecV2P），主要功能及使用场景，以及如何新增/修改主题及脚本' },
           { icon: '⏱', name: '定时任务', desc: ' — 写脚本 · 注册 cron 任务', text: '写一个 JS 脚本保存到 script/JSFile/，用 $feed 发送通知，并说明如何在 TASK 里把它配置成每天早上 8 点运行的定时任务' },
-          { icon: '❖', name: '.efh 应用', desc: ' — Vue 前端 + favend 后端', text: '创建一个新的 .efh 应用：Vue 3 前端页面 + script favend 后端接口，实现一个简单备忘录，数据用 $store 保存' },
+          { icon: '❖', name: 'EFH应用', desc: ' — Vue 前端 + favend 后端', text: '创建一个新的 .efh 应用：Vue 3 前端页面 + script favend 后端接口，实现一个简单备忘录，数据用 $store 保存' },
           { icon: '⚑', name: '排查问题', desc: ' — 贴上报错 · 定位并修复', text: '帮我分析下面这段报错的原因，定位到具体代码并给出修复方案：' },
-          { icon: '⛨', name: 'MITM 解密', desc: ' — 根证书安装 · HTTPS 主机解密', text: '讲解 elecV2P 的 MITM 机制和完整配置步骤：如何生成并安装根 CA 证书（rootCA），如何在 script/Lists/mitmhost.list 里添加需要解密的 HTTPS 主机，以及开启后哪些请求能被拦截修改' },
+          { icon: '⛨', name: 'MITM解密', desc: ' — 根证书安装 · HTTPS 主机解密', text: '讲解 elecV2P 的 MITM 机制和完整配置步骤：如何生成并安装根 CA 证书（rootCA），如何在 script/Lists/mitmhost.list 里添加需要解密的 HTTPS 主机，以及开启后哪些请求能被拦截修改' },
           { icon: '⚙', name: '规则配置', desc: ' — RULES/REWRITE · 重写、阻断、跳转', text: '帮我写网络请求修改规则：屏蔽某广告域名的请求，并把另一个 URL 的响应重写为本地 JS 脚本处理，保存到对应列表文件，同时说明 RULES（default.list）和 REWRITE（rewrite.list）的格式区别' }
         ]
       }

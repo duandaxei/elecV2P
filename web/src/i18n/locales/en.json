@@ -315,5 +315,7 @@
   "minimize": "MINIMIZE",
   "maximize": "MAXIMIZE",
   "restore": "RESTORE",
-  "minimized_windows": "Minimized Windows"
+  "minimized_windows": "Minimized Windows",
+  "evui_too_many_title": "Too many evui windows",
+  "evui_too_many_msg": "More than 12 evui windows are open, which may affect performance. Only the latest 12 opened windows will be kept in store."
 }

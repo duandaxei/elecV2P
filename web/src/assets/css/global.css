@@ -896,33 +896,50 @@ noscript {
 }
 
 /* evui handle */
-.handle {
+.ediv .handle {
   position: absolute;
-  width:8px; height:8px;
+  width: 20px;
+  height: 20px;
   box-sizing: border-box;
-  opacity: .3;
-  border-radius: 50%;
-  background: var(--main-bk);
-  cursor: n-resize
+  opacity: 0;
+  visibility: hidden;
+  background: transparent;
+  border-style: solid;
+  border-color: var(--main-bk);
+  border-width: 0;
+  z-index: 99;
+  transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
 }
 
-.handle-tl{top:-4px;left:-4px;cursor:nw-resize}
-.handle-tm{top:-4px;left:50%;margin-left:-4px;cursor:n-resize}
-.handle-tr{top:-4px;right:-4px;cursor:ne-resize}
-.handle-ml{left:-4px;cursor:w-resize}
-.handle-ml,.handle-mr{top:50%;margin-top:-4px}
-.handle-mr{right:-4px;cursor:e-resize}
-.handle-bl{bottom:-4px;left:-4px;cursor:sw-resize}
-.handle-bm{bottom:-4px;left:50%;margin-left:-4px;cursor:s-resize}
-.handle-br{bottom:-4px;right:-4px;cursor:se-resize}
+.ediv:hover .handle {
+  opacity: .5;
+  visibility: visible;
+}
+
+.ediv .handle:hover {
+  opacity: .9;
+  transform: scale(1.15);
+}
+
+/* corner handles: L-shaped quarter-arc bracket on the two outer edges */
+.handle-tl{top:0;left:0;cursor:nw-resize;border-top-width:4px;border-left-width:4px;border-top-left-radius:18px}
+.handle-tr{top:0;right:0;cursor:ne-resize;border-top-width:4px;border-right-width:4px;border-top-right-radius:18px}
+.handle-bl{bottom:0;left:0;cursor:sw-resize;border-bottom-width:4px;border-left-width:4px;border-bottom-left-radius:18px}
+.handle-br{bottom:0;right:0;cursor:se-resize;border-bottom-width:4px;border-right-width:4px;border-bottom-right-radius:18px}
+
+/* middle handles: small pill shape */
+.handle-tm{top:-7px;left:50%;margin-left:-7px;cursor:n-resize;border-radius:7px}
+.handle-bm{bottom:-7px;left:50%;margin-left:-7px;cursor:s-resize;border-radius:7px}
+.handle-ml{left:-7px;top:50%;margin-top:-7px;cursor:w-resize;border-radius:7px}
+.handle-mr{right:-7px;top:50%;margin-top:-7px;cursor:e-resize;border-radius:7px}
 @media only screen and (max-width:768px){
 [class*=handle-]:before{
     content:"";
     position:absolute;
-    left:-4px;
-    right:-4px;
-    bottom:-4px;
-    top:-4px;
+    left:-7px;
+    right:-7px;
+    bottom:-7px;
+    top:-7px;
   }
 }
 
@@ -936,7 +953,6 @@ noscript {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  transition: all 0.2s;
 }
 
 .ediv {
@@ -953,7 +969,8 @@ noscript {
   background-color: var(--main-cl);
   background-image: linear-gradient(110deg,var(--secd-fc) 25%,transparent 0),linear-gradient(315deg,transparent 30%,var(--tras-bk) 30%),linear-gradient(45deg,transparent 66%,var(--secd-bk) 0),linear-gradient(333deg,var(--icon-bk) 53%,transparent 0);
   transform-origin: 50% 50%;
-  transition: opacity .28s ease-in, transform .3s cubic-bezier(.34,1.56,.64,1);
+  transition: opacity .28s ease-in;
+  will-change: transform;
 }
 
 .ediv.active {
@@ -964,6 +981,11 @@ noscript {
   opacity: 0;
   pointer-events: none;
   transform: scale(0.08);
+}
+
+.ediv.dragging,
+.ediv.resizing {
+  transition: none;
 }
 
 .ediv.active:before {
@@ -980,12 +1002,14 @@ noscript {
   font-size: 22px;
   border-radius: 8px 8px 0 0;
   background: var(--main-bk);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .ediv_content {
   position: relative;
-  display: block;
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   border-radius: 0 0 8px 8px;
   white-space: pre-wrap;
@@ -1145,11 +1169,15 @@ noscript {
 
 .evui_dock_iconwrap {
   position: relative;
+  width: 44px;
+  height: 44px;
   transition: transform .18s cubic-bezier(.34,1.56,.64,1);
 }
 
 .evui_dock_icon {
   display: block;
+  width: 100%;
+  height: 100%;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   transition: box-shadow .18s;
