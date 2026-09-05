@@ -20,6 +20,8 @@
           <li v-else>FEED/IFTTT/Custom notifications</li>
           <li v-if="islangzh">EFSS 基础文件管理</li>
           <li v-else>EFSS file management</li>
+          <li v-if="islangzh">Pi Agent 集成交互</li>
+          <li v-else>Pi Coding Agent Interactive</li>
         </ul>
 
         <h4 class="about_title">{{ $t('about_opensource') }}</h4>
@@ -36,6 +38,7 @@
           <li><a href="https://expressjs.com" target="_blank">express</a></li>
           <li><a href="https://github.com/merencia/node-cron" target="_blank">node-cron</a></li>
           <li><a href="https://github.com/dylang/node-rss" target="_blank">node-rss</a></li>
+          <li><a href="https://github.com/earendil-works/pi" target="_blank">Pi</a></li>
           <li><a href="https://pm2.keymetrics.io/" target="_blank">pm2</a></li>
           <li><a href="https://vuejs.org" target="_blank">vue</a></li>
           <li><a href="https://github.com/mauricius/vue-draggable-resizable" target="_blank">vue-draggable-resizable</a></li>

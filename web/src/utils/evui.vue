@@ -226,8 +226,10 @@ export default {
           type: item.type,
           content: item.content,
           style: item.style,
-          resizable: item.resizable,
-          draggable: item.draggable,
+          // 最大化时 resizable/draggable 会被临时改成 false，若直接持久化会导致还原后窗口不可拖动/缩放。
+          // 因此写入 store 时应取最大化前的原始值（item.prev），没有则用当前值。
+          resizable: item.prev?.resizable ?? item.resizable,
+          draggable: item.prev?.draggable ?? item.draggable,
           cbable: item.cbable,
           cbdata: item.cbdata,
           cblabel: item.cblabel,
