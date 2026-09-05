@@ -980,6 +980,8 @@ noscript {
 .ediv--minimized {
   opacity: 0;
   pointer-events: none;
+  touch-action: auto;
+  visibility: hidden;
   transform: scale(0.08);
 }
 

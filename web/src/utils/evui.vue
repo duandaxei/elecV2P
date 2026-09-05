@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="evui">
-    <VueDragResize v-for="(ediv, drid) in displayList" :key="drid" className="ediv" dragHandle=".ediv_title--name" :parent="true" :prevent-deactivation="false" :active="ediv.active" :w="ediv.width" :h="ediv.height" :x="ediv.left" :y="ediv.top" :z="ediv.z" :resizable="ediv.resizable" :draggable="ediv.draggable" :handles="['tl','tr','bl','br']" :lock-aspect-ratio="false" :class="{ 'ediv--minimized': ediv.minimized, 'ediv--maximized': ediv.maximized }" @deactivated="ediv.z=1" @activated="ediv.z=2" @resizeStop="(...args) => updateVal(args, drid)" @dragStop="(...args) => updateVal(args, drid)">
+    <VueDragResize v-for="(ediv, drid) in displayList" :key="drid" className="ediv" dragHandle=".ediv_title--name" :parent="true" :prevent-deactivation="false" :active="ediv.active" :w="ediv.width" :h="ediv.height" :x="ediv.left" :y="ediv.top" :z="ediv.z" :resizable="ediv.resizable" :draggable="ediv.draggable" :maxWidth="evMaxW" :maxHeight="evMaxH" :handles="['tl','tr','bl','br']" :lock-aspect-ratio="false" :class="{ 'ediv--minimized': ediv.minimized, 'ediv--maximized': ediv.maximized && !ediv.minimized }" @deactivated="ediv.z=1" @activated="ediv.z=2" @resizeStop="(...args) => updateVal(args, drid)" @dragStop="(...args) => updateVal(args, drid)">
       <h3 class="ediv_title" :style="ediv.style.title" @click="ediv.maximized ? null : (ediv.z=2)">
         <span class="ediv_title--name" :title="drid">{{ ediv.title }}</span>
         <span class="ediv_title--minimize" @click="evMinimize(drid)" :title="$t('minimize')"><i class="ediv_btn_icon ediv_btn_icon--min"></i></span>
@@ -61,9 +61,16 @@ export default {
       docklist: { },
       dirty: false,
       maxZ: 2,
+      viewport: { w: 0, h: 0 },
     }
   },
   computed: {
+    evMaxW() {
+      return this.viewport.w
+    },
+    evMaxH() {
+      return this.viewport.h
+    },
     hasMinimized() {
       return Object.values(this.draglist).some(e => e.minimized) || Object.keys(this.docklist).length > 0
     },
@@ -133,10 +140,15 @@ export default {
     this.restoreAll()
   },
   mounted() {
+    this.updateViewport()
+    window.addEventListener('resize', this.updateViewport)
+    window.addEventListener('orientationchange', this.updateViewport)
     document.addEventListener('visibilitychange', this.onVisibilityChange)
     window.addEventListener('beforeunload', this.onBeforeUnload)
   },
   beforeUnmount() {
+    window.removeEventListener('resize', this.updateViewport)
+    window.removeEventListener('orientationchange', this.updateViewport)
     document.removeEventListener('visibilitychange', this.onVisibilityChange)
     window.removeEventListener('beforeunload', this.onBeforeUnload)
   },
@@ -165,10 +177,19 @@ export default {
       let id = evui.id || this.$uStr.euid()
       const reqMaximized = !!evui.maximized
       evui = { ...this.init, ...evui }
-      evui.top = evui.top || (document.body.clientHeight - Number(evui.height || 460))/2
-      evui.left = evui.left || (document.body.clientWidth - Number(evui.width || 800))/2
+      // 移动端按可视区域 clamp 宽高，避免窗口溢出屏幕（vue-draggable-resizable 的内联 width/height 优先级高于 .ediv { max-width:100% }）
+      const vw = document.documentElement.clientWidth || document.body.clientWidth || window.innerWidth
+      const vh = document.documentElement.clientHeight || document.body.clientHeight || window.innerHeight
+      const defW = Number(evui.width || 800)
+      const defH = Number(evui.height || 460)
+      if (evui.width == null || defW > vw) evui.width = Math.max(240, Math.min(defW, vw))
+      if (evui.height == null || defH > vh) evui.height = Math.max(160, Math.min(defH, vh))
+      evui.top = evui.top || (vh - evui.height)/2
+      evui.left = evui.left || (vw - evui.width)/2
       if (evui.top < 0) evui.top = 0
       if (evui.left < 0) evui.left = 0
+      if (evui.top + evui.height > vh) evui.top = Math.max(0, vh - evui.height)
+      if (evui.left + evui.width > vw) evui.left = Math.max(0, vw - evui.width)
       if (evui.content) evui.content = this.$sString(evui.content)
       if (evui.cbdata) evui.cbdata = this.$sString(evui.cbdata)
       if (this.$sType(evui.style) !== 'object') evui.style = { content: evui.style }
@@ -273,6 +294,12 @@ export default {
         this.dirty = false
       }).catch(()=>{})
     },
+    updateViewport() {
+      const w = document.documentElement.clientWidth || window.innerWidth || 0
+      const h = document.documentElement.clientHeight || window.innerHeight || 0
+      if (this.viewport.w === w && this.viewport.h === h) return
+      this.viewport = { w, h }
+    },
     onVisibilityChange() {
       if (document.hidden) this.persistAll()
     },
@@ -283,7 +310,7 @@ export default {
       const item = this.draglist[id]
       if (!item || item.minimized) return
       if (!item.prev) {
-        item.prev = { top: item.top, left: item.left, width: item.width, height: item.height, z: item.z, resizable: item.resizable, draggable: item.draggable }
+        item.prev = { top: item.top, left: item.left, width: item.width, height: item.height, z: item.z, resizable: item.resizable, draggable: item.draggable, maximized: !!item.maximized }
       }
       item.minimized = true
       item.active = false
@@ -300,11 +327,17 @@ export default {
       const item = this.draglist[id]
       if (!item) return
       item.minimized = false
+      const wasMaximized = item.prev && item.prev.maximized
       if (item.prev && !item.maximized) {
         Object.assign(item, item.prev)
         delete item.prev
       }
-      item.z = ++this.maxZ
+      // 如果最小化前是最大化状态，调用 evMaximize 重新进入全屏
+      if (wasMaximized) {
+        this.evMaximize(id)
+      } else {
+        item.z = ++this.maxZ
+      }
       item.active = true
       this.markDirty()
     },

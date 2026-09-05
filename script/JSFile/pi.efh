@@ -188,6 +188,8 @@
     .msg .ref.tool { border-left-color: #f0b; }
     .msg .ref.cmd { border-left-color: #0c8; }
     .msg .ref.info { border-left-color: #4af; }
+    .msg .ref.retrying { animation: retryPulse 1.2s ease-in-out infinite; border-left-width: 3px; }
+    @keyframes retryPulse { 0%,100%{border-left-color:#4af;background:rgba(74,175,255,.08)} 50%{border-left-color:#58a6ff;background:rgba(88,166,255,.14)} }
     .msg .ref.edit { border-left-color: #f80; }
     .msg .ref.act { border-left-color: #fd0; }
     .msg .ref.reasoning { border-left-color: #a78bfa; font-style: italic; }
@@ -887,7 +889,7 @@
         customForm: { name: '', baseUrl: '', apiKey: '', api: 'openai-completions', models: '' },
         modelFilter: '', modelNavIdx: 0,
         wfTips: [
-          { icon: '◈', name: '了解项目', desc: ' — 项目简介 · 功能介绍及使用场景', text: '简单介绍一下本项目（elecV2P），主要功能及使用场景，以及如何新增/修改主题及脚本' },
+          { icon: '◈', name: '了解项目', desc: ' — 项目简介 · 功能介绍及使用场景', text: '简单介绍一下本项目（elecV2P）主要功能及使用场景，以及如何通过网络隧道远程访问本地服务' },
           { icon: '⏱', name: '定时任务', desc: ' — 写脚本 · 注册 cron 任务', text: '写一个 JS 脚本保存到 script/JSFile/，用 $feed 发送通知，并说明如何在 TASK 里把它配置成每天早上 8 点运行的定时任务' },
           { icon: '❖', name: 'EFH应用', desc: ' — Vue 前端 + favend 后端', text: '创建一个新的 .efh 应用：Vue 3 前端页面 + script favend 后端接口，实现一个简单备忘录，数据用 $store 保存' },
           { icon: '⚑', name: '排查问题', desc: ' — 贴上报错 · 定位并修复', text: '帮我分析下面这段报错的原因，定位到具体代码并给出修复方案：' },
@@ -2155,7 +2157,13 @@
         const onMsg = (data) => {
           try {
             const clearRunning = () => {
-              for (let i = 0; i < el.parts.length; i++) if (el.parts[i].running) el.parts[i].running = false
+              for (let i = 0; i < el.parts.length; i++) {
+                if (el.parts[i].running) el.parts[i].running = false
+                if (el.parts[i].cls && el.parts[i].cls.indexOf('retrying') >= 0) {
+                  el.parts[i].cls = (el.parts[i].cls || '').replace(/retrying/g, '').trim()
+                  if (!el.parts[i].cls) el.parts[i].cls = 'info'
+                }
+              }
             }
             if (data.type === 'running') {
               // 工具开始执行：在对应 ref 行点亮一个运行指示灯，消除"卡住"的观感
@@ -4078,7 +4086,7 @@ $fend('start', (data) => {
       sendRef(line, 'info')
       return
     }
-    if (t === 'auto_retry_start') { autoRetryCount++; sendRef('↻ retrying…', 'info'); return }
+    if (t === 'auto_retry_start') { autoRetryCount++; sendRef('↻ retrying…', 'info retrying'); return }
     if (t === 'agent_end' || t === 'agent_settled') {
       endRun(0, 'event')
       return

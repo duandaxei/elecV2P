@@ -323,7 +323,6 @@ export default {
       document.addEventListener('mouseup', this.dragEnd)
       document.addEventListener('touchmove', this.dragMove, { passive: false })
       document.addEventListener('touchend', this.dragEnd)
-      event.preventDefault()
     },
     dragMove(event){
       if (!this.piEfhDragging || !this.piEfhPosition) return
@@ -334,6 +333,8 @@ export default {
       const dy = clientY - this.piEfhMouseStart.y
       if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return
       this.piEfhJustDragged = true
+      // 只有真正拖动时才 preventDefault，避免阻止 click
+      event.preventDefault()
       const root = this.$el
       const rootRect = root.getBoundingClientRect()
       let newLeft = this.piEfhPosition.left + dx
@@ -558,8 +559,8 @@ export default {
 }
 .pi-efh-btn {
   position: fixed;
-  bottom: var(--pi-efh-bottom, 20px);
-  right: var(--pi-efh-right, 20px);
+  bottom: var(--pi-efh-bottom, calc(20px + env(safe-area-inset-bottom, 0px)));
+  right: var(--pi-efh-right, calc(20px + env(safe-area-inset-right, 0px)));
   left: var(--pi-efh-left, auto);
   top: var(--pi-efh-top, auto);
   width: 48px;

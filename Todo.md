@@ -17,6 +17,7 @@
 <div style="width: 50%;background-color: #2d8800;border-radius: 8px;margin: 0 12px; max-height: 480px; overflow: hidden auto;">
 <h3 style="font-size: 24px;text-align: center;border-bottom: 1px solid;color: white;padding: 6px;margin-bottom: 0;">Done</h3>
 <pre style="margin-bottom: 0;white-space: pre-line;word-break: break-word;margin: 0;padding: 6px 10px;text-align: left;display: flex;">
+- [x] evui 窗口移动端显示优化
 - [x] evui 弹窗最小化/最大化
 - [x] 首页增加Pi-Agent/Opencode应用
 - [x] RULES 默认不对 body 进行匹配
